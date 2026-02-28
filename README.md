@@ -1,0 +1,1 @@
+# django-azure-app
