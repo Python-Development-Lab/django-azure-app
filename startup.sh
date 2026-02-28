@@ -7,7 +7,7 @@ python manage.py migrate --noinput
 python manage.py collectstatic --noinput
 
 # Запуск Gunicorn
-gunicorn myapp.wsgi:application \
+gunicorn djangoapp.wsgi:application \
     --bind 0.0.0.0:8000 \
     --workers 4 \
     --timeout 120 \
