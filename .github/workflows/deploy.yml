@@ -1,0 +1,37 @@
+name: Deploy Django to Azure
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Collect static files
+      run: python manage.py collectstatic --noinput
+      env:
+        SECRET_KEY: "build-time-key-not-used-in-prod"
+        DEBUG: "False"
+        ALLOWED_HOSTS: "localhost"
+
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: 'mydjango1772289446'
+        publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+        package: .
