@@ -1,0 +1,47 @@
+name: Deploy → Production
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://mydjango1772289446.azurewebsites.net
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install & collectstatic
+      run: |
+        pip install -r requirements.txt
+        python manage.py collectstatic --noinput
+      env:
+        SECRET_KEY: "build-key"
+        DEBUG: "False"
+        ALLOWED_HOSTS: "localhost"
+        AZURE_CLIENT_ID: "build"
+        AZURE_CLIENT_SECRET: "build"
+        AZURE_TENANT_ID: "build"
+        AZURE_REDIRECT_URI: "http://localhost/"
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy to Production
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: 'mydjango1772289446'
+        package: .
+
+    - name: Azure Logout
+      run: az logout
