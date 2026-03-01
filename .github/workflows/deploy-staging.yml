@@ -1,16 +1,15 @@
-name: Deploy → Staging
+name: CI — Staging Check
 
 on:
   push:
     branches: [ develop ]
 
 jobs:
-  deploy-staging:
-    name: Deploy to Staging
+  staging-check:
+    name: Full Integration Check
     runs-on: ubuntu-latest
     environment:
       name: staging
-      url: https://mydjango1772289446-staging.azurewebsites.net
 
     steps:
     - uses: actions/checkout@v4
@@ -19,31 +18,41 @@ jobs:
       with:
         python-version: '3.12'
 
-    - name: Install & collectstatic
-      run: |
-        pip install -r requirements.txt
-        python manage.py collectstatic --noinput
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Django system check
+      run: python manage.py check
       env:
-        SECRET_KEY: "build-key"
+        SECRET_KEY: "staging-check-key"
         DEBUG: "False"
         ALLOWED_HOSTS: "localhost"
-        AZURE_CLIENT_ID: "build"
-        AZURE_CLIENT_SECRET: "build"
-        AZURE_TENANT_ID: "build"
+        AZURE_CLIENT_ID: "test"
+        AZURE_CLIENT_SECRET: "test"
+        AZURE_TENANT_ID: "test"
         AZURE_REDIRECT_URI: "http://localhost/"
 
-    - name: Azure Login
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    - name: Collect static files
+      run: python manage.py collectstatic --noinput
+      env:
+        SECRET_KEY: "staging-check-key"
+        DEBUG: "False"
+        ALLOWED_HOSTS: "localhost"
+        AZURE_CLIENT_ID: "test"
+        AZURE_CLIENT_SECRET: "test"
+        AZURE_TENANT_ID: "test"
+        AZURE_REDIRECT_URI: "http://localhost/"
 
-    - name: Deploy to Staging Slot
-      uses: azure/webapps-deploy@v3
-      with:
-        app-name: 'mydjango1772289446'
-        slot-name: 'staging'
-        package: .
-
-    - name: Azure Logout
-      run: az logout
-
+    - name: Run tests with coverage
+      run: |
+        pip install pytest pytest-django coverage
+        coverage run -m pytest -v
+        coverage report --min-coverage=60
+      env:
+        SECRET_KEY: "staging-check-key"
+        DEBUG: "True"
+        ALLOWED_HOSTS: "localhost"
+        AZURE_CLIENT_ID: "test"
+        AZURE_CLIENT_SECRET: "test"
+        AZURE_TENANT_ID: "test"
+        AZURE_REDIRECT_URI: "http://localhost/"
