@@ -40,3 +40,4 @@ jobs:
         AZURE_CLIENT_SECRET: "test-secret"
         AZURE_TENANT_ID: "test-tenant-id"
         AZURE_REDIRECT_URI: "http://localhost:8000/auth/callback/"
+
