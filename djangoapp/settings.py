@@ -166,7 +166,8 @@ AZURE_AUTHORITY = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}"
 AZURE_SCOPE = ['User.Read']
 
 # Перевірка наявності обов'язкових змінних (тільки в production)
-if not DEBUG:
+BUILDING = os.environ.get('BUILDING', 'false').lower() == 'true'
+if not DEBUG and not BUILDING:
     _missing = [
         var for var in ['AZURE_CLIENT_ID', 'AZURE_TENANT_ID', 'AZURE_CLIENT_SECRET']
         if not os.environ.get(var)
