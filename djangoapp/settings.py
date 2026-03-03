@@ -149,8 +149,8 @@ LOGGING = {
 }
 
 # ===== MICROSOFT ENTRA ID / MSAL =====
-AZURE_CLIENT_ID     = os.environ.get('AZURE_CLIENT_ID')
-AZURE_TENANT_ID     = os.environ.get('AZURE_TENANT_ID')
+AZURE_CLIENT_ID = os.environ.get('AZURE_CLIENT_ID')
+AZURE_TENANT_ID = os.environ.get('AZURE_TENANT_ID')
 AZURE_CLIENT_SECRET = os.environ.get('AZURE_CLIENT_SECRET')
 
 AZURE_REDIRECT_URI = os.environ.get(
