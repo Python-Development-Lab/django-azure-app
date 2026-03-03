@@ -3,15 +3,23 @@ from django.http import HttpResponse
 from django.shortcuts import render
 
 
-@login_required(login_url='/auth/login/')
-def home(request):
-    """Головна сторінка"""
-    context = {
+#@login_required(login_url='/auth/login/')
+#def home(request):
+#    """Головна сторінка"""
+#    context = {
         'title': 'Django 6.0 на Azure',
         'message': 'Вітаємо! Ваш Django додаток працює успішно!',
         'user': request.user,
     }
     return render(request, 'core/home.html', context)
+#
+
+
+@login_required(login_url='/auth/login/')
+def home(request):
+    return render(request, 'core/home.html', {
+        'user': request.user
+    })
 
 
 def health_check(request):
