@@ -1,0 +1,44 @@
+name: CI — Tests & Lint
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ develop ]
+
+jobs:
+  test:
+    name: Tests & Linting
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install pytest pytest-django coverage flake8
+
+    - name: Lint
+      run: |
+        flake8 . --max-line-length=120 \
+          --exclude=venv,migrations,staticfiles,__pycache__
+
+    - name: Run tests
+      run: |
+        coverage run -m pytest -v
+        coverage report --fail-under=80
+        
+      env:
+        SECRET_KEY: "ci-test-secret-key"
+        DEBUG: "True"
+        ALLOWED_HOSTS: "localhost"
+        AZURE_CLIENT_ID: "test-client-id"
+        AZURE_CLIENT_SECRET: "test-secret"
+        AZURE_TENANT_ID: "test-tenant-id"
+        AZURE_REDIRECT_URI: "http://localhost:8000/auth/callback/"
+
