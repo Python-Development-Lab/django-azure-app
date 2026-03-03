@@ -1,0 +1,58 @@
+name: CI — Staging Check
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  staging-check:
+    name: Full Integration Check
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Django system check
+      run: python manage.py check
+      env:
+        SECRET_KEY: "staging-check-key"
+        DEBUG: "False"
+        ALLOWED_HOSTS: "localhost"
+        AZURE_CLIENT_ID: "test"
+        AZURE_CLIENT_SECRET: "test"
+        AZURE_TENANT_ID: "test"
+        AZURE_REDIRECT_URI: "http://localhost/"
+
+    - name: Collect static files
+      run: python manage.py collectstatic --noinput
+      env:
+        SECRET_KEY: "staging-check-key"
+        DEBUG: "False"
+        ALLOWED_HOSTS: "localhost"
+        AZURE_CLIENT_ID: "test"
+        AZURE_CLIENT_SECRET: "test"
+        AZURE_TENANT_ID: "test"
+        AZURE_REDIRECT_URI: "http://localhost/"
+
+    - name: Run tests with coverage
+      run: |
+        pip install pytest pytest-django coverage
+        coverage run -m pytest -v
+        coverage report --fail-under=60
+      env:
+        SECRET_KEY: "staging-check-key"
+        DEBUG: "True"
+        ALLOWED_HOSTS: "localhost"
+        AZURE_CLIENT_ID: "test"
+        AZURE_CLIENT_SECRET: "test"
+        AZURE_TENANT_ID: "test"
+        AZURE_REDIRECT_URI: "http://localhost/"
