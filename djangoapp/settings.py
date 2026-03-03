@@ -147,3 +147,30 @@ LOGGING = {
         },
     },
 }
+
+# ===== MICROSOFT ENTRA ID / MSAL =====
+AZURE_CLIENT_ID     = os.environ.get('AZURE_CLIENT_ID')
+AZURE_TENANT_ID     = os.environ.get('AZURE_TENANT_ID')
+AZURE_CLIENT_SECRET = os.environ.get('AZURE_CLIENT_SECRET')
+
+AZURE_REDIRECT_URI = os.environ.get(
+    'AZURE_REDIRECT_URI',
+    'http://localhost:8000/auth/callback/' if DEBUG
+    else 'https://mydjango1772289446.azurewebsites.net/auth/callback/'
+)
+
+AZURE_AUTHORITY = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}"
+
+# Дозволи які запитує додаток у Microsoft Graph
+AZURE_SCOPE = ['User.Read']
+
+# Перевірка наявності обов'язкових змінних (тільки в production)
+if not DEBUG:
+    _missing = [
+        var for var in ['AZURE_CLIENT_ID', 'AZURE_TENANT_ID', 'AZURE_CLIENT_SECRET']
+        if not os.environ.get(var)
+    ]
+    if _missing:
+        raise ValueError(
+            f"Відсутні обов'язкові змінні середовища для Entra ID: {', '.join(_missing)}"
+        )
