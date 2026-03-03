@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head><title>Login — Django Azure App</title></head>
+<body>
+  <h1>Django Azure App</h1>
+  {% if error %}
+    <p style="color:red">{{ error }}</p>
+  {% endif %}
+  <a href="{% url 'auth_login' %}">Sign in with Microsoft</a>
+</body>
+</html>
