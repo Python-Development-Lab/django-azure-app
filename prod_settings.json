@@ -1,0 +1,42 @@
+[
+  {
+    "name": "SECRET_KEY",
+    "slotSetting": false,
+    "value": "LCW_vVdIdvagKSYDq_5qa8gr9iUWuRwQXFo49QzHcBkHisZhcJNw2iCBAv-RYWKC3qU"
+  },
+  {
+    "name": "DEBUG",
+    "slotSetting": false,
+    "value": "False"
+  },
+  {
+    "name": "ALLOWED_HOSTS",
+    "slotSetting": false,
+    "value": "mydjango1772289446.azurewebsites.net"
+  },
+  {
+    "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+    "slotSetting": false,
+    "value": "true"
+  },
+  {
+    "name": "WEBSITE_HTTPLOGGING_RETENTION_DAYS",
+    "slotSetting": false,
+    "value": "3"
+  },
+  {
+    "name": "ENABLE_ORYX_BUILD",
+    "slotSetting": false,
+    "value": "true"
+  },
+  {
+    "name": "POST_BUILD_COMMAND",
+    "slotSetting": false,
+    "value": "python manage.py migrate --noinput"
+  },
+  {
+    "name": "PYTHON_ENABLE_GUNICORN_MULTIWORKERS",
+    "slotSetting": false,
+    "value": "true"
+  }
+]
