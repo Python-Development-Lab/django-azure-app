@@ -56,7 +56,7 @@ def callback_view(request):
     login(request, user)
     request.session['access_token'] = result.get('access_token')
 
-    return redirect('home')
+    return redirect('core:home')
 
 
 def logout_view(request):
