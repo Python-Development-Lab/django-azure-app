@@ -1,14 +1,9 @@
-{% extends 'base/base.html' %}
-
-{% block title %}{{ title }}{% endblock %}
-
-{% block content %}
-    <h1>🚀 {{ title }}</h1>
-    <p>{{ message }}</p>
-    <p><span class="badge">Django 6.0</span> 
-       <span class="badge">Azure App Service</span></p>
-    <hr>
-    <p>✅ Сервер працює коректно</p>
-    <p>✅ Статичні файли налаштовано</p>
-    <p>✅ Шаблони підключено</p>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="uk">
+<head><title>Django Azure App</title></head>
+<body>
+  <h1>Ласкаво просимо, {{ user.first_name }}!</h1>
+  <p>Email: {{ user.email }}</p>
+  <a href="{% url 'auth_logout' %}">Sign out</a>
+</body>
+</html>
