@@ -27,6 +27,7 @@ jobs:
         AZURE_CLIENT_SECRET: "build"
         AZURE_TENANT_ID: "build"
         AZURE_REDIRECT_URI: "http://localhost/"
+        BUILDING: "true"   
 
     # Замість publish-profile — використовуємо Service Principal
     - name: Azure Login
