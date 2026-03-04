@@ -14,8 +14,10 @@ class EntraIDBackend(BaseBackend):
             return None
 
         email = entra_id_claims.get('preferred_username', '')
-        first_name = entra_id_claims.get('given_name', '')
-        last_name = entra_id_claims.get('family_name', '')
+        full_name = entra_id_claims.get('name', '')
+        name_parts = full_name.split(' ', 1)
+        first_name = name_parts[0] if name_parts else ''
+        last_name = name_parts[1] if len(name_parts) > 1 else ''
 
         user, created = User.objects.get_or_create(
             username=oid,
