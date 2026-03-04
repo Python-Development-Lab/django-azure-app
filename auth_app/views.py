@@ -1,3 +1,4 @@
+import logging
 import uuid
 import msal
 from django.conf import settings
@@ -44,6 +45,7 @@ def callback_view(request):
         })
 
     claims = result.get('id_token_claims', {})
+    logging.warning('ENTRA_CLAIMS: %s', claims)
 
     user = authenticate(request, entra_id_claims=claims)
     if user is None:
