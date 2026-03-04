@@ -174,7 +174,7 @@ AZURE_REDIRECT_URI = os.environ.get(
 AZURE_AUTHORITY = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}"
 
 # Дозволи які запитує додаток у Microsoft Graph
-AZURE_SCOPE = ['User.Read']
+AZURE_SCOPE = ['openid', 'profile', 'email', 'User.Read']
 
 # Перевірка наявності обов'язкових змінних (тільки в production)
 BUILDING = os.environ.get('BUILDING', 'false').lower() == 'true'
