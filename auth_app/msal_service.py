@@ -35,6 +35,13 @@ class MSALService:
             redirect_uri=self.redirect_uri,
         )
 
+    def refresh_token(self, refresh_token):
+        """Refresh access token using refresh token."""
+        return self._get_app().acquire_token_by_refresh_token(
+            refresh_token=refresh_token,
+            scopes=self.scope,
+        )
+
     def get_logout_url(self, id_token=None):
         """Generate Microsoft SSO logout URL."""
         base_url = (
