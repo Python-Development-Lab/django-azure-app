@@ -1,3 +1,4 @@
+import time
 import uuid
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import redirect, render
@@ -40,6 +41,8 @@ def callback_view(request):
     login(request, user, backend='auth_app.backends.EntraIDBackend')
     request.session['access_token'] = result.get('access_token')
     request.session['id_token'] = result.get('id_token')
+    request.session['refresh_token'] = result.get('refresh_token')
+    request.session['token_expiry'] = int(time.time()) + result.get('expires_in', 3600)
 
     return redirect('core:home')
 
