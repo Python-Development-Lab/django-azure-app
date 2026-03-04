@@ -1,8 +1,7 @@
 import uuid
 import msal
 from django.conf import settings
-from django.contrib.auth import login, logout
-from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import redirect, render
 
 
@@ -45,21 +44,22 @@ def callback_view(request):
         })
 
     claims = result.get('id_token_claims', {})
-    email = claims.get('preferred_username', '')
-    name = claims.get('name', email)
 
-    user, _ = User.objects.get_or_create(
-        username=email,
-        defaults={'email': email, 'first_name': name}
-    )
-    user.backend = 'django.contrib.auth.backends.ModelBackend'
-    login(request, user)
+    user = authenticate(request, entra_id_claims=claims)
+    if user is None:
+        return render(request, 'auth/login.html', {
+            'error': 'Authentication failed'
+        })
+
+    login(request, user, backend='auth_app.backends.EntraIDBackend')
     request.session['access_token'] = result.get('access_token')
+    request.session['id_token'] = result.get('id_token')
 
-    return redirect('home')
+    return redirect('core:home')
 
 
 def logout_view(request):
+    id_token = request.session.get('id_token', '')
     logout(request)
     request.session.clear()
     logout_url = (
@@ -67,4 +67,6 @@ def logout_view(request):
         f"?post_logout_redirect_uri="
         f"{settings.AZURE_REDIRECT_URI.replace('/auth/callback/', '/')}"
     )
+    if id_token:
+        logout_url += f"&id_token_hint={id_token}"
     return redirect(logout_url)
