@@ -90,3 +90,53 @@ class MSALServiceTest(TestCase):
         service = MSALService()
         url = service.get_logout_url(id_token='test-id-token')
         self.assertIn('id_token_hint=test-id-token', url)
+
+
+class TokenRefreshMiddlewareTest(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='test-oid', password='pass')
+        self.factory = RequestFactory()
+
+    def test_skips_anonymous_user(self):
+        from auth_app.middleware import TokenRefreshMiddleware
+        get_response = MagicMock(return_value=MagicMock())
+        middleware = TokenRefreshMiddleware(get_response)
+        request = self.factory.get('/')
+        request.user = MagicMock(is_authenticated=False)
+        request.session = {}
+        middleware(request)
+        get_response.assert_called_once()
+
+    def test_skips_if_no_expiry(self):
+        from auth_app.middleware import TokenRefreshMiddleware
+        get_response = MagicMock(return_value=MagicMock())
+        middleware = TokenRefreshMiddleware(get_response)
+        request = self.factory.get('/')
+        request.user = MagicMock(is_authenticated=True)
+        request.session = {}
+        middleware(request)
+        get_response.assert_called_once()
+
+    @patch('auth_app.middleware.MSALService')
+    def test_refreshes_token_when_expiring(self, mock_msal_class):
+        import time
+        from auth_app.middleware import TokenRefreshMiddleware
+        mock_service = MagicMock()
+        mock_service.refresh_token.return_value = {
+            'access_token': 'new-token',
+            'expires_in': 3600,
+        }
+        mock_msal_class.return_value = mock_service
+
+        get_response = MagicMock(return_value=MagicMock())
+        middleware = TokenRefreshMiddleware(get_response)
+        request = self.factory.get('/')
+        request.user = MagicMock(is_authenticated=True)
+        request.session = {
+            'token_expiry': int(time.time()) + 60,
+            'refresh_token': 'old-refresh-token',
+        }
+        middleware(request)
+        mock_service.refresh_token.assert_called_once_with('old-refresh-token')
+        self.assertEqual(request.session['access_token'], 'new-token')
