@@ -11,8 +11,7 @@ class EntraIDBackendTest(TestCase):
         self.claims = {
             'oid': 'test-oid-123',
             'preferred_username': 'test@epam.com',
-            'given_name': 'Test',
-            'family_name': 'User',
+            'name': 'Test User',
         }
 
     def test_authenticate_creates_user(self):
