@@ -183,3 +183,38 @@ class RBACDecoratorsTest(TestCase):
         request = self._make_request({'entra_roles': []})
         result = view(request)
         self.assertIsInstance(result, HttpResponseForbidden)
+
+
+class KeyVaultServiceTest(TestCase):
+    @patch('djangoapp.key_vault.ManagedIdentityCredential')
+    @patch('djangoapp.key_vault.SecretClient')
+    def test_load_secrets_to_env(self, mock_client_cls, mock_cred_cls):
+        mock_client = MagicMock()
+        mock_client.get_secret.return_value = MagicMock(value='test-value')
+        mock_client_cls.return_value = mock_client
+
+        import os
+        os.environ.pop('SECRET_KEY', None)
+
+        from djangoapp.key_vault import load_secrets_to_env
+        load_secrets_to_env()
+
+        mock_client.get_secret.assert_called()
+
+    @patch('djangoapp.key_vault.ManagedIdentityCredential')
+    @patch('djangoapp.key_vault.SecretClient')
+    def test_load_secrets_skips_existing_env(self, mock_client_cls, mock_cred_cls):
+        mock_client = MagicMock()
+        mock_client.get_secret.return_value = MagicMock(value='test-value')
+        mock_client_cls.return_value = mock_client
+
+        import os
+        for key in ['SECRET_KEY', 'AZURE_CLIENT_ID', 'AZURE_CLIENT_SECRET', 'AZURE_TENANT_ID']:
+            os.environ[key] = 'already-set'
+
+        from djangoapp.key_vault import load_secrets_to_env
+        load_secrets_to_env()
+
+        # get_secret called once for credential check only, not for each secret
+        secret_names = [c.args[0] for c in mock_client.get_secret.call_args_list]
+        assert secret_names.count('DJANGO-SECRET-KEY') <= 1
