@@ -140,3 +140,46 @@ class TokenRefreshMiddlewareTest(TestCase):
         middleware(request)
         mock_service.refresh_token.assert_called_once_with('old-refresh-token')
         self.assertEqual(request.session['access_token'], 'new-token')
+
+
+class RBACDecoratorsTest(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='test-oid', password='pass')
+        self.factory = RequestFactory()
+
+    def _make_request(self, session_data=None):
+        request = self.factory.get('/')
+        request.user = self.user
+        request.session = session_data or {}
+        return request
+
+    def test_require_group_allows_access(self):
+        from auth_app.decorators import require_group
+        view = require_group('Admin')(lambda r: 'ok')
+        request = self._make_request({'entra_groups': ['Admin', 'Users']})
+        result = view(request)
+        self.assertEqual(result, 'ok')
+
+    def test_require_group_denies_access(self):
+        from auth_app.decorators import require_group
+        from django.http import HttpResponseForbidden
+        view = require_group('Admin')(lambda r: 'ok')
+        request = self._make_request({'entra_groups': ['Users']})
+        result = view(request)
+        self.assertIsInstance(result, HttpResponseForbidden)
+
+    def test_require_role_allows_access(self):
+        from auth_app.decorators import require_role
+        view = require_role('manager')(lambda r: 'ok')
+        request = self._make_request({'entra_roles': ['manager']})
+        result = view(request)
+        self.assertEqual(result, 'ok')
+
+    def test_require_role_denies_access(self):
+        from auth_app.decorators import require_role
+        from django.http import HttpResponseForbidden
+        view = require_role('manager')(lambda r: 'ok')
+        request = self._make_request({'entra_roles': []})
+        result = view(request)
+        self.assertIsInstance(result, HttpResponseForbidden)
