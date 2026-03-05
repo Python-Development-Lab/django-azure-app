@@ -10,3 +10,5 @@ msal-extensions==1.2.0
 python-dotenv==1.2.2
 requests==2.32.5
 requests-oauthlib==2.0.0
+azure-keyvault-secrets==4.7.0
+azure-identity==1.21.0
