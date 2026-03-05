@@ -8,6 +8,14 @@ try:
 except ImportError:
     pass
 
+# Завантаження секретів з Azure Key Vault (тільки в Azure)
+if os.environ.get('WEBSITE_SITE_NAME'):
+    try:
+        from djangoapp.key_vault import load_secrets_to_env
+        load_secrets_to_env()
+    except Exception as e:
+        print(f'Key Vault warning: {e}')
+
 # Базова директорія
 BASE_DIR = Path(__file__).resolve().parent.parent
 
