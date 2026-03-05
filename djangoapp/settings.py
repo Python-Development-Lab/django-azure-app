@@ -196,3 +196,4 @@ if not DEBUG and not BUILDING:
         raise ValueError(
             f"Відсутні обов'язкові змінні середовища для Entra ID: {', '.join(_missing)}"
         )
+# PostgreSQL configuration
