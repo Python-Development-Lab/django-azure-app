@@ -43,6 +43,8 @@ def callback_view(request):
     request.session['id_token'] = result.get('id_token')
     request.session['refresh_token'] = result.get('refresh_token')
     request.session['token_expiry'] = int(time.time()) + result.get('expires_in', 3600)
+    request.session['entra_groups'] = claims.get('groups', [])
+    request.session['entra_roles'] = claims.get('roles', [])
 
     return redirect('core:home')
 
