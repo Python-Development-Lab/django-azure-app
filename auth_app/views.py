@@ -7,6 +7,10 @@ from auth_app.msal_service import MSALService
 
 
 def login_view(request):
+    return render(request, 'auth/login.html')
+
+
+def microsoft_redirect_view(request):
     msal_service = MSALService()
     request.session['state'] = str(uuid.uuid4())
     auth_url = msal_service.get_auth_url(state=request.session['state'])
