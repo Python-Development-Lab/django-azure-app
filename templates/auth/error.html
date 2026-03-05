@@ -1,0 +1,17 @@
+{% extends "base/base.html" %}
+
+{% block title %}Помилка — Django Azure App{% endblock %}
+
+{% block content %}
+<h1>⚠️ Помилка доступу</h1>
+<p style="color:#666;">{{ message|default:"Доступ заборонено." }}</p>
+<a href="{% url 'auth_login' %}" style="
+    display: inline-block;
+    background: #0078d4;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    margin-top: 15px;
+">← Повернутись до входу</a>
+{% endblock %}
