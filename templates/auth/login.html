@@ -1,0 +1,28 @@
+{% extends "base/base.html" %}
+
+{% block title %}Вхід — Django Azure App{% endblock %}
+
+{% block content %}
+<h1>🔐 Вхід до системи</h1>
+
+{% if error %}
+<div style="background:#fee;border:1px solid #f00;padding:10px;border-radius:5px;margin:15px 0;">
+    ⚠️ {{ error }}
+</div>
+{% endif %}
+
+<p>Для входу використовуйте корпоративний або особистий акаунт Microsoft.</p>
+
+<a href="{% url 'auth_login' %}" style="
+    display: inline-block;
+    background: #0078d4;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 16px;
+    margin-top: 10px;
+">
+    🪟 Увійти через Microsoft
+</a>
+{% endblock %}
