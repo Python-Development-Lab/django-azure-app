@@ -18,11 +18,9 @@ if os.environ.get('WEBSITE_SITE_NAME'):
 
 # OpenCensus трейсинг
 OPENCENSUS = {
-    'TRACE': {
-        'SAMPLER': 'opencensus.trace.samplers.ProbabilitySampler(rate=1.0)',
-        'EXPORTER': '''opencensus.ext.azure.trace_exporter.AzureExporter(
-            connection_string=os.environ.get("APPINSIGHTS_CONNECTION_STRING", "")
-        )''',
+    "TRACE": {
+        "SAMPLER": "opencensus.trace.samplers.ProbabilitySampler(rate=1.0)",
+        "EXPORTER": "opencensus.ext.azure.trace_exporter.AzureExporter()",
     }
 }
 
