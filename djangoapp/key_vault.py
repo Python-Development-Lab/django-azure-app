@@ -4,16 +4,18 @@ from azure.keyvault.secrets import SecretClient
 from azure.identity import ManagedIdentityCredential, DefaultAzureCredential
 
 logger = logging.getLogger(__name__)
-
 VAULT_URL = "https://django-app-kv.vault.azure.net/"
-
 SECRET_MAP = {
     "SECRET_KEY": "DJANGO-SECRET-KEY",
     "AZURE_CLIENT_ID": "AZURE-CLIENT-ID",
     "AZURE_CLIENT_SECRET": "AZURE-CLIENT-SECRET",
     "AZURE_TENANT_ID": "AZURE-TENANT-ID",
+    "DB_HOST": "DB-HOST",
+    "DB_NAME": "DB-NAME",
+    "DB_USER": "DB-USER",
+    "DB_PASSWORD": "DB-PASSWORD",
+    "APPINSIGHTS_CONNECTION_STRING": "APPINSIGHTS-CONNECTION-STRING",
 }
-
 
 def get_secret_client():
     try:
@@ -27,7 +29,6 @@ def get_secret_client():
         credential = DefaultAzureCredential()
         return SecretClient(vault_url=VAULT_URL, credential=credential)
 
-
 def load_secrets_to_env():
     try:
         client = get_secret_client()
@@ -37,4 +38,4 @@ def load_secrets_to_env():
                 os.environ[env_key] = value
                 logger.info(f"Key Vault: loaded {env_key}")
     except Exception as e:
-        logger.warning(f"Key Vault: failed to load secrets — {e}")
+        logger.warning(f"Key Vault: failed - {e}")

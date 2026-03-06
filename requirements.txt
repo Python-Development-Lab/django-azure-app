@@ -12,3 +12,5 @@ requests==2.32.5
 requests-oauthlib==2.0.0
 azure-keyvault-secrets==4.7.0
 azure-identity==1.21.0
+opencensus-ext-azure==1.1.13
+opencensus-ext-django==0.8.0
