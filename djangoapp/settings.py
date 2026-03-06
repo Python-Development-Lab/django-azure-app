@@ -16,6 +16,16 @@ if os.environ.get('WEBSITE_SITE_NAME'):
     except Exception as e:
         print(f'Key Vault warning: {e}')
 
+# OpenCensus трейсинг
+OPENCENSUS = {
+    'TRACE': {
+        'SAMPLER': 'opencensus.trace.samplers.ProbabilitySampler(rate=1.0)',
+        'EXPORTER': '''opencensus.ext.azure.trace_exporter.AzureExporter(
+            connection_string=os.environ.get("APPINSIGHTS_CONNECTION_STRING", "")
+        )''',
+    }
+}
+
 # Azure Monitor (тільки в Azure)
 if os.environ.get('WEBSITE_SITE_NAME'):
     try:
@@ -44,6 +54,10 @@ ALLOWED_HOSTS = [
     ).split(',')
     if host.strip()
 ]
+
+# Azure internal health check
+if os.environ.get('WEBSITE_SITE_NAME'):
+    ALLOWED_HOSTS.append('169.254.130.5')
 
 # ===== ДОДАТКИ =====
 INSTALLED_APPS = [
