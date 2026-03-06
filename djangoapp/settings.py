@@ -94,12 +94,26 @@ WSGI_APPLICATION = 'djangoapp.wsgi.application'
 
 # ===== БАЗА ДАНИХ =====
 # ✅ Виправлено: persistent storage для Azure
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': '/home/db.sqlite3' if not DEBUG else BASE_DIR / 'db.sqlite3',
+# PostgreSQL в Azure, SQLite локально
+if os.environ.get('DB_HOST'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'HOST': os.environ.get('DB_HOST'),
+            'NAME': os.environ.get('DB_NAME', 'djangodb'),
+            'USER': os.environ.get('DB_USER', 'djangoadmin'),
+            'PASSWORD': os.environ.get('DB_PASSWORD'),
+            'PORT': '5432',
+            'OPTIONS': {'sslmode': 'require'},
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # ===== ВАЛІДАЦІЯ ПАРОЛІВ =====
 AUTHENTICATION_BACKENDS = [
@@ -205,3 +219,4 @@ if not DEBUG and not BUILDING:
         raise ValueError(
             f"Відсутні обов'язкові змінні середовища для Entra ID: {', '.join(_missing)}"
         )
+# PostgreSQL configuration
