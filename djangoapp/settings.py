@@ -21,6 +21,7 @@ OPENCENSUS = {
     "TRACE": {
         "SAMPLER": "opencensus.trace.samplers.ProbabilitySampler(rate=1.0)",
         "EXPORTER": "opencensus.ext.azure.trace_exporter.AzureExporter()",
+        "EXCLUDELIST_PATHS": ["/auth/callback/"],
     }
 }
 
