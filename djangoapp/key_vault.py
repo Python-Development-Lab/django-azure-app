@@ -17,6 +17,7 @@ SECRET_MAP = {
     "APPINSIGHTS_CONNECTION_STRING": "APPINSIGHTS-CONNECTION-STRING",
 }
 
+
 def get_secret_client():
     try:
         credential = ManagedIdentityCredential()
@@ -28,6 +29,7 @@ def get_secret_client():
         logger.info("Key Vault: falling back to DefaultAzureCredential")
         credential = DefaultAzureCredential()
         return SecretClient(vault_url=VAULT_URL, credential=credential)
+
 
 def load_secrets_to_env():
     try:
