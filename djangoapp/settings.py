@@ -16,14 +16,6 @@ if os.environ.get('WEBSITE_SITE_NAME'):
     except Exception as e:
         print(f'Key Vault warning: {e}')
 
-# OpenCensus трейсинг
-OPENCENSUS = {
-    "TRACE": {
-        "SAMPLER": "opencensus.trace.samplers.ProbabilitySampler(rate=1.0)",
-        "EXPORTER": "opencensus.ext.azure.trace_exporter.AzureExporter()",
-        "EXCLUDELIST_PATHS": ["/auth/callback/"],
-    }
-}
 
 # Azure Monitor (тільки в Azure)
 if os.environ.get('WEBSITE_SITE_NAME'):
@@ -84,7 +76,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'auth_app.middleware.TokenRefreshMiddleware',
-    'opencensus.ext.django.middleware.OpencensusMiddleware',
 ]
 
 ROOT_URLCONF = 'djangoapp.urls'
