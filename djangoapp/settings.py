@@ -56,7 +56,10 @@ ALLOWED_HOSTS = [
 
 # Azure internal health check
 if os.environ.get('WEBSITE_SITE_NAME'):
-    ALLOWED_HOSTS.append('169.254.130.5')
+    # Azure internal health check IPs (169.254.x.x range)
+    import socket
+    ALLOWED_HOSTS.append(socket.gethostname())
+    ALLOWED_HOSTS += [f'169.254.130.{i}' for i in range(1, 10)]
 
 # ===== ДОДАТКИ =====
 INSTALLED_APPS = [
