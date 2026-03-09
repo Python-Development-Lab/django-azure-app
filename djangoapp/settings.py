@@ -17,13 +17,6 @@ if os.environ.get('WEBSITE_SITE_NAME'):
         print(f'Key Vault warning: {e}')
 
 
-# Azure Monitor (тільки в Azure)
-if os.environ.get('WEBSITE_SITE_NAME'):
-    try:
-        from djangoapp.monitoring import setup_azure_monitor
-        setup_azure_monitor()
-    except Exception as e:
-        print(f'Azure Monitor warning: {e}')
 
 # Базова директорія
 BASE_DIR = Path(__file__).resolve().parent.parent
