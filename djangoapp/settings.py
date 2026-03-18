@@ -16,8 +16,6 @@ if os.environ.get('WEBSITE_SITE_NAME'):
     except Exception as e:
         print(f'Key Vault warning: {e}')
 
-
-
 # Базова директорія
 BASE_DIR = Path(__file__).resolve().parent.parent
 
