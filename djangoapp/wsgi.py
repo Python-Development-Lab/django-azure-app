@@ -24,5 +24,5 @@ try:
 except Exception as e:
     logger.warning(f"Azure Monitor: configuration failed: {e}")
 
-from django.core.wsgi import get_wsgi_application
+from django.core.wsgi import get_wsgi_application  # noqa: E402
 application = get_wsgi_application()
