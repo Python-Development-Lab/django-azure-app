@@ -30,6 +30,7 @@ jobs:
         DEBUG: 'False'
         ALLOWED_HOSTS: 'localhost'
         DATABASE_URL: 'sqlite:///tmp/db.sqlite3'
+        BUILDING: 'true'
 
     - name: Deploy to Staging slot
       uses: azure/webapps-deploy@v3
