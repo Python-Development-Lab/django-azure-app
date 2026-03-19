@@ -1,0 +1,41 @@
+{
+  "roles": [
+    {
+      "roleDefinitionId": "62e90394-69f5-4237-9190-012177145e10",
+      "displayName": "Global Administrator",
+      "settings": {
+        "activationMaxDuration": "PT1H",
+        "activationRequirements": ["mfa", "justification", "ticketInfo"],
+        "approvalRequired": true,
+        "approvers": [],
+        "permanentAssignmentAllowed": false,
+        "expirationRequired": true,
+        "maxAssignmentDuration": "P180D"
+      }
+    },
+    {
+      "roleDefinitionId": "8311e382-0749-4cb8-b61a-304f252e578b",
+      "displayName": "Key Vault Administrator",
+      "settings": {
+        "activationMaxDuration": "PT4H",
+        "activationRequirements": ["mfa", "justification"],
+        "approvalRequired": false,
+        "permanentAssignmentAllowed": false,
+        "expirationRequired": true,
+        "maxAssignmentDuration": "P90D"
+      }
+    },
+    {
+      "roleDefinitionId": "194ae4cb-b126-40b2-bd5b-6091b380977d",
+      "displayName": "Security Administrator",
+      "settings": {
+        "activationMaxDuration": "PT8H",
+        "activationRequirements": ["mfa", "justification"],
+        "approvalRequired": false,
+        "permanentAssignmentAllowed": false,
+        "expirationRequired": true,
+        "maxAssignmentDuration": "P90D"
+      }
+    }
+  ]
+}
