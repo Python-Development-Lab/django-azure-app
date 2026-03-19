@@ -1,0 +1,36 @@
+{
+  "displayName": "Require MFA for Django App",
+  "state": "enabled",
+  "conditions": {
+    "users": {
+      "includeUsers": ["All"],
+      "excludeUsers": [],
+      "excludeGroups": [],
+      "excludeRoles": [
+        "62e90394-69f5-4237-9190-012177145e10"
+      ]
+    },
+    "applications": {
+      "includeApplications": [
+        "773b7bfb-dc04-42f4-8dd3-d98939ea925d"
+      ]
+    },
+    "locations": {
+      "includeLocations": ["All"],
+      "excludeLocations": ["AllTrusted"]
+    },
+    "signInRiskLevels": [],
+    "clientAppTypes": ["browser", "mobileAppsAndDesktopClients"]
+  },
+  "grantControls": {
+    "operator": "OR",
+    "builtInControls": ["mfa"]
+  },
+  "sessionControls": {
+    "signInFrequency": {
+      "value": 8,
+      "type": "hours",
+      "isEnabled": true
+    }
+  }
+}
