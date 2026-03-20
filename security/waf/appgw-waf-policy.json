@@ -1,0 +1,76 @@
+{
+  "name": "django-waf-policy",
+  "location": "westeurope",
+  "properties": {
+    "policySettings": {
+      "state": "Enabled",
+      "mode": "Prevention",
+      "requestBodyCheck": true,
+      "maxRequestBodySizeInKb": 128,
+      "fileUploadLimitInMb": 100
+    },
+    "managedRules": {
+      "managedRuleSets": [
+        {
+          "ruleSetType": "OWASP",
+          "ruleSetVersion": "3.2",
+          "ruleGroupOverrides": []
+        },
+        {
+          "ruleSetType": "Microsoft_BotManagerRuleSet",
+          "ruleSetVersion": "1.0"
+        }
+      ]
+    },
+    "customRules": [
+      {
+        "name": "BlockSuspiciousUserAgents",
+        "priority": 10,
+        "ruleType": "MatchRule",
+        "action": "Block",
+        "matchConditions": [
+          {
+            "matchVariables": [
+              { "variableName": "RequestHeaders", "selector": "User-Agent" }
+            ],
+            "operator": "Contains",
+            "matchValues": ["sqlmap", "nikto", "nmap", "masscan", "zgrab"]
+          }
+        ]
+      },
+      {
+        "name": "RateLimitLogin",
+        "priority": 20,
+        "ruleType": "RateLimitRule",
+        "action": "Block",
+        "rateLimitDuration": "OneMin",
+        "rateLimitThreshold": 20,
+        "matchConditions": [
+          {
+            "matchVariables": [
+              { "variableName": "RequestUri" }
+            ],
+            "operator": "Contains",
+            "matchValues": ["/auth/login", "/auth/callback"]
+          }
+        ]
+      },
+      {
+        "name": "AllowOnlyUkraineAndEU",
+        "priority": 30,
+        "ruleType": "MatchRule",
+        "action": "Block",
+        "matchConditions": [
+          {
+            "matchVariables": [
+              { "variableName": "RemoteAddr" }
+            ],
+            "operator": "GeoMatch",
+            "negationConditon": true,
+            "matchValues": ["UA", "DE", "PL", "NL", "FR", "GB", "SE", "FI"]
+          }
+        ]
+      }
+    ]
+  }
+}

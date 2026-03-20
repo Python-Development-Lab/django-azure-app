@@ -1,0 +1,104 @@
+{
+  "name": "django-appgw",
+  "location": "westeurope",
+  "sku": {
+    "name": "WAF_v2",
+    "tier": "WAF_v2",
+    "capacity": 1
+  },
+  "properties": {
+    "gatewayIPConfigurations": [
+      {
+        "name": "appgw-ip-config",
+        "subnet": "appgw-subnet (10.0.3.0/24)"
+      }
+    ],
+    "frontendIPConfigurations": [
+      {
+        "name": "appgw-public-ip",
+        "publicIPAddress": "django-appgw-pip"
+      }
+    ],
+    "frontendPorts": [
+      { "name": "port-443", "port": 443 },
+      { "name": "port-80",  "port": 80  }
+    ],
+    "backendAddressPools": [
+      {
+        "name": "django-backend-pool",
+        "backendAddresses": [
+          { "fqdn": "mydjango1772289446.azurewebsites.net" }
+        ]
+      }
+    ],
+    "backendHttpSettingsCollection": [
+      {
+        "name": "django-https-settings",
+        "port": 443,
+        "protocol": "Https",
+        "cookieBasedAffinity": "Disabled",
+        "pickHostNameFromBackendAddress": true,
+        "requestTimeout": 30,
+        "probe": "django-health-probe"
+      }
+    ],
+    "httpListeners": [
+      {
+        "name": "https-listener",
+        "frontendPort": "port-443",
+        "protocol": "Https",
+        "sslCertificate": "django-tls-cert"
+      },
+      {
+        "name": "http-listener",
+        "frontendPort": "port-80",
+        "protocol": "Http"
+      }
+    ],
+    "redirectConfigurations": [
+      {
+        "name": "http-to-https",
+        "redirectType": "Permanent",
+        "targetListener": "https-listener"
+      }
+    ],
+    "requestRoutingRules": [
+      {
+        "name": "https-routing-rule",
+        "ruleType": "Basic",
+        "listener": "https-listener",
+        "backendAddressPool": "django-backend-pool",
+        "backendHttpSettings": "django-https-settings",
+        "priority": 100
+      },
+      {
+        "name": "http-redirect-rule",
+        "ruleType": "Basic",
+        "listener": "http-listener",
+        "redirectConfiguration": "http-to-https",
+        "priority": 200
+      }
+    ],
+    "probes": [
+      {
+        "name": "django-health-probe",
+        "protocol": "Https",
+        "host": "mydjango1772289446.azurewebsites.net",
+        "path": "/",
+        "interval": 30,
+        "timeout": 30,
+        "unhealthyThreshold": 3,
+        "match": {
+          "statusCodes": ["200-399"]
+        }
+      }
+    ],
+    "webApplicationFirewallConfiguration": {
+      "enabled": true,
+      "firewallMode": "Prevention",
+      "ruleSetType": "OWASP",
+      "ruleSetVersion": "3.2"
+    },
+    "firewallPolicy": "django-waf-policy"
+  }
+}
