@@ -9,7 +9,7 @@ except ImportError:
     pass
 
 # Завантаження секретів з Azure Key Vault (тільки в Azure)
-if os.environ.get('WEBSITE_SITE_NAME'):
+if os.environ.get('WEBSITE_SITE_NAME') and os.environ.get('BUILDING', 'false').lower() != 'true':
     try:
         from djangoapp.key_vault import load_secrets_to_env
         load_secrets_to_env()
