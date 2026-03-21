@@ -1,778 +1,414 @@
-# Створення Django 6.0 додатку та розгортання в Azure App Services
+# Django Azure Security Template
+
+> Production-ready Django application template with **Security by Design**, Azure cloud infrastructure, and automated CI/CD pipelines. Built and validated through a full AZ-500 security sprint covering all four exam domains.
 
 ---
 
-## Передумови
+## Overview
 
-Перед початком переконайтеся, що маєте:
-- Обліковий запис **GitHub**
-- Обліковий запис **Microsoft Azure**
-- Базові знання Python та Django
+This template provides a secure, production-grade foundation for Django applications deployed to Azure App Service. Instead of adding security as an afterthought, every component is designed with security as a first principle — from identity and networking to monitoring and governance.
 
----
+**What you get out of the box:**
 
-## Етап 1: Налаштування GitHub Codespace
-
-### Крок 1.1: Створення нового репозиторію
-
-1. Відкрийте [github.com](https://github.com)
-2. Натисніть **"New repository"**
-3. Заповніть параметри:
-
-```
-Repository name: my-django-azure-app
-Description: Django 6.0 app deployed to Azure
-Visibility: Public або Private
-✅ Add a README file
-✅ Add .gitignore → Python
-```
-
-4. Натисніть **"Create repository"**
+- Microsoft Entra ID (Azure AD) authentication via OAuth2 + MSAL
+- Secrets management via Azure Key Vault with Managed Identity (no passwords in code)
+- PostgreSQL Flexible Server with audit logging
+- Full observability stack (OpenTelemetry → Application Insights → Log Analytics)
+- Private networking (VNet, NSG, Private Endpoints)
+- Zero-downtime deployments via staging slots
+- Microsoft Defender for Cloud + Microsoft Sentinel
+- Azure Policy enforcement
+- Automated CI/CD with GitHub Actions
 
 ---
 
-### Крок 1.2: Запуск GitHub Codespace
+## Security by Design Principles
 
-1. У репозиторії натисніть **"Code"**
-2. Виберіть вкладку **"Codespaces"**
-3. Натисніть **"Create codespace on main"**
-4. Зачекайте поки середовище завантажиться (1-2 хвилини)
-
----
-
-### Крок 1.3: Налаштування середовища у Codespace
-
-```bash
-# Перевірте версію Python
-python --version
-# Має бути Python 3.11+
-
-# Оновіть pip
-pip install --upgrade pip
-
-# Створіть віртуальне середовище
-python -m venv venv
-
-# Активуйте віртуальне середовище
-source venv/bin/activate
-
-# Переконайтеся що venv активовано
-which python
-# Має показати: /workspaces/my-django-azure-app/venv/bin/python
-```
-
----
-
-## Етап 2: Встановлення Django 6.0 та створення проєкту
-
-### Крок 2.1: Встановлення залежностей
-
-```bash
-# Встановлення Django 6.0
-pip install django==6.0
-
-# Встановлення додаткових пакетів для Azure
-pip install gunicorn
-pip install whitenoise
-pip install python-dotenv
-pip install psycopg2-binary
-
-# Перевірка встановлення
-django-admin --version
-# Має показати: 6.0
-```
-
----
-
-### Крок 2.2: Створення Django проєкту
-
-```bash
-# Створення проєкту (з підкресленнями, без дефісів!)
-django-admin startproject myapp .
-
-# Перевірте структуру проєкту
-ls -la
-```
-
-Структура має виглядати так:
-```
-my-django-azure-app/
-├── myapp/
-│   ├── __init__.py
-│   ├── settings.py
-│   ├── urls.py
-│   ├── asgi.py
-│   └── wsgi.py
-├── venv/
-├── manage.py
-├── .gitignore
-└── README.md
-```
-
----
-
-### Крок 2.3: Створення першого додатку
-
-```bash
-# Створення додатку
-python manage.py startapp core
-
-# Перевірте структуру
-ls -la core/
-```
-
----
-
-## Етап 3: Налаштування проєкту
-
-### Крок 3.1: Створення файлу змінних середовища
-
-```bash
-# Створіть файл .env
-touch .env
-```
-
-Додайте до `.env`:
-```env
-SECRET_KEY=your-super-secret-key-here-change-in-production
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1,.azurewebsites.net
-DATABASE_URL=sqlite:///db.sqlite3
-```
-
-Переконайтеся, що `.env` є у `.gitignore`:
-```bash
-echo ".env" >> .gitignore
-echo "venv/" >> .gitignore
-echo "__pycache__/" >> .gitignore
-echo "*.pyc" >> .gitignore
-echo "db.sqlite3" >> .gitignore
-```
-
----
-
-### Крок 3.2: Налаштування settings.py
-
-Відкрийте `myapp/settings.py` та замініть вміст:
-
-```python
-import os
-from pathlib import Path
-from dotenv import load_dotenv
-
-# Завантаження змінних середовища
-load_dotenv()
-
-# Базова директорія
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Безпека
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost').split(',')
-
-# Додатки
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'core',  # Наш додаток
-]
-
-# Middleware з WhiteNoise для статичних файлів
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # WhiteNoise
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-
-ROOT_URLCONF = 'myapp.urls'
-
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
-WSGI_APPLICATION = 'myapp.wsgi.application'
-
-# База даних
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-# Валідація паролів
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
-
-# Інтернаціоналізація
-LANGUAGE_CODE = 'uk'
-TIME_ZONE = 'Europe/Kyiv'
-USE_I18N = True
-USE_TZ = True
-
-# Статичні файли
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-# Медіафайли
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-# Тип первинного ключа за замовчуванням
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-```
-
----
-
-### Крок 3.3: Створення базового View та URL
-
-Відкрийте `core/views.py`:
-```python
-from django.shortcuts import render
-from django.http import HttpResponse
-
-
-def home(request):
-    """Головна сторінка"""
-    context = {
-        'title': 'Django 6.0 на Azure',
-        'message': 'Вітаємо! Ваш Django додаток працює успішно!',
-    }
-    return render(request, 'core/home.html', context)
-
-
-def health_check(request):
-    """Перевірка стану для Azure"""
-    return HttpResponse("OK", status=200)
-```
-
-Створіть `core/urls.py`:
-```python
-from django.urls import path
-from . import views
-
-app_name = 'core'
-
-urlpatterns = [
-    path('', views.home, name='home'),
-    path('health/', views.health_check, name='health_check'),
-]
-```
-
-Оновіть `myapp/urls.py`:
-```python
-from django.contrib import admin
-from django.urls import path, include
-
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('core.urls')),
-]
-```
-
----
-
-### Крок 3.4: Створення шаблонів
-
-```bash
-# Створення директорій для шаблонів
-mkdir -p templates/core
-mkdir -p templates/base
-```
-
-Створіть `templates/base/base.html`:
-```html
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Django Azure App{% endblock %}</title>
-    {% load static %}
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        h1 { color: #0078d4; }
-        .badge {
-            background: #0078d4;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        {% block content %}{% endblock %}
-    </div>
-</body>
-</html>
-```
-
-Створіть `templates/core/home.html`:
-```html
-{% extends 'base/base.html' %}
-
-{% block title %}{{ title }}{% endblock %}
-
-{% block content %}
-    <h1>🚀 {{ title }}</h1>
-    <p>{{ message }}</p>
-    <p><span class="badge">Django 6.0</span> 
-       <span class="badge">Azure App Service</span></p>
-    <hr>
-    <p>✅ Сервер працює коректно</p>
-    <p>✅ Статичні файли налаштовано</p>
-    <p>✅ Шаблони підключено</p>
-{% endblock %}
-```
-
----
-
-### Крок 3.5: Перевірка локальної роботи
-
-```bash
-# Застосування міграцій
-python manage.py migrate
-
-# Збір статичних файлів
-python manage.py collectstatic --noinput
-
-# Запуск сервера
-python manage.py runserver
-```
-
-Відкрийте браузер та перевірте `http://127.0.0.1:8000/`
-
----
-
-## Етап 4: Підготовка до розгортання в Azure
-
-### Крок 4.1: Створення requirements.txt
-
-```bash
-pip freeze > requirements.txt
-```
-
-Переконайтеся що `requirements.txt` містить:
-```text
-Django==6.0
-gunicorn==21.2.0
-whitenoise==6.6.0
-python-dotenv==1.0.0
-psycopg2-binary==2.9.9
-```
-
----
-
-### Крок 4.2: Створення файлу startup.sh
-
-```bash
-touch startup.sh
-chmod +x startup.sh
-```
-
-Додайте до `startup.sh`:
-```bash
-#!/bin/bash
-
-# Активація міграцій
-python manage.py migrate --noinput
-
-# Збір статичних файлів
-python manage.py collectstatic --noinput
-
-# Запуск Gunicorn
-gunicorn myapp.wsgi:application \
-    --bind 0.0.0.0:8000 \
-    --workers 4 \
-    --timeout 120 \
-    --access-logfile '-' \
-    --error-logfile '-'
-```
-
----
-
-### Крок 4.3: Створення .azure/config (необов'язково)
-
-```bash
-mkdir -p .azure
-touch .azure/config
-```
-
----
-
-### Крок 4.4: Фінальна структура проєкту
-
-```
-my-django-azure-app/
-├── .azure/
-├── core/
-│   ├── migrations/
-│   ├── __init__.py
-│   ├── admin.py
-│   ├── apps.py
-│   ├── models.py
-│   ├── urls.py
-│   └── views.py
-├── myapp/
-│   ├── __init__.py
-│   ├── settings.py
-│   ├── urls.py
-│   ├── asgi.py
-│   └── wsgi.py
-├── templates/
-│   ├── base/
-│   │   └── base.html
-│   └── core/
-│       └── home.html
-├── staticfiles/
-├── venv/
-├── .env
-├── .gitignore
-├── manage.py
-├── requirements.txt
-├── startup.sh
-└── README.md
-```
-
----
-
-### Крок 4.5: Збереження змін у GitHub
-
-```bash
-# Додайте всі файли
-git add .
-
-# Перевірте що додається
-git status
-
-# Зробіть коміт
-git commit -m "Initial Django 6.0 project setup"
-
-# Відправте на GitHub
-git push origin main
-```
-
----
-
-## Етап 5: Розгортання в Azure App Services
-
-### Крок 5.1: Встановлення Azure CLI у Codespace
-
-```bash
-# Встановлення Azure CLI
-curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-
-# Перевірка встановлення
-az --version
-
-# Авторизація в Azure
-az login --use-device-code
-```
-
----
-
-### Крок 5.2: Створення ресурсів Azure
-
-```bash
-# Змінні для зручності
-RESOURCE_GROUP="my-django-rg"
-LOCATION="eastus"
-APP_NAME="my-django-app-$(date +%s)"  # Унікальна назва
-APP_PLAN="my-django-plan"
-
-# Створення групи ресурсів
-az group create \
-    --name $RESOURCE_GROUP \
-    --location $LOCATION
-
-# Створення плану App Service (безкоштовний рівень F1)
-az appservice plan create \
-    --name $APP_PLAN \
-    --resource-group $RESOURCE_GROUP \
-    --sku F1 \
-    --is-linux
-
-# Створення Web App
-az webapp create \
-    --name $APP_NAME \
-    --resource-group $RESOURCE_GROUP \
-    --plan $APP_PLAN \
-    --runtime "PYTHON:3.11"
-
-# Збережіть назву додатку
-echo "App name: $APP_NAME"
-echo "URL: https://$APP_NAME.azurewebsites.net"
-```
-
----
-
-### Крок 5.3: Налаштування змінних середовища в Azure
-
-```bash
-# Генерація нового SECRET_KEY
-SECRET_KEY=$(python -c "
-import secrets
-import string
-chars = string.ascii_letters + string.digits + '!@#$%^&*()'
-print(''.join(secrets.choice(chars) for _ in range(50)))
-")
-
-# Встановлення змінних середовища в Azure
-az webapp config appsettings set \
-    --name $APP_NAME \
-    --resource-group $RESOURCE_GROUP \
-    --settings \
-        SECRET_KEY="$SECRET_KEY" \
-        DEBUG="False" \
-        ALLOWED_HOSTS="$APP_NAME.azurewebsites.net" \
-        SCM_DO_BUILD_DURING_DEPLOYMENT="true" \
-        WEBSITE_HTTPLOGGING_RETENTION_DAYS="3"
-```
-
----
-
-### Крок 5.4: Налаштування команди запуску
-
-```bash
-# Встановлення startup команди
-az webapp config set \
-    --name $APP_NAME \
-    --resource-group $RESOURCE_GROUP \
-    --startup-file "startup.sh"
-```
-
----
-
-### Крок 5.5: Розгортання через GitHub Actions (Рекомендований спосіб)
-
-#### Отримання профілю публікації:
-```bash
-az webapp deployment list-publishing-profiles \
-    --name $APP_NAME \
-    --resource-group $RESOURCE_GROUP \
-    --xml > publish_profile.xml
-
-cat publish_profile.xml
-```
-
-#### Додавання секрету до GitHub:
-1. Відкрийте ваш репозиторій на GitHub
-2. Перейдіть до **Settings → Secrets and variables → Actions**
-3. Натисніть **"New repository secret"**
-4. Назва: `AZURE_WEBAPP_PUBLISH_PROFILE`
-5. Значення: вміст файлу `publish_profile.xml`
-
-#### Створення GitHub Actions workflow:
-```bash
-mkdir -p .github/workflows
-touch .github/workflows/deploy.yml
-```
-
-Додайте до `.github/workflows/deploy.yml`:
-```yaml
-name: Deploy Django to Azure App Service
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    
-    steps:
-    # Крок 1: Отримання коду
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    # Крок 2: Налаштування Python
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    # Крок 3: Встановлення залежностей
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-
-    # Крок 4: Збір статичних файлів
-    - name: Collect static files
-      run: |
-        python manage.py collectstatic --noinput
-      env:
-        SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        DEBUG: 'False'
-        ALLOWED_HOSTS: 'localhost'
-
-    # Крок 5: Розгортання в Azure
-    - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: .
-```
-
----
-
-### Крок 5.6: Додавання секретів GitHub Actions
-
-У GitHub репозиторії додайте ще два секрети:
-
-| Назва секрету | Значення |
+| Principle | Implementation |
 |---|---|
-| `AZURE_WEBAPP_NAME` | Назва вашого додатку (значення $APP_NAME) |
-| `AZURE_WEBAPP_PUBLISH_PROFILE` | Вміст publish_profile.xml |
-| `SECRET_KEY` | Згенерований SECRET_KEY |
+| Minimize Attack Surface | Private Endpoints, NSG deny-all, Storage firewall |
+| Least Privilege | Managed Identity with Key Vault Secrets User role only |
+| Defense in Depth | 6 independent security layers |
+| Secure Defaults | TLS 1.2+, HTTPS only, Azure Policy enforcement |
+| Audit Everything | OpenTelemetry, pgaudit, KV audit logs, Sentinel |
+| Fail Securely | BUILDING flag skips KV during Oryx build |
+| Separation of Duties | Production + staging environments, separate Managed Identities |
 
 ---
 
-### Крок 5.7: Запуск розгортання
+## Architecture
+
+```
+Internet
+    ↓ HTTPS 443
+Azure App Service (Production + Staging slot)
+    ↓ Microsoft Entra ID OAuth2
+    ↓ VNet Integration
+app-subnet (10.0.1.0/24) ← NSG: Allow 443, Deny All
+    ↓
+data-subnet (10.0.2.0/24)
+    ├── 10.0.2.4 → Azure Key Vault  (Private Endpoint)
+    └── 10.0.2.5 → PostgreSQL       (Private Endpoint)
+
+Monitoring:
+App Service → OpenTelemetry → Application Insights → Log Analytics
+                                                           ↓
+                                                   Microsoft Sentinel
+                                                   (Analytics Rules)
+```
+
+---
+
+## Prerequisites
+
+Before deploying, you need:
+
+- Azure subscription with Owner or Contributor access
+- Microsoft Entra ID tenant (free tier works for basic auth)
+- GitHub account with Actions enabled
+- Azure CLI installed locally or GitHub Codespaces
+- Python 3.12+
+
+---
+
+## Quick Start
+
+### Step 1 — Create a new repository from this template
+
+Click **Use this template** → **Create a new repository** on GitHub. Choose a name and visibility for your project.
+
+### Step 2 — Clone your new repository
 
 ```bash
-# Збережіть workflow файл та відправте на GitHub
-git add .
-git commit -m "Add Azure deployment configuration"
+git clone https://github.com/YOUR_USERNAME/YOUR_PROJECT_NAME
+cd YOUR_PROJECT_NAME
+```
+
+### Step 3 — Create Azure infrastructure
+
+```bash
+# Login to Azure
+az login --tenant "YOUR_TENANT_ID"
+
+# Create resource group
+az group create \
+  --name "your-app-rg" \
+  --location "westeurope"
+
+# Create App Service Plan (Standard S1 required for deployment slots)
+az appservice plan create \
+  --name "your-app-plan" \
+  --resource-group "your-app-rg" \
+  --sku S1 \
+  --is-linux
+
+# Create App Service
+az webapp create \
+  --name "your-app-name" \
+  --resource-group "your-app-rg" \
+  --plan "your-app-plan" \
+  --runtime "PYTHON:3.12"
+
+# Create Key Vault
+az keyvault create \
+  --name "your-app-kv" \
+  --resource-group "your-app-rg" \
+  --enable-rbac-authorization true
+
+# Create PostgreSQL
+az postgres flexible-server create \
+  --name "your-app-db" \
+  --resource-group "your-app-rg" \
+  --sku-name "Standard_B1ms" \
+  --version "16"
+```
+
+### Step 4 — Configure Microsoft Entra ID App Registration
+
+```bash
+# Create App Registration
+az ad app create \
+  --display-name "Your App Name" \
+  --web-redirect-uris "https://your-app-name.azurewebsites.net/auth/callback/"
+
+# Note the appId — you will need it for Key Vault secrets
+```
+
+### Step 5 — Store secrets in Key Vault
+
+```bash
+KV_NAME="your-app-kv"
+
+# Django secret key
+az keyvault secret set --vault-name $KV_NAME \
+  --name "DJANGO-SECRET-KEY" \
+  --value "$(python3 -c "import secrets,string; print(''.join(secrets.choice(string.ascii_letters+string.digits+'-_') for _ in range(64)))")"
+
+# Entra ID credentials
+az keyvault secret set --vault-name $KV_NAME \
+  --name "AZURE-CLIENT-ID" --value "your-entra-app-client-id"
+
+az keyvault secret set --vault-name $KV_NAME \
+  --name "AZURE-CLIENT-SECRET" --value "your-entra-app-client-secret"
+
+az keyvault secret set --vault-name $KV_NAME \
+  --name "AZURE-TENANT-ID" --value "your-tenant-id"
+
+# Database credentials
+az keyvault secret set --vault-name $KV_NAME \
+  --name "DB-HOST" --value "your-app-db.postgres.database.azure.com"
+
+az keyvault secret set --vault-name $KV_NAME \
+  --name "DB-NAME" --value "djangodb"
+
+az keyvault secret set --vault-name $KV_NAME \
+  --name "DB-USER" --value "your-db-admin"
+
+az keyvault secret set --vault-name $KV_NAME \
+  --name "DB-PASSWORD" --value "your-db-password"
+```
+
+### Step 6 — Enable Managed Identity and grant Key Vault access
+
+```bash
+# Enable system-assigned managed identity
+az webapp identity assign \
+  --name "your-app-name" \
+  --resource-group "your-app-rg"
+
+# Get the principal ID
+PRINCIPAL_ID=$(az webapp identity show \
+  --name "your-app-name" \
+  --resource-group "your-app-rg" \
+  --query "principalId" -o tsv)
+
+KV_ID=$(az keyvault show \
+  --name "your-app-kv" \
+  --resource-group "your-app-rg" \
+  --query "id" -o tsv)
+
+# Grant Key Vault Secrets User role
+az role assignment create \
+  --role "Key Vault Secrets User" \
+  --assignee "$PRINCIPAL_ID" \
+  --scope "$KV_ID"
+```
+
+### Step 7 — Configure App Service settings
+
+```bash
+az webapp config appsettings set \
+  --name "your-app-name" \
+  --resource-group "your-app-rg" \
+  --settings \
+    "AZURE_KEY_VAULT_NAME=your-app-kv" \
+    "AZURE_TENANT_ID=your-tenant-id" \
+    "ALLOWED_HOSTS=your-app-name.azurewebsites.net" \
+    "AZURE_REDIRECT_URI=https://your-app-name.azurewebsites.net/auth/callback/" \
+    "OTEL_SERVICE_NAME=your-app-name-production" \
+    "BUILDING=true" \
+    "DEBUG=False"
+```
+
+### Step 8 — Configure GitHub Secrets
+
+In your repository go to **Settings → Secrets and variables → Actions** and add:
+
+| Secret | Value |
+|---|---|
+| `AZURE_CREDENTIALS` | JSON output of `az ad sp create-for-rbac` |
+| `AZURE_APP_NAME` | your-app-name |
+| `AZURE_RESOURCE_GROUP` | your-app-rg |
+
+```bash
+# Generate AZURE_CREDENTIALS
+az ad sp create-for-rbac \
+  --name "github-actions-your-app" \
+  --role "Contributor" \
+  --scopes "/subscriptions/YOUR_SUBSCRIPTION_ID/resourceGroups/your-app-rg" \
+  --sdk-auth
+```
+
+### Step 9 — Deploy
+
+Push to `main` branch — GitHub Actions will automatically build and deploy:
+
+```bash
 git push origin main
 ```
 
-GitHub Actions автоматично розпочне розгортання.
-
 ---
 
-## Етап 6: Перевірка розгортання
-
-### Крок 6.1: Моніторинг GitHub Actions
-
-1. Відкрийте репозиторій на GitHub
-2. Перейдіть до вкладки **"Actions"**
-3. Перегляньте прогрес розгортання
-4. Переконайтеся що всі кроки завершились успішно ✅
-
----
-
-### Крок 6.2: Перевірка роботи додатку
-
-```bash
-# Перевірка через curl
-curl https://$APP_NAME.azurewebsites.net/health/
-
-# Має повернути: OK
-```
-
-Відкрийте браузер та перейдіть до:
-```
-https://[your-app-name].azurewebsites.net
-```
-
----
-
-### Крок 6.3: Перегляд логів Azure
-
-```bash
-# Перегляд логів у реальному часі
-az webapp log tail \
-    --name $APP_NAME \
-    --resource-group $RESOURCE_GROUP
-```
-
----
-
-## Підсумкова схема розгортання
+## Project Structure
 
 ```
-GitHub Codespace
-      │
-      │ git push
-      ▼
-GitHub Repository
-      │
-      │ GitHub Actions trigger
-      ▼
-GitHub Actions Runner
-  ├── Встановлення Python
-  ├── Встановлення залежностей
-  ├── Збір статичних файлів
-  └── Розгортання в Azure
-            │
-            ▼
-    Azure App Service
-    ├── Python 3.11
-    ├── Django 6.0
-    ├── Gunicorn
-    └── WhiteNoise (статичні файли)
-            │
-            ▼
-    https://your-app.azurewebsites.net
+├── .azure/                         # Azure configuration
+├── .github/
+│   ├── pull_request_template.md    # PR template with security checklist
+│   └── workflows/
+│       ├── ci.yml                  # Lint + tests on every PR
+│       ├── deploy-production.yml   # main → production deployment
+│       └── deploy-staging.yml      # develop → staging deployment
+├── auth_app/
+│   ├── backends.py                 # Custom EntraID authentication backend
+│   ├── decorators.py               # RBAC decorators (@require_role)
+│   ├── middleware.py               # Token refresh middleware
+│   ├── msal_service.py             # MSAL OAuth2 service
+│   ├── views.py                    # Login, callback, logout views
+│   └── urls.py
+├── core/
+│   ├── views.py                    # Application views (home, dashboard)
+│   └── urls.py
+├── djangoapp/
+│   ├── key_vault.py                # Key Vault secret loader
+│   ├── monitoring.py               # OpenTelemetry configuration
+│   ├── settings.py                 # Django settings with BUILDING flag
+│   └── wsgi.py
+├── security/
+│   ├── conditional-access/         # Conditional Access policies (policy-as-code)
+│   ├── pim/                        # PIM role settings (policy-as-code)
+│   └── waf/                        # WAF + Application Gateway config (policy-as-code)
+├── templates/
+│   ├── auth/                       # Login and error pages
+│   ├── base/                       # Base HTML template
+│   └── core/                       # Application pages
+├── .env.example                    # Environment variables template
+├── manage.py
+├── pytest.ini
+├── requirements.txt
+└── startup.sh                      # Azure App Service startup script
 ```
 
 ---
 
-## Очищення ресурсів Azure
+## CI/CD Pipeline
 
-Після завершення роботи видаліть ресурси щоб уникнути зайвих витрат:
+```
+Push to develop → CI (lint + tests) → Deploy to Staging
+                                            ↓
+                                   Manual verification
+                                            ↓
+Push to main   → CI (lint + tests) → Deploy to Production
+                                   (zero-downtime via slot swap)
+```
 
-```bash
-az group delete \
-    --name $RESOURCE_GROUP \
-    --yes \
-    --no-wait
+The pipeline uses `azure/login` with `AZURE_CREDENTIALS` (service principal) — not publish profiles, which are less secure and unreliable for slot deployments.
+
+---
+
+## Key Components Explained
+
+### Key Vault Integration (`djangoapp/key_vault.py`)
+
+Secrets are loaded from Azure Key Vault at application startup using the App Service Managed Identity. No passwords are stored in environment variables or configuration files.
+
+The `BUILDING=true` flag prevents Key Vault loading during the Oryx build process (where Managed Identity is unavailable), allowing `collectstatic` to run cleanly.
+
+### Authentication Flow
+
+```
+User visits app → Redirect to Microsoft login
+                        ↓
+            Microsoft Entra ID OAuth2
+                        ↓
+            Callback with authorization code
+                        ↓
+            MSAL exchanges code for tokens
+                        ↓
+            Custom backend creates/updates Django user
+                        ↓
+            Session established → App access
+```
+
+### Monitoring (`djangoapp/monitoring.py`)
+
+OpenTelemetry automatically instruments Django, PostgreSQL queries, and HTTP calls. All telemetry flows to Application Insights and is queryable via KQL in Log Analytics:
+
+```kql
+// Recent requests
+AppRequests
+| where TimeGenerated > ago(1h)
+| summarize count() by Name
+
+// Failed requests
+AppRequests
+| where Success == false
+| project TimeGenerated, Name, ResultCode
+```
+
+### Security Policy-as-Code (`security/`)
+
+The `security/` directory contains policy definitions that can be deployed when the appropriate Azure tier is available:
+
+- `conditional-access/` — MFA enforcement, legacy auth blocking, compliant device policies (requires Entra ID P1/P2)
+- `pim/` — Just-In-Time role activation settings (requires Entra ID P2)
+- `waf/` — Application Gateway WAF with OWASP 3.2, bot protection, geo-blocking
+
+---
+
+## Customisation Checklist
+
+When using this template for a new project, update the following:
+
+```
+Settings:
+[ ] djangoapp/settings.py — update OTEL_SERVICE_NAME, ALLOWED_HOSTS
+[ ] .github/workflows/*.yml — update app-name, resource-group
+[ ] Copy .env.example to .env for local development
+
+New Azure Resources per project:
+[ ] App Service + Plan
+[ ] Key Vault (recommended: one per application)
+[ ] PostgreSQL database (can share server, use separate DB)
+[ ] Entra ID App Registration (one per application)
+[ ] Managed Identity + RBAC assignments
+
+GitHub Secrets:
+[ ] AZURE_CREDENTIALS
+[ ] AZURE_APP_NAME
+[ ] AZURE_RESOURCE_GROUP
 ```
 
 ---
 
-## Поширені помилки та їх вирішення
+## Cost Estimate (westeurope region)
 
-| Помилка | Причина | Вирішення |
+| Resource | SKU | Monthly cost |
 |---|---|---|
-| `ModuleNotFoundError` | Невірна назва модуля | Перевірте назви без дефісів |
-| `DisallowedHost` | Хост не в ALLOWED_HOSTS | Додайте `.azurewebsites.net` |
-| `Static files 404` | WhiteNoise не налаштовано | Перевірте MIDDLEWARE |
-| `Application Error` | Помилка Gunicorn | Перегляньте логи Azure |
-| `Migration errors` | Міграції не застосовані | Додайте migrate до startup.sh |
+| App Service Plan S1 | Standard (required for slots) | ~€56 |
+| PostgreSQL Flexible Server | Standard_B1ms | ~€13 |
+| Azure Key Vault | Standard (10K ops) | ~€0.30 |
+| Azure Storage Account | Standard LRS | ~€0.50 |
+| Private Endpoints (×2) | VNet integration | ~€14 |
+| Log Analytics | PerGB2018 (< 5GB free) | ~€0 |
+| **Total** | | **~€85/month** |
+
+When sharing the App Service Plan and PostgreSQL server across multiple applications, each additional app costs approximately €25–30/month.
+
+---
+
+## AZ-500 Coverage
+
+This template was built as a practical study project for the Microsoft AZ-500 Security Engineer certification and covers approximately 90% of exam domains through hands-on implementation:
+
+| Domain | Coverage |
+|---|---|
+| Domain 1 — Identity and Access | ~80% |
+| Domain 2 — Secure Networking | ~100% |
+| Domain 3 — Compute, Storage, Databases | ~85% |
+| Domain 4 — Defender for Cloud + Sentinel | ~90% |
+
+---
+
+## Contributing
+
+Pull requests are welcome. For major changes, open an issue first to discuss what you would like to change. Please ensure all security-related changes follow the existing Security by Design principles documented in the `security/` directory.
+
+---
+
+## License
+
+MIT — free to use, modify, and distribute.
+
+---
+
