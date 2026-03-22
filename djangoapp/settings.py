@@ -42,7 +42,7 @@ if os.environ.get('WEBSITE_SITE_NAME'):
     # Azure internal health check IPs (169.254.x.x range)
     import socket
     ALLOWED_HOSTS.append(socket.gethostname())
-    ALLOWED_HOSTS += [f'169.254.130.{i}' for i in range(1, 10)]
+    ALLOWED_HOSTS += [f'169.254.{j}.{i}' for j in range(128, 160) for i in range(256)]
 
 # ===== ДОДАТКИ =====
 INSTALLED_APPS = [
