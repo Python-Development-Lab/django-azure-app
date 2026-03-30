@@ -20,7 +20,7 @@ class ExternalIDService:
 
     def get_auth_url(self, state):
         return self._get_app().get_authorization_request_url(
-            scopes=["openid", "profile", "email"],
+            scopes=["User.Read"],
             state=state,
             redirect_uri=self.redirect_uri,
         )
@@ -28,7 +28,7 @@ class ExternalIDService:
     def get_token_by_code(self, code):
         return self._get_app().acquire_token_by_authorization_code(
             code=code,
-            scopes=["openid", "profile", "email"],
+            scopes=["User.Read"],
             redirect_uri=self.redirect_uri,
         )
 
