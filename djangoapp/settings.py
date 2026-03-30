@@ -218,3 +218,11 @@ if not DEBUG and not BUILDING:
             f"Відсутні обов'язкові змінні середовища для Entra ID: {', '.join(_missing)}"
         )
 # PostgreSQL configuration
+
+# ===== MICROSOFT ENTRA EXTERNAL IDENTITIES =====
+import os
+EXTERNAL_ID_CLIENT_ID = os.environ.get("EXTERNAL_ID_CLIENT_ID", "")
+EXTERNAL_ID_TENANT_ID = os.environ.get("EXTERNAL_ID_TENANT_ID", "")
+EXTERNAL_ID_CLIENT_SECRET = os.environ.get("EXTERNAL_ID_CLIENT_SECRET", "")
+EXTERNAL_ID_USER_FLOW = os.environ.get("EXTERNAL_ID_USER_FLOW", "B2X_1_SignUpSignIn")
+EXTERNAL_ID_REDIRECT_URI = os.environ.get("EXTERNAL_ID_REDIRECT_URI", "")

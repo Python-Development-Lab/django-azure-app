@@ -60,3 +60,51 @@ def logout_view(request):
     msal_service = MSALService()
     logout_url = msal_service.get_logout_url(id_token=id_token)
     return redirect(logout_url)
+
+
+# ===== Microsoft Entra External Identities =====
+
+def external_redirect_view(request):
+    import uuid
+    from auth_app.external_id_service import ExternalIDService
+    service = ExternalIDService()
+    request.session["external_state"] = str(uuid.uuid4())
+    auth_url = service.get_auth_url(state=request.session["external_state"])
+    from django.shortcuts import redirect
+    return redirect(auth_url)
+
+
+def external_callback_view(request):
+    import time
+    from auth_app.external_id_service import ExternalIDService
+    from django.contrib.auth import authenticate, login
+    from django.shortcuts import redirect, render
+    if request.GET.get("state") != request.session.get("external_state"):
+        return render(request, "auth/login.html", {"error": "State mismatch"})
+    if "error" in request.GET:
+        return render(request, "auth/login.html", {"error": request.GET.get("error_description")})
+    service = ExternalIDService()
+    result = service.get_token_by_code(code=request.GET["code"])
+    if "error" in result:
+        return render(request, "auth/login.html", {"error": result.get("error_description", "Authentication failed")})
+    claims = result.get("id_token_claims", {})
+    user = authenticate(request, entra_id_claims=claims)
+    if user is None:
+        return render(request, "auth/login.html", {"error": "External authentication failed"})
+    login(request, user, backend="auth_app.backends.EntraIDBackend")
+    request.session["access_token"] = result.get("access_token")
+    request.session["id_token"] = result.get("id_token")
+    request.session["token_expiry"] = int(time.time()) + result.get("expires_in", 3600)
+    request.session["auth_provider"] = "external_id"
+    return redirect("core:home")
+
+
+def external_logout_view(request):
+    from auth_app.external_id_service import ExternalIDService
+    from django.contrib.auth import logout
+    from django.shortcuts import redirect
+    id_token = request.session.get("id_token", "")
+    logout(request)
+    request.session.clear()
+    service = ExternalIDService()
+    return redirect(service.get_logout_url(id_token=id_token))
