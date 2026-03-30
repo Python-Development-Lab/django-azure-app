@@ -9,10 +9,7 @@ class ExternalIDService:
         self.tenant_id = settings.EXTERNAL_ID_TENANT_ID
         self.user_flow = settings.EXTERNAL_ID_USER_FLOW
         self.redirect_uri = settings.EXTERNAL_ID_REDIRECT_URI
-        self.authority = (
-            f"https://login.microsoftonline.com/{self.tenant_id}"
-        )
-        self.user_flow_param = f"p={self.user_flow}"
+        self.authority = f"https://login.microsoftonline.com/{self.tenant_id}"
 
     def _get_app(self):
         return msal.ConfidentialClientApplication(
@@ -26,6 +23,7 @@ class ExternalIDService:
             scopes=["User.Read"],
             state=state,
             redirect_uri=self.redirect_uri,
+            extra_query_parameters={"p": self.user_flow},
         )
 
     def get_token_by_code(self, code):
@@ -33,10 +31,11 @@ class ExternalIDService:
             code=code,
             scopes=["User.Read"],
             redirect_uri=self.redirect_uri,
+            extra_query_parameters={"p": self.user_flow},
         )
 
     def get_logout_url(self, id_token=None):
-        base_url = f"{self.authority}/oauth2/v2.0/logout?post_logout_redirect_uri=http://localhost:8000/"
+        base_url = f"{self.authority}/oauth2/v2.0/logout?post_logout_redirect_uri=https://mydjango1772289446.azurewebsites.net/"
         if id_token:
             base_url += f"&id_token_hint={id_token}"
         return base_url
