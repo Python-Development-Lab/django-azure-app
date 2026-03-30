@@ -23,7 +23,7 @@ class ExternalIDService:
             scopes=["User.Read"],
             state=state,
             redirect_uri=self.redirect_uri,
-            extra_query_parameters={"p": self.user_flow},
+            extra_query_parameters={"p": self.user_flow, "domain_hint": "google.com"},
         )
 
     def get_token_by_code(self, code):
