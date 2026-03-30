@@ -31,7 +31,6 @@ class ExternalIDService:
             code=code,
             scopes=["User.Read"],
             redirect_uri=self.redirect_uri,
-            extra_query_parameters={"p": self.user_flow},
         )
 
     def get_logout_url(self, id_token=None):
