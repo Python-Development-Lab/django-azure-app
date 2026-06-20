@@ -25,3 +25,7 @@ output "kv_dns_zone_name" {
 output "pg_dns_zone_name" {
   value = azurerm_private_dns_zone.pg.name
 }
+
+output "kv_subnet_id" {
+  value = azurerm_subnet.kv.id
+}
