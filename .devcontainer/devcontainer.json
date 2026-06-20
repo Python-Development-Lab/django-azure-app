@@ -1,0 +1,59 @@
+{
+  "name": "Django Azure Security Template",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
+
+  "features": {
+    "ghcr.io/devcontainers/features/azure-cli:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+        "hashicorp.terraform",
+        "hashicorp.hcl",
+        "ms-azuretools.vscode-azureresourcegroups",
+        "ms-vscode.azurecli",
+        "GitHub.vscode-pull-request-github"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.formatOnSave": true,
+        "editor.rulers": [120],
+        "[terraform]": {
+          "editor.defaultFormatter": "hashicorp.terraform",
+          "editor.formatOnSave": true,
+          "editor.tabSize": 2
+        },
+        "terraform.languageServer": {
+          "enabled": true,
+          "args": ["serve"]
+        }
+      }
+    },
+    "codespaces": {
+      "openFiles": ["README.md"]
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/install-tools.sh",
+
+  "remoteEnv": {
+    "TF_LOG": "WARN",
+    "DJANGO_SETTINGS_MODULE": "djangoapp.settings"
+  },
+
+  "forwardPorts": [8000],
+
+  "portsAttributes": {
+    "8000": {
+      "label": "Django Dev Server",
+      "onAutoForward": "notify"
+    }
+  }
+}
