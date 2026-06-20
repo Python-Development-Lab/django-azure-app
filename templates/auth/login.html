@@ -11,7 +11,7 @@
 </div>
 {% endif %}
 
-<p>Для входу використовуйте корпоративний або особистий акаунт Microsoft.</p>
+<p>Для входу використовуйте корпоративний акаунт Microsoft або Google.</p>
 
 <a href="{% url 'auth_redirect' %}" style="
     display: inline-block;
@@ -22,7 +22,25 @@
     text-decoration: none;
     font-size: 16px;
     margin-top: 10px;
+    margin-right: 10px;
 ">
     🪟 Увійти через Microsoft
 </a>
+
+<a href="{% url 'auth_external_redirect' %}" style="
+    display: inline-block;
+    background: #ffffff;
+    color: #444;
+    padding: 12px 24px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 16px;
+    margin-top: 10px;
+    border: 1px solid #dadce0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+">
+    <img src="https://www.google.com/favicon.ico" width="16" height="16" style="vertical-align:middle;margin-right:8px;">
+    Увійти через Google
+</a>
+
 {% endblock %}
