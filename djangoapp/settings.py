@@ -42,7 +42,7 @@ if os.environ.get('WEBSITE_SITE_NAME'):
     # Azure internal health check IPs (169.254.x.x range)
     import socket
     ALLOWED_HOSTS.append(socket.gethostname())
-    ALLOWED_HOSTS += [f'169.254.130.{i}' for i in range(1, 10)]
+    ALLOWED_HOSTS += [f'169.254.{j}.{i}' for j in range(128, 160) for i in range(256)]
 
 # ===== ДОДАТКИ =====
 INSTALLED_APPS = [
@@ -218,3 +218,9 @@ if not DEBUG and not BUILDING:
             f"Відсутні обов'язкові змінні середовища для Entra ID: {', '.join(_missing)}"
         )
 # PostgreSQL configuration
+
+EXTERNAL_ID_CLIENT_ID = os.environ.get("EXTERNAL_ID_CLIENT_ID", "")
+EXTERNAL_ID_TENANT_ID = os.environ.get("EXTERNAL_ID_TENANT_ID", "")
+EXTERNAL_ID_CLIENT_SECRET = os.environ.get("EXTERNAL_ID_CLIENT_SECRET", "")
+EXTERNAL_ID_USER_FLOW = os.environ.get("EXTERNAL_ID_USER_FLOW", "B2X_1_SignUpSignIn")
+EXTERNAL_ID_REDIRECT_URI = os.environ.get("EXTERNAL_ID_REDIRECT_URI", "")
