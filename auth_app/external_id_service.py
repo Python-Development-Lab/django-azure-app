@@ -9,7 +9,7 @@ class ExternalIDService:
         self.tenant_id = settings.EXTERNAL_ID_TENANT_ID
         self.user_flow = settings.EXTERNAL_ID_USER_FLOW
         self.redirect_uri = settings.EXTERNAL_ID_REDIRECT_URI
-        self.authority = f"https://seclabsecurityengineering.ciamlogin.com"
+        self.authority = "https://seclabsecurityengineering.ciamlogin.com"
 
     def _get_app(self):
         return msal.ConfidentialClientApplication(
@@ -34,7 +34,8 @@ class ExternalIDService:
         )
 
     def get_logout_url(self, id_token=None):
-        base_url = f"{self.authority}/oauth2/v2.0/logout?post_logout_redirect_uri=https://mydjango1772289446.azurewebsites.net/"
+        redirect = "https://mydjango1772289446.azurewebsites.net/"
+        base_url = f"{self.authority}/oauth2/v2.0/logout?post_logout_redirect_uri={redirect}"
         if id_token:
             base_url += f"&id_token_hint={id_token}"
         return base_url

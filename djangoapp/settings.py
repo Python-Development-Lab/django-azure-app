@@ -219,8 +219,6 @@ if not DEBUG and not BUILDING:
         )
 # PostgreSQL configuration
 
-# ===== MICROSOFT ENTRA EXTERNAL IDENTITIES =====
-import os
 EXTERNAL_ID_CLIENT_ID = os.environ.get("EXTERNAL_ID_CLIENT_ID", "")
 EXTERNAL_ID_TENANT_ID = os.environ.get("EXTERNAL_ID_TENANT_ID", "")
 EXTERNAL_ID_CLIENT_SECRET = os.environ.get("EXTERNAL_ID_CLIENT_SECRET", "")
