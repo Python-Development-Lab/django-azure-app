@@ -15,7 +15,9 @@ resource "azurerm_linux_web_app" "main" {
   tags                = var.tags
 
   site_config {
-    always_on = var.environment == "production"
+    always_on              = var.environment == "production"
+    vnet_route_all_enabled = true
+    app_command_line       = "PYTHONPATH=/home/site/wwwroot/packages gunicorn djangoapp.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120"
 
     application_stack {
       python_version = "3.12"
@@ -23,8 +25,8 @@ resource "azurerm_linux_web_app" "main" {
   }
 
   app_settings = {
-    "WEBSITE_RUN_FROM_PACKAGE"       = "1"
-    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
+    "WEBSITE_RUN_FROM_PACKAGE"       = "0"
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "BUILDING"                       = "false"
     "DEBUG"                          = var.environment == "production" ? "False" : "True"
     "ALLOWED_HOSTS"                  = "app-${var.prefix}.azurewebsites.net,localhost"
