@@ -4,6 +4,13 @@ on:
   push:
     branches: [ develop ]
   workflow_dispatch:
+    inputs:
+      force_terraform:
+        description: 'Force terraform apply even if infra exists'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
 
 env:
   APP_NAME: app-django-azure-staging
@@ -31,13 +38,11 @@ jobs:
           pip install -r requirements.txt --quiet
           pip-audit --requirement requirements.txt \
             --format json \
-            --output pip-audit-report.json \
-            --ignore-vuln PYSEC-2024-232 || true
+            --output pip-audit-report.json || true
           echo "=== pip-audit summary ==="
-          pip-audit --requirement requirements.txt \
-            --ignore-vuln PYSEC-2024-232 || true
+          pip-audit --requirement requirements.txt || true
 
-      - name: Trivy — filesystem scan (table output)
+      - name: Trivy — filesystem scan (table)
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
@@ -96,9 +101,7 @@ jobs:
             --exclude=venv,migrations,staticfiles,__pycache__,packages
 
       - name: Run tests
-        run: |
-          coverage run -m pytest -v
-          coverage report --fail-under=70
+        run: coverage run -m pytest -v && coverage report --fail-under=70
         env:
           SECRET_KEY: "ci-test-key"
           DEBUG: "True"
@@ -109,28 +112,64 @@ jobs:
           AZURE_REDIRECT_URI: "http://localhost/auth/callback/"
           BUILDING: "true"
 
-  # ── Terraform + Deploy ────────────────────────────────────────────
-  deploy:
-    name: Terraform + Deploy + Migrate
+  # ── Check Infrastructure ──────────────────────────────────────────
+  check-infra:
+    name: Check Infrastructure
     runs-on: ubuntu-latest
     needs: [security, test]
-    environment:
-      name: staging
-      url: https://app-django-azure-staging.azurewebsites.net
+    outputs:
+      infra_exists: ${{ steps.check.outputs.infra_exists }}
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Check if infrastructure exists
+        id: check
+        run: |
+          RG_EXISTS=$(az group exists --name ${{ env.RESOURCE_GROUP }})
+          echo "Resource group exists: $RG_EXISTS"
+
+          if [ "$RG_EXISTS" = "true" ]; then
+            # Перевіримо чи App Service теж існує
+            APP_EXISTS=$(az webapp show \
+              --name ${{ env.APP_NAME }} \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --query "name" -o tsv 2>/dev/null || echo "")
+
+            if [ -n "$APP_EXISTS" ]; then
+              echo "infra_exists=true" >> $GITHUB_OUTPUT
+              echo "Infrastructure is UP — skipping terraform apply"
+            else
+              echo "infra_exists=false" >> $GITHUB_OUTPUT
+              echo "Resource group exists but App Service missing — running terraform"
+            fi
+          else
+            echo "infra_exists=false" >> $GITHUB_OUTPUT
+            echo "Infrastructure is DOWN — terraform apply needed"
+          fi
+
+      - name: Azure Logout
+        if: always()
+        run: az logout
+
+  # ── Terraform (only if infra does not exist) ──────────────────────
+  terraform:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    needs: check-infra
+    if: |
+      needs.check-infra.outputs.infra_exists == 'false' ||
+      github.event.inputs.force_terraform == 'true'
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # ── Terraform ──────────────────────────────────────────────────
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -153,7 +192,7 @@ jobs:
             -var="django_secret_key=${{ secrets.DJANGO_SECRET_KEY }}" \
             -var="azure_client_id=${{ secrets.AZURE_CLIENT_ID }}" \
             -var="azure_client_secret=${{ secrets.AZURE_CLIENT_SECRET }}" \
-            -var="azure_redirect_uri=https://app-django-azure-staging.azurewebsites.net/auth/callback/" \
+            -var="azure_redirect_uri=https://${{ env.APP_NAME }}.azurewebsites.net/auth/callback/" \
             -var="terraform_object_id=${{ secrets.TERRAFORM_OBJECT_ID }}" \
             -var="owner_email=${{ secrets.OWNER_EMAIL }}" \
             -out=tfplan
@@ -162,7 +201,31 @@ jobs:
         working-directory: terraform
         run: terraform apply -auto-approve tfplan
 
-      # ── Build ──────────────────────────────────────────────────────
+      - name: Azure Logout
+        if: always()
+        run: az logout
+
+  # ── Deploy ────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy + Migrate
+    runs-on: ubuntu-latest
+    needs: [check-infra, terraform]
+    if: always() && needs.check-infra.result == 'success' && (needs.terraform.result == 'success' || needs.terraform.result == 'skipped')
+    environment:
+      name: staging
+      url: https://app-django-azure-staging.azurewebsites.net
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Install packages (PYTHONPATH workaround)
         run: pip install -r requirements.txt --target ./packages --quiet
 
@@ -178,7 +241,6 @@ jobs:
           AZURE_TENANT_ID: "build"
           AZURE_REDIRECT_URI: "http://localhost/"
 
-      # ── Deploy ─────────────────────────────────────────────────────
       - name: Create deployment zip
         run: |
           zip -r /tmp/django-app.zip . \
@@ -201,7 +263,6 @@ jobs:
       - name: Remove local packages
         run: rm -rf packages/
 
-      # ── Migrate ────────────────────────────────────────────────────
       - name: Wait for app to start
         run: |
           echo "Waiting 90s for app startup..."
