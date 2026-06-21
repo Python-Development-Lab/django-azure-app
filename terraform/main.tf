@@ -50,8 +50,8 @@ module "key_vault" {
   prefix              = local.prefix
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
-  tenant_id           = var.tenant_id  
-  data_subnet_id = module.network.kv_subnet_id
+  tenant_id           = var.tenant_id
+  data_subnet_id      = module.network.kv_subnet_id
   kv_dns_zone_id      = module.network.kv_dns_zone_id
   django_secret_key   = var.django_secret_key
   azure_client_id     = var.azure_client_id
@@ -82,6 +82,12 @@ module "app_service" {
   key_vault_uri       = module.key_vault.key_vault_uri
   db_host             = module.database.db_host
   db_name             = module.database.db_name
+  db_password         = var.db_password
+  azure_client_id     = var.azure_client_id
+  azure_client_secret = var.azure_client_secret
+  azure_tenant_id     = var.tenant_id
+  django_secret_key   = var.django_secret_key
+  azure_redirect_uri  = var.azure_redirect_uri
   tags                = local.tags
 }
 

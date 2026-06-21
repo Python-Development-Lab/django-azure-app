@@ -28,12 +28,19 @@ resource "azurerm_linux_web_app" "main" {
     "WEBSITE_RUN_FROM_PACKAGE"       = "0"
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "false"
     "BUILDING"                       = "false"
-    "DEBUG"                          = var.environment == "production" ? "False" : "True"
+    "DEBUG"                          = "False"
     "ALLOWED_HOSTS"                  = "app-${var.prefix}.azurewebsites.net,localhost"
     "AZURE_KEY_VAULT_NAME"           = var.key_vault_uri
     "OTEL_SERVICE_NAME"              = "django-${var.environment}"
     "DB_HOST"                        = var.db_host
     "DB_NAME"                        = var.db_name
+    "DB_USER"                        = var.db_user
+    "DB_PASSWORD"                    = var.db_password
+    "AZURE_CLIENT_ID"                = var.azure_client_id
+    "AZURE_CLIENT_SECRET"            = var.azure_client_secret
+    "AZURE_TENANT_ID"                = var.azure_tenant_id
+    "SECRET_KEY"                     = var.django_secret_key
+    "AZURE_REDIRECT_URI"             = var.azure_redirect_uri
   }
 
   identity {

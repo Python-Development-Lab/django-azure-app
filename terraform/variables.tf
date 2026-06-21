@@ -54,3 +54,13 @@ variable "azure_client_secret" {
   sensitive   = true
   description = "Entra ID App client secret"
 }
+
+variable "azure_redirect_uri" {
+  type        = string
+  description = "OAuth2 redirect URI"
+}
+
+variable "terraform_object_id" {
+  type        = string
+  description = "Object ID of the user/SP running Terraform (Key Vault access)"
+}
