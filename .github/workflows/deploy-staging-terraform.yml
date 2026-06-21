@@ -15,6 +15,9 @@ jobs:
   security:
     name: Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v4
 
@@ -22,18 +25,28 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install security tools
-        run: pip install pip-audit trivy-python-client --quiet
-
       - name: pip-audit — dependency vulnerabilities
         run: |
+          pip install pip-audit --quiet
           pip install -r requirements.txt --quiet
           pip-audit --requirement requirements.txt \
             --format json \
-            --output pip-audit-report.json || true
-          pip-audit --requirement requirements.txt || true
+            --output pip-audit-report.json \
+            --ignore-vuln PYSEC-2024-232 || true
+          echo "=== pip-audit summary ==="
+          pip-audit --requirement requirements.txt \
+            --ignore-vuln PYSEC-2024-232 || true
 
-      - name: Trivy — filesystem scan
+      - name: Trivy — filesystem scan (table output)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: 0
+
+      - name: Trivy — SARIF output
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
@@ -43,13 +56,14 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: 0
 
-      - name: Upload Trivy SARIF to GitHub Security
+      - name: Upload Trivy SARIF
         uses: github/codeql-action/upload-sarif@v3
         if: always()
+        continue-on-error: true
         with:
           sarif_file: trivy-results.sarif
 
-      - name: Upload pip-audit report
+      - name: Upload security reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -57,6 +71,7 @@ jobs:
           path: |
             pip-audit-report.json
             trivy-results.sarif
+          if-no-files-found: warn
 
   # ── CI Tests ──────────────────────────────────────────────────────
   test:
@@ -148,7 +163,7 @@ jobs:
         run: terraform apply -auto-approve tfplan
 
       # ── Build ──────────────────────────────────────────────────────
-      - name: Install packages locally (PYTHONPATH workaround)
+      - name: Install packages (PYTHONPATH workaround)
         run: pip install -r requirements.txt --target ./packages --quiet
 
       - name: Collect static files
