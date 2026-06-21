@@ -128,26 +128,17 @@ jobs:
       - name: Check if infrastructure exists
         id: check
         run: |
-          RG_EXISTS=$(az group exists --name ${{ env.RESOURCE_GROUP }})
-          echo "Resource group exists: $RG_EXISTS"
+          APP_EXISTS=$(az webapp show \
+            --name ${{ env.APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query "name" -o tsv 2>/dev/null || echo "")
 
-          if [ "$RG_EXISTS" = "true" ]; then
-            # Перевіримо чи App Service теж існує
-            APP_EXISTS=$(az webapp show \
-              --name ${{ env.APP_NAME }} \
-              --resource-group ${{ env.RESOURCE_GROUP }} \
-              --query "name" -o tsv 2>/dev/null || echo "")
-
-            if [ -n "$APP_EXISTS" ]; then
-              echo "infra_exists=true" >> $GITHUB_OUTPUT
-              echo "Infrastructure is UP — skipping terraform apply"
-            else
-              echo "infra_exists=false" >> $GITHUB_OUTPUT
-              echo "Resource group exists but App Service missing — running terraform"
-            fi
+          if [ -n "$APP_EXISTS" ]; then
+            echo "infra_exists=true" >> $GITHUB_OUTPUT
+            echo "Infrastructure is UP — skipping terraform"
           else
             echo "infra_exists=false" >> $GITHUB_OUTPUT
-            echo "Infrastructure is DOWN — terraform apply needed"
+            echo "Infrastructure is DOWN — terraform needed"
           fi
 
       - name: Azure Logout
