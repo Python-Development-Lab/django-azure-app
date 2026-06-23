@@ -14,6 +14,12 @@ resource "azurerm_postgresql_flexible_server" "main" {
   delegated_subnet_id = var.data_subnet_id
 
   public_network_access_enabled = false
+  lifecycle {
+    ignore_changes = [
+      zone,
+      high_availability[0].standby_availability_zone,
+    ]
+  }
 }
 
 resource "azurerm_postgresql_flexible_server_database" "main" {
