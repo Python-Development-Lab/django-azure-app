@@ -216,13 +216,19 @@ jobs:
       - name: Terraform Init
         working-directory: terraform
         run: terraform init
+        env:
+          ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
 
       - name: Terraform Validate
         working-directory: terraform
         run: terraform validate
+        env:
+          ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
 
       - name: Terraform Plan
         working-directory: terraform
+        env:
+          ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
         run: |
           terraform plan \
             -var="tenant_id=${{ secrets.AZURE_TENANT_ID }}" \
@@ -238,6 +244,8 @@ jobs:
       - name: Terraform Apply
         working-directory: terraform
         run: terraform apply -auto-approve tfplan
+        env:
+          ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
 
       - name: Azure Logout
         if: always()
