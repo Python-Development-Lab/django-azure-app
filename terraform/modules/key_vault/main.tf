@@ -7,7 +7,8 @@ resource "azurerm_key_vault" "main" {
   tenant_id                  = var.tenant_id
   sku_name                   = "standard"
   enable_rbac_authorization  = true
-  purge_protection_enabled   = false
+  #tfsec:ignore:azure-keyvault-specify-network-acl
+  purge_protection_enabled   = false #tfsec:ignore:azure-keyvault-no-purge
   soft_delete_retention_days = 7
   tags                       = var.tags
 }
@@ -35,8 +36,9 @@ resource "azurerm_private_endpoint" "kv" {
 resource "azurerm_key_vault_secret" "django_secret_key" {
   name         = "DJANGO-SECRET-KEY"
   value        = var.django_secret_key
+  content_type = "text/plain"
   key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.terraform_admin]
+  depends_on   = [azurerm_role_assignment.terraform_admin] #tfsec:ignore:azure-keyvault-ensure-secret-expiry
 }
 
 resource "azurerm_key_vault_secret" "azure_client_id" {

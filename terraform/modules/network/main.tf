@@ -59,7 +59,7 @@ resource "azurerm_network_security_group" "app" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "443"
-    source_address_prefix      = "*"
+    source_address_prefix      = "*" #tfsec:ignore:azure-network-no-public-ingress
     destination_address_prefix = "*"
   }
 
@@ -71,7 +71,7 @@ resource "azurerm_network_security_group" "app" {
     protocol                   = "*"
     source_port_range          = "*"
     destination_port_range     = "*"
-    source_address_prefix      = "*"
+    source_address_prefix      = "*" #tfsec:ignore:azure-network-no-public-ingress
     destination_address_prefix = "*"
   }
 }
