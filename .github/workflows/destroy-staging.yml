@@ -1,0 +1,112 @@
+name: Destroy → Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "destroy" to confirm destruction of ALL staging resources'
+        required: true
+        type: string
+      reason:
+        description: 'Reason for destruction (for audit log)'
+        required: true
+        type: string
+
+env:
+  RESOURCE_GROUP: rg-django-azure-staging
+  APP_NAME: app-django-azure-staging
+
+jobs:
+  # ── Safety Check ──────────────────────────────────────────────────
+  safety-check:
+    name: Safety Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "destroy" ]; then
+            echo "ERROR: You must type 'destroy' to confirm"
+            echo "You typed: '${{ github.event.inputs.confirm }}'"
+            exit 1
+          fi
+          echo "Confirmation accepted"
+          echo "Reason: ${{ github.event.inputs.reason }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Time: $(date -u)"
+
+      - name: Audit log
+        run: |
+          echo "=== DESTROY AUDIT LOG ==="
+          echo "Actor:     ${{ github.actor }}"
+          echo "Reason:    ${{ github.event.inputs.reason }}"
+          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Run ID:    ${{ github.run_id }}"
+          echo "Repo:      ${{ github.repository }}"
+          echo "========================="
+
+  # ── Terraform Destroy ─────────────────────────────────────────────
+  destroy:
+    name: Terraform Destroy
+    runs-on: ubuntu-latest
+    needs: safety-check
+    environment:
+      name: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+        env:
+          ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
+
+      - name: Terraform Plan Destroy
+        working-directory: terraform
+        run: |
+          terraform plan -destroy \
+            -var="tenant_id=${{ secrets.AZURE_TENANT_ID }}" \
+            -var="db_password=${{ secrets.DB_PASSWORD }}" \
+            -var="django_secret_key=${{ secrets.DJANGO_SECRET_KEY }}" \
+            -var="azure_client_id=${{ secrets.AZURE_CLIENT_ID }}" \
+            -var="azure_client_secret=${{ secrets.AZURE_CLIENT_SECRET }}" \
+            -var="azure_redirect_uri=https://${{ env.APP_NAME }}.azurewebsites.net/auth/callback/" \
+            -var="terraform_object_id=${{ secrets.TERRAFORM_OBJECT_ID }}" \
+            -var="owner_email=${{ secrets.OWNER_EMAIL }}" \
+            -out=destroy.tfplan
+        env:
+          ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
+
+      - name: Show destroy plan
+        working-directory: terraform
+        run: terraform show destroy.tfplan
+        env:
+          ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
+
+      - name: Terraform Destroy
+        working-directory: terraform
+        run: terraform apply -auto-approve destroy.tfplan
+        env:
+          ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
+
+      - name: Verify destruction
+        run: |
+          RG_EXISTS=$(az group exists --name ${{ env.RESOURCE_GROUP }})
+          if [ "$RG_EXISTS" = "false" ]; then
+            echo "SUCCESS: Resource group ${{ env.RESOURCE_GROUP }} destroyed"
+          else
+            echo "WARNING: Resource group still exists — check Azure Portal"
+          fi
+
+      - name: Azure Logout
+        if: always()
+        run: az logout
