@@ -62,7 +62,7 @@ jobs:
           exit-code: 0
 
       - name: Upload Trivy SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         continue-on-error: true
         with:
@@ -107,10 +107,10 @@ jobs:
         with:
           working_directory: terraform
           sarif_file: tfsec-results.sarif
-          soft_fail: true
+          tfsec_version: v1.28.11
 
       - name: Upload tfsec SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         continue-on-error: true
         with:
