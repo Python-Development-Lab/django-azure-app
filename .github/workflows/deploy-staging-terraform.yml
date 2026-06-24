@@ -350,6 +350,12 @@ jobs:
             [ "$i" = "6" ] && echo "Warning: app may not be ready" || sleep 15
           done
 
+      - name: Configure App Service startup and secrets
+        run: |
+          az webapp config appsettings set             --name ${{ env.APP_NAME }}             --resource-group ${{ env.RESOURCE_GROUP }}             --settings SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}"
+
+          az webapp config set             --name ${{ env.APP_NAME }}             --resource-group ${{ env.RESOURCE_GROUP }}             --startup-file "bash /home/site/wwwroot/startup.sh"
+
       - name: Run Django migrations
         run: |
           echo "Migrations run automatically via startup.sh on app restart"
