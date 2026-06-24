@@ -327,6 +327,17 @@ jobs:
             -q
           echo "Zip size: $(du -sh /tmp/django-app.zip | cut -f1)"
 
+      - name: Configure App Service startup and secrets
+        run: |
+          az webapp config appsettings set \
+            --name ${{ env.APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --settings SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}"
+          az webapp config set \
+            --name ${{ env.APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --startup-file "bash /home/site/wwwroot/startup.sh"
+
       - name: Deploy to Azure App Service
         run: |
           az webapp deployment source config-zip \
@@ -338,29 +349,13 @@ jobs:
       - name: Remove local packages
         run: rm -rf packages/
 
-      - name: Wait for app to start
+      - name: Restart app and run migrations
         run: |
-          echo "Waiting 90s for app startup..."
-          sleep 90
-          for i in {1..6}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-              https://${{ env.APP_NAME }}.azurewebsites.net/auth/login/ || echo "000")
-            echo "  Attempt $i: HTTP $STATUS"
-            [ "$STATUS" = "200" ] && echo "App is ready!" && break
-            [ "$i" = "6" ] && echo "Warning: app may not be ready" || sleep 15
-          done
-
-      - name: Configure App Service startup and secrets
-        run: |
-          az webapp config appsettings set             --name ${{ env.APP_NAME }}             --resource-group ${{ env.RESOURCE_GROUP }}             --settings SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}"
-
-          az webapp config set             --name ${{ env.APP_NAME }}             --resource-group ${{ env.RESOURCE_GROUP }}             --startup-file "bash /home/site/wwwroot/startup.sh"
-
-      - name: Run Django migrations
-        run: |
-          echo "Migrations run automatically via startup.sh on app restart"
-          az webapp restart             --name ${{ env.APP_NAME }}             --resource-group ${{ env.RESOURCE_GROUP }}
-          echo "App restarted — migrations triggered"
+          az webapp restart \
+            --name ${{ env.APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }}
+          echo "Waiting 60s for startup.sh to run migrations..."
+          sleep 60
 
       - name: Azure Logout
         if: always()
