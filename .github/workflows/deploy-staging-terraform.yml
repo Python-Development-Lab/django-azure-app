@@ -329,7 +329,7 @@ jobs:
           az webapp ssh \
             --name ${{ env.APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --command "cd /home/site/wwwroot && PYTHONPATH=/home/site/wwwroot/packages python manage.py migrate --noinput"
+            --command "bash -c 'cd /home/site/wwwroot && PYTHONPATH=/home/site/wwwroot/packages python manage.py migrate --noinput'"
 
       - name: Azure Logout
         if: always()
