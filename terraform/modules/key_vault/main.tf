@@ -44,6 +44,7 @@ resource "azurerm_key_vault_secret" "django_secret_key" {
 resource "azurerm_key_vault_secret" "azure_client_id" {
   name         = "AZURE-CLIENT-ID"
   value        = var.azure_client_id
+  content_type = "text/plain" #tfsec:ignore:azure-keyvault-ensure-secret-expiry
   key_vault_id = azurerm_key_vault.main.id
   depends_on   = [azurerm_role_assignment.terraform_admin]
 }
@@ -51,6 +52,7 @@ resource "azurerm_key_vault_secret" "azure_client_id" {
 resource "azurerm_key_vault_secret" "azure_client_secret" {
   name         = "AZURE-CLIENT-SECRET"
   value        = var.azure_client_secret
+  content_type = "text/plain" #tfsec:ignore:azure-keyvault-ensure-secret-expiry
   key_vault_id = azurerm_key_vault.main.id
   depends_on   = [azurerm_role_assignment.terraform_admin]
 }
@@ -58,6 +60,7 @@ resource "azurerm_key_vault_secret" "azure_client_secret" {
 resource "azurerm_key_vault_secret" "azure_tenant_id" {
   name         = "AZURE-TENANT-ID"
   value        = var.tenant_id
+  content_type = "text/plain" #tfsec:ignore:azure-keyvault-ensure-secret-expiry
   key_vault_id = azurerm_key_vault.main.id
   depends_on   = [azurerm_role_assignment.terraform_admin]
 }

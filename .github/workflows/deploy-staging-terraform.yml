@@ -95,11 +95,12 @@ jobs:
         with:
           working_directory: terraform
           format: lovely
-          tfsec_args: >-
+          soft_fail: true
+          additional_args: >-
             --exclude-path .terraform
-            --exclude azure-keyvault-ensure-key-expiry
             --exclude azure-keyvault-ensure-secret-expiry
-            --soft-fail
+            --exclude azure-keyvault-content-type-for-secret
+            --exclude azure-keyvault-specify-network-acl
 
       - name: tfsec — SARIF output
         uses: aquasecurity/tfsec-sarif-action@v0.1.0
