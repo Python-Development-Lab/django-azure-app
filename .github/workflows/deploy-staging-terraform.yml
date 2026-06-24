@@ -394,7 +394,7 @@ jobs:
         with:
           target: "https://app-django-azure-staging.azurewebsites.net"
           rules_file_name: ".zap/rules.tsv"
-          cmd_options: "-a -J zap_scan.json"
+          cmd_options: "-a"
           fail_action: false
           allow_issue_writing: false
 
