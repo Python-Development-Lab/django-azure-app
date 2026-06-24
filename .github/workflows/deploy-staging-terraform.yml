@@ -79,7 +79,7 @@ jobs:
             trivy-results.sarif
           if-no-files-found: warn
 
-  # ── IaC Security Scan (tfsec) ─────────────────────────────────────
+  # ── IaC Security Scan (Trivy) ───────────────────────────────────────
   iac-security:
     name: IaC Security Scan (tfsec)
     runs-on: ubuntu-latest
@@ -90,34 +90,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: tfsec — Terraform security scan (table output)
-        uses: aquasecurity/tfsec-action@v1.0.0
+      - name: Trivy — IaC scan (table output)
+        uses: aquasecurity/trivy-action@master
         with:
-          working_directory: terraform
-          format: lovely
-          soft_fail: true
-          additional_args: >-
-            --exclude-path .terraform
-            --exclude azure-keyvault-ensure-secret-expiry
-            --exclude azure-keyvault-content-type-for-secret
-            --exclude azure-keyvault-specify-network-acl
+          scan-type: config
+          scan-ref: terraform
+          format: table
+          severity: CRITICAL,HIGH,MEDIUM
+          exit-code: 0
 
-      - name: tfsec — SARIF output
-        uses: aquasecurity/tfsec-sarif-action@v0.1.0
+      - name: Trivy — IaC SARIF output
+        uses: aquasecurity/trivy-action@master
         with:
-          working_directory: terraform
-          sarif_file: tfsec-results.sarif
-          tfsec_version: v1.28.11
+          scan-type: config
+          scan-ref: terraform
+          format: sarif
+          output: tfsec-results.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+          exit-code: 0
 
-      - name: Upload tfsec SARIF
+      - name: Upload IaC SARIF
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         continue-on-error: true
         with:
           sarif_file: tfsec-results.sarif
-          category: tfsec-iac
+          category: trivy-iac
 
-      - name: Upload tfsec report
+      - name: Upload IaC report
         uses: actions/upload-artifact@v4
         if: always()
         with:
