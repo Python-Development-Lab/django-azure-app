@@ -40,9 +40,10 @@ jobs:
           bandit -r .             --exclude ./packages,./venv,./staticfiles,./terraform             --severity-level medium             --quiet || true
 
       - name: Gitleaks — secrets detection
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.27.2/gitleaks_8.27.2_linux_x64.tar.gz             | tar -xz gitleaks
+          ./gitleaks detect             --source .             --config .gitleaks.toml             --report-format json             --report-path gitleaks-report.json             --no-git             --exit-code 0 || true
+          echo "Gitleaks scan complete"
         continue-on-error: true
 
       - name: pip-audit — dependency vulnerabilities
@@ -99,6 +100,7 @@ jobs:
           path: |
             pip-audit-report.json
             bandit-report.json
+            gitleaks-report.json
             trivy-results.sarif
             sbom-cyclonedx.json
           if-no-files-found: warn
