@@ -17,7 +17,7 @@ resource "azurerm_linux_web_app" "main" {
   site_config {
     always_on              = var.environment == "production"
     vnet_route_all_enabled = true
-    app_command_line       = "PYTHONPATH=/home/site/wwwroot/packages gunicorn djangoapp.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120"
+    app_command_line       = "bash /home/site/wwwroot/startup.sh"
 
     application_stack {
       python_version = "3.12"
