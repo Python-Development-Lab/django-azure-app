@@ -279,7 +279,7 @@ jobs:
         run: pip install -r requirements.txt --target ./packages --quiet
 
       - name: Collect static files
-        run: python manage.py collectstatic --noinput --verbosity 0
+        run: PYTHONPATH="${GITHUB_WORKSPACE}/packages" python manage.py collectstatic --noinput --verbosity 0
         env:
           BUILDING: "true"
           SECRET_KEY: "build-key-ci"
