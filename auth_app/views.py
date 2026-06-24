@@ -7,7 +7,11 @@ from auth_app.msal_service import MSALService
 
 
 def login_view(request):
-    return render(request, 'auth/login.html')
+    from django.conf import settings
+    external_id_enabled = bool(getattr(settings, 'EXTERNAL_ID_CLIENT_ID', ''))
+    return render(request, 'auth/login.html', {
+        'external_id_enabled': external_id_enabled
+    })
 
 
 def microsoft_redirect_view(request):

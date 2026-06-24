@@ -27,7 +27,7 @@
     🪟 Увійти через Microsoft
 </a>
 
-<a href="{% url 'auth_external_redirect' %}" style="
+{% if external_id_enabled %}<a href="{% url 'auth_external_redirect' %}" style="
     display: inline-block;
     background: #ffffff;
     color: #444;
@@ -41,6 +41,6 @@
 ">
     <img src="https://www.google.com/favicon.ico" width="16" height="16" style="vertical-align:middle;margin-right:8px;">
     Увійти через Google
-</a>
+</a>{% endif %}
 
 {% endblock %}
