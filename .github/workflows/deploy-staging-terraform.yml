@@ -379,6 +379,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Wait for app to be ready
+        run: |
+          echo "Waiting for app to be healthy..."
+          for i in $(seq 1 24); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}"               https://app-django-azure-staging.azurewebsites.net/health/               --max-time 10 || echo "000")
+            echo "Attempt $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "App is ready!"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "App did not become ready in time"
+          exit 1
+
       - name: ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.14.0
         with:
@@ -386,7 +401,7 @@ jobs:
           rules_file_name: ".zap/rules.tsv"
           cmd_options: "-a -J zap_scan.json"
           fail_action: false
-          allow_issue_reporting: false
+          allow_issue_writing: false
 
       - name: Upload ZAP report
         uses: actions/upload-artifact@v4
