@@ -4,7 +4,7 @@ from azure.keyvault.secrets import SecretClient
 from azure.identity import ManagedIdentityCredential, DefaultAzureCredential
 
 logger = logging.getLogger(__name__)
-VAULT_URL = "https://django-app-kv.vault.azure.net/"
+VAULT_URL = os.environ.get("AZURE_KEY_VAULT_NAME", "https://kv-django-azure-staging.vault.azure.net/")
 SECRET_MAP = {
     "SECRET_KEY": "DJANGO-SECRET-KEY",
     "AZURE_CLIENT_ID": "AZURE-CLIENT-ID",
