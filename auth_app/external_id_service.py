@@ -9,7 +9,7 @@ class ExternalIDService:
         self.tenant_id = settings.EXTERNAL_ID_TENANT_ID
         self.user_flow = settings.EXTERNAL_ID_USER_FLOW
         self.redirect_uri = settings.EXTERNAL_ID_REDIRECT_URI
-        self.authority = f"https://login.microsoftonline.com/{self.tenant_id}"
+        self.authority = "https://seclabsecurityengineering.ciamlogin.com"
 
     def _get_app(self):
         return msal.ConfidentialClientApplication(
