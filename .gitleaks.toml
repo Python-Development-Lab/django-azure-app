@@ -1,0 +1,26 @@
+title = "Django Azure Security Template - Gitleaks Config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+description = "Azure credentials pattern"
+id = "azure-credentials"
+regex = '''(?i)(azure[_-]?(client[_-]?secret|subscription[_-]?id|tenant[_-]?id)[_-]?=\s*['"]?[0-9a-f-]{36}['"]?)'''
+tags = ["azure", "credentials"]
+
+[[allowlist]]
+description = "Allow test values in CI"
+regexes = [
+  '''AZURE_CLIENT_ID.*=.*"test"''',
+  '''AZURE_CLIENT_SECRET.*=.*"test"''',
+  '''AZURE_TENANT_ID.*=.*"test"''',
+  '''SECRET_KEY.*=.*"ci-test-key"''',
+  '''SECRET_KEY.*=.*"build-key"''',
+]
+
+[[allowlist]]
+description = "Allow terraform tfvars example"
+paths = [
+  '''terraform/terraform.tfvars.example''',
+]

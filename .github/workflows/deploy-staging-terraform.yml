@@ -32,6 +32,19 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      - name: Bandit — Python SAST
+        run: |
+          pip install bandit --quiet
+          bandit -r .             --exclude ./packages,./venv,./staticfiles,./terraform             --format json             --output bandit-report.json             --severity-level medium || true
+          echo "=== Bandit summary ==="
+          bandit -r .             --exclude ./packages,./venv,./staticfiles,./terraform             --severity-level medium             --quiet || true
+
+      - name: Gitleaks — secrets detection
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
       - name: pip-audit — dependency vulnerabilities
         run: |
           pip install pip-audit --quiet
@@ -85,6 +98,7 @@ jobs:
           name: security-reports
           path: |
             pip-audit-report.json
+            bandit-report.json
             trivy-results.sarif
             sbom-cyclonedx.json
           if-no-files-found: warn
