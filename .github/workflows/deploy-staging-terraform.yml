@@ -332,7 +332,13 @@ jobs:
           az webapp config appsettings set \
             --name ${{ env.APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --settings SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}"
+            --settings \
+              SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}" \
+              EXTERNAL_ID_CLIENT_ID="${{ secrets.EXTERNAL_ID_CLIENT_ID }}" \
+              EXTERNAL_ID_TENANT_ID="${{ secrets.EXTERNAL_ID_TENANT_ID }}" \
+              EXTERNAL_ID_CLIENT_SECRET="${{ secrets.EXTERNAL_ID_CLIENT_SECRET }}" \
+              EXTERNAL_ID_USER_FLOW="B2X_1_SignUpSignIn" \
+              EXTERNAL_ID_REDIRECT_URI="https://${{ env.APP_NAME }}.azurewebsites.net/auth/external/callback/"
           az webapp config set \
             --name ${{ env.APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
