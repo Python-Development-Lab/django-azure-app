@@ -326,10 +326,9 @@ jobs:
 
       - name: Run Django migrations
         run: |
-          az webapp ssh \
-            --name ${{ env.APP_NAME }} \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --command "bash -c 'cd /home/site/wwwroot && PYTHONPATH=/home/site/wwwroot/packages python manage.py migrate --noinput'"
+          echo "Migrations run automatically via startup.sh on app restart"
+          az webapp restart             --name ${{ env.APP_NAME }}             --resource-group ${{ env.RESOURCE_GROUP }}
+          echo "App restarted — migrations triggered"
 
       - name: Azure Logout
         if: always()
