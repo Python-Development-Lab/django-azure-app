@@ -406,6 +406,6 @@ jobs:
           path: |
             report_html.html
             report_md.md
-            zap_scan.sarif
+            report_json.json
           if-no-files-found: warn
 
