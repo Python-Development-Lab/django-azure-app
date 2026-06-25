@@ -8,7 +8,6 @@ This middleware provides application-level device verification as fallback.
 """
 import hashlib
 import logging
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
