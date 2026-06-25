@@ -15,3 +15,10 @@ resource "azurerm_application_insights" "main" {
   application_type    = "web"
   tags                = var.tags
 }
+
+resource "azurerm_sentinel_log_analytics_workspace_onboarding" "main" {
+  workspace_id                 = azurerm_log_analytics_workspace.main.id
+  customer_managed_key_enabled = false
+
+  depends_on = [azurerm_log_analytics_workspace.main]
+}
