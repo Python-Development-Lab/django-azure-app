@@ -17,3 +17,8 @@ variable "app_service_id" {
 variable "tags" {
   type = map(string)
 }
+
+variable "subscription_id" {
+  type        = string
+  description = "Azure subscription ID for Activity logs"
+}

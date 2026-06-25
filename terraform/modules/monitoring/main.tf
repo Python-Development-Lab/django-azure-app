@@ -22,3 +22,27 @@ resource "azurerm_sentinel_log_analytics_workspace_onboarding" "main" {
 
   depends_on = [azurerm_log_analytics_workspace.main]
 }
+
+resource "azurerm_monitor_diagnostic_setting" "sentinel_activity" {
+  name               = "sentinel-activity"
+  target_resource_id = "/subscriptions/${var.subscription_id}"
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
+
+  enabled_log {
+    category = "Administrative"
+  }
+  enabled_log {
+    category = "Security"
+  }
+  enabled_log {
+    category = "ServiceHealth"
+  }
+  enabled_log {
+    category = "Alert"
+  }
+  enabled_log {
+    category = "Policy"
+  }
+
+  depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.main]
+}
