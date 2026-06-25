@@ -1,48 +1,49 @@
-# Conditional Access Policies
+# Conditional Access Policies — Policy as Code
+
+Ці policies реалізують Zero Trust Device Health Verification
+відповідно до NIST SP 800-207 принципу 7.
 
 ## Статус
-Tenant використовує Microsoft Entra ID Free (Personal tenant).
-Conditional Access потребує P1/P2 ліцензії.
 
-Поточний захист: **Security Defaults** (активовано)
+| Policy | Файл | Ліцензія | Статус |
+|--------|------|----------|--------|
+| Block Legacy Auth | policy-block-legacy-auth.json | Free | ✅ Активна |
+| Require MFA | policy-require-mfa.json | P1 | 📋 Policy-as-Code |
+| Require Compliant Device | policy-require-compliant-device.json | P1 | 📋 Policy-as-Code |
 
-## Політики (policy-as-code для P1/P2 середовища)
+## Вимоги для активації
 
-### 1. policy-require-mfa.json
-**Мета:** Вимагати MFA для всіх користувачів застосунку
-- Застосунок: Django Falken App (773b7bfb-...)
-- Виключення: Global Administrator role
-- Виключення: Trusted locations
-- Session frequency: 8 годин
+Для активації `compliantDevice` control потрібна:
+- Azure AD Premium P1 ліцензія (~€6/user/month)
+- Microsoft Intune для device enrollment
+- Мінімум 1 enrolled пристрій
 
-### 2. policy-block-legacy-auth.json
-**Мета:** Блокувати legacy аутентифікацію
-- Охоплює: Exchange ActiveSync + інші legacy clients
-- Причина: legacy auth обходить MFA
+## Застосування через Graph API
 
-### 3. policy-require-compliant-device.json
-**Мета:** Вимагати compliant device для адмінів
-- Режим: Report-only (не enforced)
-- Ролі: Global Admin, Security Admin
-- Контролі: MFA AND compliant device
-
-## Розгортання (з P1/P2 ліцензією)
 ```bash
-# Створити policy через Graph API
-az rest \
-  --method POST \
-  --uri "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies" \
-  --body @policy-require-mfa.json
+TOKEN=$(az account get-access-token \
+  --resource https://graph.microsoft.com \
+  --query accessToken -o tsv)
 
-# Перевірити
-az rest \
-  --method GET \
-  --uri "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies" \
-  --query "value[].{name:displayName, state:state}" \
-  -o table
+curl -X POST \
+  "https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d @policy-require-compliant-device.json
 ```
 
-## AZ-500 Coverage
-- Domain 1: Identity (15-20%) — Conditional Access, MFA
-- Named Locations, Sign-in Risk, User Risk
-- Report-only mode для тестування
+## Django-рівень Device Verification
+
+Реалізовано в `auth_app/middleware.py` через `DeviceVerificationMiddleware`:
+- User-Agent fingerprinting
+- IP geolocation anomaly detection
+- Session consistency checks
+- Suspicious device alerts → Sentinel
+
+## Zero Trust Coverage
+
+Цей модуль закриває NIST SP 800-207 принцип 7:
+"Device health is verified before granting access"
+
+AZ-500 Domain 1: Identity and Access Management
+SC-100: Zero Trust Architecture
