@@ -13,7 +13,6 @@ def setup_azure_monitor():
         from azure.monitor.opentelemetry import configure_azure_monitor
         configure_azure_monitor(
             connection_string=connection_string,
-            logger_name="djangoapp",
         )
         logging.getLogger(__name__).info(
             "Azure Monitor: OpenTelemetry configured"
