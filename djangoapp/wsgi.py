@@ -12,9 +12,15 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "djangoapp.settings")
 
 # Azure Monitor OpenTelemetry — КРИТИЧНО: до get_wsgi_application()
 try:
-    from azure.monitor.opentelemetry import configure_azure_monitor
-    configure_azure_monitor()
-
+    import os as _os
+    _conn = _os.environ.get("APPINSIGHTS_CONNECTION_STRING") or \
+            _os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING")
+    if _conn:
+        from azure.monitor.opentelemetry import configure_azure_monitor
+        configure_azure_monitor(connection_string=_conn)
+        logger.warning("Azure Monitor: OpenTelemetry configured")
+    else:
+        logger.warning("Azure Monitor: APPINSIGHTS_CONNECTION_STRING not set")
     # Явний тестовий trace
     from opentelemetry import trace
     tracer = trace.get_tracer(__name__)
