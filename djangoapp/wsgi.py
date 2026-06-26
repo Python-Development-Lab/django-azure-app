@@ -20,6 +20,12 @@ try:
     if _conn:
         from azure.monitor.opentelemetry import configure_azure_monitor
         configure_azure_monitor(connection_string=_conn)
+        # Підключити auth_app logger до OpenTelemetry
+        import logging
+        from opentelemetry.sdk._logs import LoggerProvider
+        from opentelemetry._logs import get_logger_provider
+        for log_name in ["auth_app", "auth_app.device_middleware", "djangoapp"]:
+            logging.getLogger(log_name).setLevel(logging.INFO)
         logger.warning("Azure Monitor: OpenTelemetry configured")
     else:
         logger.warning("Azure Monitor: APPINSIGHTS_CONNECTION_STRING not set")
