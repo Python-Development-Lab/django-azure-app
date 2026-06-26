@@ -104,5 +104,8 @@ module "monitoring" {
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
   app_service_id      = module.app_service.app_service_id
+  subscription_id     = data.azurerm_client_config.current.subscription_id
   tags                = local.tags
 }
+
+data "azurerm_client_config" "current" {}
