@@ -180,21 +180,26 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'WARNING',
+        'level': 'INFO',
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            'propagate': False,
+            'propagate': True,
         },
         'auth_app': {
-            'handlers': ['console'],
+            'handlers': [],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'auth_app.device_middleware': {
+            'handlers': [],
             'level': 'INFO',
             'propagate': True,
         },
         'djangoapp': {
-            'handlers': ['console'],
+            'handlers': [],
             'level': 'INFO',
             'propagate': True,
         },
