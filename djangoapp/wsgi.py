@@ -38,3 +38,20 @@ except Exception as e:
 
 from django.core.wsgi import get_wsgi_application  # noqa: E402
 application = get_wsgi_application()
+
+# Додаємо LoggingHandler ПІСЛЯ Django ініціалізації (dictConfig не перезапише)
+if _conn:
+    try:
+        import logging as _logging2
+        from azure.monitor.opentelemetry.exporter import AzureMonitorLogExporter
+        from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+        from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+        _exporter2 = AzureMonitorLogExporter(connection_string=_conn)
+        _provider2 = LoggerProvider()
+        _provider2.add_log_record_processor(BatchLogRecordProcessor(_exporter2))
+        _handler2 = LoggingHandler(logger_provider=_provider2)
+        _handler2.setLevel(_logging2.WARNING)
+        _logging2.getLogger().addHandler(_handler2)
+        _logging2.getLogger().warning("Azure Monitor: logging bridge attached after Django init")
+    except Exception as _e2:
+        pass
