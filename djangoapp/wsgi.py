@@ -4,35 +4,35 @@ WSGI config for djangoapp project.
 import os
 import logging
 
-# Налаштовуємо logging ДО configure_azure_monitor
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "djangoapp.settings")
 
-# Azure Monitor OpenTelemetry — КРИТИЧНО: до get_wsgi_application()
 try:
-    import os as _os
     _conn = (
-        _os.environ.get("APPINSIGHTS_CONNECTION_STRING") or
-        _os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING")
+        os.environ.get("APPINSIGHTS_CONNECTION_STRING") or
+        os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING")
     )
     if _conn:
         from azure.monitor.opentelemetry import configure_azure_monitor
         configure_azure_monitor(connection_string=_conn)
-        # Підключити auth_app logger до OpenTelemetry
+
         import logging as _logging
-        for log_name in ["auth_app", "auth_app.device_middleware", "djangoapp"]:
-            _logging.getLogger(log_name).setLevel(_logging.INFO)
-        logger.warning("Azure Monitor: OpenTelemetry configured")
+        from azure.monitor.opentelemetry.exporter import AzureMonitorLogExporter
+        from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+        from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+
+        _exporter = AzureMonitorLogExporter(connection_string=_conn)
+        _provider = LoggerProvider()
+        _provider.add_log_record_processor(BatchLogRecordProcessor(_exporter))
+        _handler = LoggingHandler(logger_provider=_provider)
+        _handler.setLevel(_logging.WARNING)
+        _logging.getLogger().addHandler(_handler)
+
+        logger.warning("Azure Monitor: OpenTelemetry configured with logging bridge")
     else:
         logger.warning("Azure Monitor: APPINSIGHTS_CONNECTION_STRING not set")
-    # Явний тестовий trace
-    from opentelemetry import trace
-    tracer = trace.get_tracer(__name__)
-    with tracer.start_as_current_span("wsgi-startup"):
-        logger.warning("Azure Monitor: OpenTelemetry configured successfully")
-
 except Exception as e:
     logger.warning(f"Azure Monitor: configuration failed: {e}")
 
