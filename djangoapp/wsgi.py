@@ -53,5 +53,5 @@ if _conn:
         _handler2.setLevel(_logging2.WARNING)
         _logging2.getLogger().addHandler(_handler2)
         _logging2.getLogger().warning("Azure Monitor: logging bridge attached after Django init")
-    except Exception as _e2:
+    except Exception:
         pass
