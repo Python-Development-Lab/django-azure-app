@@ -16,5 +16,4 @@ def home(request):
 
 def health_check(request):
     """Перевірка стану для Azure"""
-    logger.warning("Health check called — OpenTelemetry test")
     return HttpResponse("OK", status=200)
