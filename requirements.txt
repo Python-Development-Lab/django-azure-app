@@ -15,4 +15,8 @@ azure-keyvault-secrets==4.10.0
 azure-identity==1.25.3
 azure-monitor-opentelemetry==1.8.7
 
-cryptography>=43.0.1
+# cryptography pinned to 41.0.7 — GLIBC_2.31 constraint on Azure App Service
+# Debian 11 Bullseye (GLIBC 2.31) incompatible with cryptography>=42.0.0 Rust bindings
+# CVEs acknowledged — upgrade blocked until App Service moves to Debian 12
+# Track: https://github.com/Python-Development-Lab/django-azure-app/issues
+cryptography==41.0.7
