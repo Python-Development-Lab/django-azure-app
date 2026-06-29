@@ -1,0 +1,27 @@
+{
+  "kind": "Scheduled",
+  "properties": {
+    "displayName": "Zero Trust - Device Verification Alert",
+    "description": "Detects suspicious device activity from auth_app.device_middleware: IP changes, User-Agent changes, suspicious scanning tools",
+    "severity": "Medium",
+    "enabled": true,
+    "query": "AppTraces\n| where Properties[\"logger_name\"] == \"auth_app.device_middleware\"\n| where Message contains \"IP address changed\"\n    or Message contains \"Suspicious\"\n    or Message contains \"User-Agent changed\"\n| extend UserId = extract(\"user=([a-f0-9-]+)\", 1, Message)\n| extend FromIP = extract(\"from=([0-9.]+)\", 1, Message)\n| extend ToIP = extract(\"to=([0-9.]+)\", 1, Message)\n| project TimeGenerated, Message, UserId, FromIP, ToIP",
+    "queryFrequency": "PT5M",
+    "queryPeriod": "PT5M",
+    "triggerOperator": "GreaterThan",
+    "triggerThreshold": 0,
+    "suppressionDuration": "PT1H",
+    "suppressionEnabled": false,
+    "tactics": ["InitialAccess", "DefenseEvasion"],
+    "techniques": ["T1078", "T1036"],
+    "incidentConfiguration": {
+      "createIncident": true,
+      "groupingConfiguration": {
+        "enabled": true,
+        "reopenClosedIncident": false,
+        "lookbackDuration": "PT5M",
+        "matchingMethod": "AllEntities"
+      }
+    }
+  }
+}
