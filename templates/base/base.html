@@ -6,12 +6,38 @@
     <title>{% block title %}Django Azure App{% endblock %}</title>
     {% load static %}
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 50px auto;
-            padding: 20px;
             background-color: #f5f5f5;
+            min-height: 100vh;
+        }
+        nav {
+            background: #0078d4;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            height: 48px;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            opacity: 0.85;
+        }
+        nav a:hover { opacity: 1; }
+        nav .brand {
+            font-weight: 700;
+            font-size: 15px;
+            opacity: 1;
+            margin-right: 1rem;
+        }
+        nav .spacer { flex: 1; }
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
         }
         .container {
             background: white;
@@ -30,7 +56,16 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <nav>
+        <a href="/" class="brand">🔒 Django Azure</a>
+        <a href="/">Home</a>
+        {% if user.is_authenticated %}
+        <a href="/security/">Security Dashboard</a>
+        <span class="spacer"></span>
+        <a href="/auth/logout/">{{ user.username }} · Logout</a>
+        {% endif %}
+    </nav>
+    <div class="page-container">
         {% block content %}{% endblock %}
     </div>
 </body>
