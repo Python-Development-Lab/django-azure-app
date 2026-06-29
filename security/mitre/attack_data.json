@@ -1,0 +1,97 @@
+{
+  "project": "django-azure-security-template",
+  "tactics": [
+    {
+      "id": "TA0001",
+      "name": "Initial Access",
+      "techniques": [
+        {
+          "id": "T1078",
+          "name": "Valid Accounts",
+          "status": "mitigated",
+          "control": "Entra ID OAuth2 + MFA",
+          "detection": "Sentinel Sign-in risk analytics"
+        },
+        {
+          "id": "T1110",
+          "name": "Brute Force",
+          "status": "mitigated",
+          "control": "WAF OWASP 3.2 + Rate limiting",
+          "detection": "AppRequests anomaly"
+        }
+      ]
+    },
+    {
+      "id": "TA0003",
+      "name": "Persistence",
+      "techniques": [
+        {
+          "id": "T1078.004",
+          "name": "Cloud Accounts",
+          "status": "mitigated",
+          "control": "Managed Identity + RBAC",
+          "detection": "Entra ID audit logs"
+        }
+      ]
+    },
+    {
+      "id": "TA0005",
+      "name": "Defense Evasion",
+      "techniques": [
+        {
+          "id": "T1036",
+          "name": "Masquerading",
+          "status": "detected",
+          "control": "Device fingerprint middleware",
+          "detection": "auth_app.device_middleware → Sentinel"
+        }
+      ]
+    },
+    {
+      "id": "TA0006",
+      "name": "Credential Access",
+      "techniques": [
+        {
+          "id": "T1552",
+          "name": "Unsecured Credentials",
+          "status": "mitigated",
+          "control": "Azure Key Vault + System MSI",
+          "detection": "Key Vault audit logs"
+        },
+        {
+          "id": "T1040",
+          "name": "Network Sniffing",
+          "status": "mitigated",
+          "control": "TLS 1.2+ enforced, HTTPS only",
+          "detection": "NSG flow logs"
+        }
+      ]
+    },
+    {
+      "id": "TA0007",
+      "name": "Discovery",
+      "techniques": [
+        {
+          "id": "T1046",
+          "name": "Network Service Discovery",
+          "status": "mitigated",
+          "control": "NSG deny-all + Private Endpoints",
+          "detection": "NSG flow logs"
+        }
+      ]
+    },
+    {
+      "id": "TA0010",
+      "name": "Exfiltration",
+      "techniques": [
+        {
+          "id": "T1071",
+          "name": "Application Layer Protocol",
+          "status": "monitored",
+          "control": "VNet Integration + NSG",
+          "detection": "AppRequests + AppTraces"
+        }
+      ]
+    }
+  ]
+}
