@@ -9,7 +9,7 @@
           "id": "T1078",
           "name": "Valid Accounts",
           "status": "mitigated",
-          "control": "Entra ID OAuth2 + MFA",
+          "control": "Entra ID OAuth2 + MFA (Security Defaults)",
           "detection": "Sentinel Sign-in risk analytics"
         },
         {
@@ -18,6 +18,13 @@
           "status": "mitigated",
           "control": "WAF OWASP 3.2 + Rate limiting",
           "detection": "AppRequests anomaly"
+        },
+        {
+          "id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "status": "detected",
+          "control": "OWASP ZAP DAST scan on every pipeline run",
+          "detection": "DAST pipeline job + Bandit SAST findings"
         }
       ]
     },
@@ -31,6 +38,33 @@
           "status": "mitigated",
           "control": "Managed Identity + RBAC",
           "detection": "Entra ID audit logs"
+        },
+        {
+          "id": "T1098",
+          "name": "Account Manipulation",
+          "status": "detected",
+          "control": "PIM Just-In-Time role activation, MFA required",
+          "detection": "PIM audit logs"
+        }
+      ]
+    },
+    {
+      "id": "TA0004",
+      "name": "Privilege Escalation",
+      "techniques": [
+        {
+          "id": "T1068",
+          "name": "Exploitation for Privilege Escalation",
+          "status": "detected",
+          "control": "Threat Ontology pattern: privilege_escalation (KBSSE)",
+          "detection": "RiskScoringMiddleware confidence threshold"
+        },
+        {
+          "id": "T1078.004b",
+          "name": "Additional Cloud Roles",
+          "status": "mitigated",
+          "control": "Least privilege: Key Vault Secrets User role only",
+          "detection": "Entra ID role assignment audit"
         }
       ]
     },
@@ -44,6 +78,13 @@
           "status": "detected",
           "control": "Device fingerprint middleware",
           "detection": "auth_app.device_middleware → Sentinel"
+        },
+        {
+          "id": "T1027",
+          "name": "Obfuscated Files or Information",
+          "status": "gap",
+          "control": "Not implemented — no content inspection on uploads",
+          "detection": "No coverage yet"
         }
       ]
     },
@@ -55,7 +96,7 @@
           "id": "T1552",
           "name": "Unsecured Credentials",
           "status": "mitigated",
-          "control": "Azure Key Vault + System MSI",
+          "control": "Azure Key Vault + System-Assigned Managed Identity",
           "detection": "Key Vault audit logs"
         },
         {
@@ -64,6 +105,20 @@
           "status": "mitigated",
           "control": "TLS 1.2+ enforced, HTTPS only",
           "detection": "NSG flow logs"
+        },
+        {
+          "id": "T1110.004",
+          "name": "Credential Stuffing",
+          "status": "detected",
+          "control": "Threat Ontology pattern: credential_stuffing (KBSSE)",
+          "detection": "RiskScoringMiddleware IoC signals"
+        },
+        {
+          "id": "T1528",
+          "name": "Steal Application Access Token",
+          "status": "detected",
+          "control": "Threat Ontology pattern: token_theft (KBSSE)",
+          "detection": "MSAL token refresh middleware anomaly check"
         }
       ]
     },
@@ -81,6 +136,19 @@
       ]
     },
     {
+      "id": "TA0009",
+      "name": "Collection",
+      "techniques": [
+        {
+          "id": "T1530",
+          "name": "Data from Cloud Storage",
+          "status": "gap",
+          "control": "Blob Storage access policy not yet hardened",
+          "detection": "No coverage yet"
+        }
+      ]
+    },
+    {
       "id": "TA0010",
       "name": "Exfiltration",
       "techniques": [
@@ -90,6 +158,33 @@
           "status": "monitored",
           "control": "VNet Integration + NSG",
           "detection": "AppRequests + AppTraces"
+        },
+        {
+          "id": "T1567",
+          "name": "Exfiltration Over Web Service",
+          "status": "detected",
+          "control": "Threat Ontology pattern: data_exfiltration (KBSSE)",
+          "detection": "RiskScoringMiddleware volume/pattern analysis"
+        }
+      ]
+    },
+    {
+      "id": "TA0040",
+      "name": "Impact",
+      "techniques": [
+        {
+          "id": "T1486",
+          "name": "Data Encrypted for Impact (Ransomware)",
+          "status": "gap",
+          "control": "No automated backup/restore tested for staging DB",
+          "detection": "No coverage yet"
+        },
+        {
+          "id": "T1531",
+          "name": "Account Access Removal",
+          "status": "gap",
+          "control": "No documented incident response runbook for account compromise",
+          "detection": "No automated playbook — manual process only"
         }
       ]
     }
