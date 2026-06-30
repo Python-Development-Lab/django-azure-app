@@ -61,7 +61,7 @@ const statusLabel = {
 };
 
 // ── Coverage Summary ──────────────────────────────────────────
-const counts = {mitigated:0, detected:0, monitored:0};
+const counts = {mitigated:0, detected:0, monitored:0, gap:0};
 data.tactics.forEach(t => t.techniques.forEach(tech => counts[tech.status]++));
 const total = Object.values(counts).reduce((a,b)=>a+b,0);
 
