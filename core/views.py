@@ -1,4 +1,6 @@
-import json
+import json as _json
+import urllib.request
+import urllib.error
 from pathlib import Path
 
 from django.contrib.auth.decorators import login_required
@@ -24,8 +26,79 @@ def security_dashboard(request):
     """Security Dashboard — MITRE ATT&CK coverage"""
     data_path = Path(__file__).parent.parent / 'security' / 'mitre' / 'attack_data.json'
     with open(data_path) as f:
-        attack_data = json.load(f)
+        attack_data = _json.load(f)
     return render(request, 'core/security.html', {
         'attack_data': attack_data,
-        'attack_data_json': json.dumps(attack_data),
+        'attack_data_json': _json.dumps(attack_data),
+    })
+
+
+def _get_msi_token():
+    """Отримати MSI token для Cost Management API"""
+    url = (
+        "http://169.254.169.254/metadata/identity/oauth2/token"
+        "?api-version=2018-02-01"
+        "&resource=https://management.azure.com/"
+    )
+    req = urllib.request.Request(url, headers={"Metadata": "true"})
+    with urllib.request.urlopen(req, timeout=5) as resp:
+        return _json.loads(resp.read())["access_token"]
+
+
+def _get_cost_data():
+    """Запит до Cost Management API через MSI"""
+    token = _get_msi_token()
+    subscription_id = "23ee341e-dbd1-4904-8bb2-5dde59747b5d"
+    url = (
+        f"https://management.azure.com/subscriptions/{subscription_id}"
+        "/providers/Microsoft.CostManagement/query?api-version=2023-11-01"
+    )
+    body = _json.dumps({
+        "type": "ActualCost",
+        "timeframe": "MonthToDate",
+        "dataset": {
+            "granularity": "None",
+            "aggregation": {
+                "totalCost": {"name": "PreTaxCost", "function": "Sum"}
+            },
+            "grouping": [
+                {"type": "Dimension", "name": "ResourceGroupName"}
+            ]
+        }
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        url, data=body, method="POST",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return _json.loads(resp.read())
+
+
+@login_required(login_url='/auth/login/')
+def finops_dashboard(request):
+    """FinOps Dashboard — Azure Cost Management"""
+    error = None
+    costs = []
+    total = 0.0
+
+    try:
+        data = _get_cost_data()
+        rows = data.get("properties", {}).get("rows", [])
+        costs = [
+            {"resource_group": r[1], "cost": round(r[0], 2), "currency": r[2]}
+            for r in rows if r[0] > 0
+        ]
+        costs.sort(key=lambda x: x["cost"], reverse=True)
+        total = round(sum(c["cost"] for c in costs), 2)
+    except Exception as e:
+        error = str(e)
+
+    return render(request, "core/finops.html", {
+        "costs": costs,
+        "costs_json": _json.dumps(costs),
+        "total": total,
+        "error": error,
     })
