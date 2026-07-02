@@ -1,0 +1,11 @@
+{
+  "description": "Cost Management Reader for App Service Managed Identity",
+  "principalId": "0bcc5eab-9560-4070-a830-6f2cf0f57acc",
+  "principalType": "ServicePrincipal",
+  "roleDefinitionId": "72fafb9e-0641-4937-9268-a91bfd8191a3",
+  "roleDefinitionName": "Cost Management Reader",
+  "scope": "/subscriptions/23ee341e-dbd1-4904-8bb2-5dde59747b5d",
+  "assignmentId": "ee7a6240-ada5-4095-811f-bea5dc196041",
+  "createdOn": "2026-07-02T14:42:44Z",
+  "purpose": "FinOps Dashboard /finops/ — read cost data via MSI token"
+}
