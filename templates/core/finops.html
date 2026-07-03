@@ -46,6 +46,17 @@
     </div>
   </div>
 
+  <!-- Daily Trend -->
+  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
+              padding:1.25rem; margin-bottom:2rem;">
+    <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">
+      Daily Spend Trend — {{ period_month }}
+    </h2>
+    <div style="position:relative; height:200px;">
+      <canvas id="dailyChart"></canvas>
+    </div>
+  </div>
+
   <!-- Charts Row -->
   <div style="display:grid; grid-template-columns:2fr 1fr; gap:1.5rem; margin-bottom:2rem;">
     <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:1.25rem;">
@@ -164,6 +175,42 @@ new Chart(document.getElementById('barChart'), {
     }
   }
 });
+
+// Daily Trend Chart
+const dailyTrend = {{ daily_trend_json|safe }};
+if (dailyTrend.length > 0) {
+  new Chart(document.getElementById('dailyChart'), {
+    type: 'line',
+    data: {
+      labels: dailyTrend.map(d => d.date),
+      datasets: [{
+        label: 'Daily Cost (USD)',
+        data: dailyTrend.map(d => d.cost),
+        borderColor: '#0078d4',
+        backgroundColor: 'rgba(0,120,212,0.08)',
+        borderWidth: 2,
+        pointRadius: 4,
+        pointBackgroundColor: '#0078d4',
+        fill: true,
+        tension: 0.3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#666', font: { size: 11 } }, grid: { display: false } },
+        y: {
+          ticks: { color: '#666', font: { size: 11 },
+                   callback: v => '$' + v.toFixed(2) },
+          grid: { color: '#f0f0f0' },
+          beginAtZero: true,
+        }
+      }
+    }
+  });
+}
 
 // Doughnut Chart
 new Chart(document.getElementById('doughnutChart'), {
