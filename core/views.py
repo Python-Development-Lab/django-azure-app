@@ -41,8 +41,15 @@ def _get_msi_token():
         "&resource=https://management.azure.com/"
     )
     req = urllib.request.Request(url, headers={"Metadata": "true"})
-    with urllib.request.urlopen(req, timeout=5) as resp:
-        return _json.loads(resp.read())["access_token"]
+    last_error = None
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return _json.loads(resp.read())["access_token"]
+        except Exception as e:
+            last_error = e
+            continue
+    raise last_error
 
 
 def _get_cost_data():
