@@ -8,7 +8,7 @@
     FinOps Dashboard
   </h1>
   <p style="color: #666; margin-bottom: 2rem; font-size: 0.9rem;">
-    Azure Cost Management — Month to Date · Subscription: django-azure-security-template
+    Azure Cost Management · {{ period_from }} — {{ period_to }} · Subscription: django-azure-security-template
   </p>
 
   {% if error %}
@@ -24,9 +24,9 @@
               gap:1rem; margin-bottom:2rem;">
     <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
                 padding:1.25rem; border-left:4px solid #0078d4;">
-      <p style="font-size:0.8rem; color:#666; margin-bottom:4px;">Total Month-to-Date</p>
+      <p style="font-size:0.8rem; color:#666; margin-bottom:4px;">Total · {{ period_month }}</p>
       <p style="font-size:2rem; font-weight:700; color:#0078d4;">${{ total }}</p>
-      <p style="font-size:0.75rem; color:#999;">USD · All resource groups</p>
+      <p style="font-size:0.75rem; color:#999;">USD · {{ period_from }} — {{ period_to }}</p>
     </div>
     <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
                 padding:1.25rem; border-left:4px solid #2e7d32;">

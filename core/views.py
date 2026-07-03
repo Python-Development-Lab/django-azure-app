@@ -86,9 +86,17 @@ def finops_dashboard(request):
     except Exception as e:
         error = str(e)
 
+    from datetime import date
+    today = date.today()
+    period_from = today.replace(day=1).strftime("%d %b %Y")
+    period_to = today.strftime("%d %b %Y")
+
     return render(request, "core/finops.html", {
         "costs": costs,
         "costs_json": _json.dumps(costs),
         "total": total,
         "error": error,
+        "period_from": period_from,
+        "period_to": period_to,
+        "period_month": today.strftime("%B %Y"),
     })
