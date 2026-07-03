@@ -34,9 +34,9 @@ def security_dashboard(request):
 
 
 def _get_cost_data():
-    """Запит до Cost Management API через DefaultAzureCredential (MSI)"""
-    from azure.identity import DefaultAzureCredential
-    credential = DefaultAzureCredential()
+    """Запит до Cost Management API через ManagedIdentityCredential"""
+    from azure.identity import ManagedIdentityCredential
+    credential = ManagedIdentityCredential()
     token = credential.get_token("https://management.azure.com/.default").token
     subscription_id = "23ee341e-dbd1-4904-8bb2-5dde59747b5d"
     url = (
