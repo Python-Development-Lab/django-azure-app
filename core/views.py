@@ -37,9 +37,7 @@ def security_dashboard(request):
 def _get_token():
     """MSI token через ManagedIdentityCredential"""
     from azure.identity import ManagedIdentityCredential
-    credential = ManagedIdentityCredential(
-        client_id="0bcc5eab-9560-4070-a830-6f2cf0f57acc"
-    )
+    credential = ManagedIdentityCredential()
     return credential.get_token("https://management.azure.com/.default").token
 
 
