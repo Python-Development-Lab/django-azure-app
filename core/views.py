@@ -33,28 +33,11 @@ def security_dashboard(request):
     })
 
 
-def _get_msi_token():
-    """Отримати MSI token для Cost Management API"""
-    url = (
-        "http://169.254.169.254/metadata/identity/oauth2/token"
-        "?api-version=2018-02-01"
-        "&resource=https://management.azure.com/"
-    )
-    req = urllib.request.Request(url, headers={"Metadata": "true"})
-    last_error = None
-    for attempt in range(3):
-        try:
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                return _json.loads(resp.read())["access_token"]
-        except Exception as e:
-            last_error = e
-            continue
-    raise last_error
-
-
 def _get_cost_data():
-    """Запит до Cost Management API через MSI"""
-    token = _get_msi_token()
+    """Запит до Cost Management API через DefaultAzureCredential (MSI)"""
+    from azure.identity import DefaultAzureCredential
+    credential = DefaultAzureCredential()
+    token = credential.get_token("https://management.azure.com/.default").token
     subscription_id = "23ee341e-dbd1-4904-8bb2-5dde59747b5d"
     url = (
         f"https://management.azure.com/subscriptions/{subscription_id}"
