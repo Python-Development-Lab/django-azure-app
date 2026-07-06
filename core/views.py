@@ -22,15 +22,60 @@ def health_check(request):
     return HttpResponse("OK", status=200)
 
 
+def _get_defender_alerts():
+    """Отримати Defender for Cloud alerts через MSI"""
+    from azure.identity import ManagedIdentityCredential
+    credential = ManagedIdentityCredential()
+    token = credential.get_token("https://management.azure.com/.default").token
+    subscription_id = "23ee341e-dbd1-4904-8bb2-5dde59747b5d"
+    url = (
+        f"https://management.azure.com/subscriptions/{subscription_id}"
+        "/providers/Microsoft.Security/alerts?api-version=2022-01-01"
+    )
+    req = urllib.request.Request(
+        url, headers={"Authorization": f"Bearer {token}"}
+    )
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        data = _json.loads(resp.read())
+    alerts = []
+    for a in data.get("value", []):
+        p = a.get("properties", {})
+        ext = p.get("extendedProperties", {})
+        alerts.append({
+            "name": p.get("alertDisplayName", ""),
+            "severity": p.get("severity", ""),
+            "time": p.get("timeGeneratedUtc", "")[:10],
+            "status": p.get("status", ""),
+            "entity": p.get("compromisedEntity", ""),
+            "intent": p.get("intent", ""),
+            "description": p.get("description", "")[:200],
+            "source_ip": ext.get("Sample Source IP Addresses", ""),
+            "user_agent": ext.get("Sample User Agents", ""),
+            "target_uri": ext.get("Sample URIs", ""),
+        })
+    alerts.sort(key=lambda x: x["time"], reverse=True)
+    return alerts
+
+
 @login_required(login_url='/auth/login/')
 def security_dashboard(request):
-    """Security Dashboard — MITRE ATT&CK coverage"""
+    """Security Dashboard — MITRE ATT&CK coverage + Defender alerts"""
     data_path = Path(__file__).parent.parent / 'security' / 'mitre' / 'attack_data.json'
     with open(data_path) as f:
         attack_data = _json.load(f)
+
+    defender_alerts = []
+    defender_error = None
+    try:
+        defender_alerts = _get_defender_alerts()
+    except Exception as e:
+        defender_error = str(e)
+
     return render(request, 'core/security.html', {
         'attack_data': attack_data,
         'attack_data_json': _json.dumps(attack_data),
+        'defender_alerts': defender_alerts,
+        'defender_error': defender_error,
     })
 
 
