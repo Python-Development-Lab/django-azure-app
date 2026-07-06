@@ -1,0 +1,18 @@
+{
+  "kind": "AzureSecurityCenter",
+  "connectorId": "54447e60-fa95-4c2f-8123-35d9f642928f",
+  "description": "Microsoft Defender for Cloud Data Connector",
+  "subscriptionId": "23ee341e-dbd1-4904-8bb2-5dde59747b5d",
+  "dataTypes": {
+    "alerts": {
+      "state": "Enabled"
+    }
+  },
+  "purpose": "Forward Defender for App Service alerts to SecurityAlert table in Sentinel",
+  "createdOn": "2026-07-06",
+  "enables": [
+    "defender-active-scanning-nmap rule (SecurityAlert table)",
+    "NMap scanning alerts from Defender for App Service",
+    "T1595 Active Scanning detection pipeline"
+  ]
+}
