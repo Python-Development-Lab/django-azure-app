@@ -1,0 +1,27 @@
+{
+  "kind": "Scheduled",
+  "properties": {
+    "displayName": "Defender - Active Scanning Detected (NMap)",
+    "description": "Detects NMap or active scanning attempts against App Service from Microsoft Defender for Cloud. Maps to MITRE ATT&CK T1595 / T1046.",
+    "severity": "Medium",
+    "enabled": true,
+    "query": "SecurityAlert\n| where TimeGenerated > ago(1h)\n| where ProductName contains 'App Service'\n| where AlertName contains 'scan' or AlertName contains 'NMap' or AlertName contains 'fingerprint'\n| extend SourceIP = tostring(parse_json(ExtendedProperties)[\"Sample Source IP Addresses\"])\n| extend TargetURI = tostring(parse_json(ExtendedProperties)[\"Sample URIs\"])\n| extend UserAgent = tostring(parse_json(ExtendedProperties)[\"Sample User Agents\"])\n| project TimeGenerated, AlertName, AlertSeverity, CompromisedEntity, SourceIP, TargetURI, UserAgent",
+    "queryFrequency": "PT1H",
+    "queryPeriod": "PT1H",
+    "triggerOperator": "GreaterThan",
+    "triggerThreshold": 0,
+    "suppressionDuration": "PT4H",
+    "suppressionEnabled": true,
+    "tactics": ["Reconnaissance", "Discovery"],
+    "techniques": ["T1595", "T1046"],
+    "incidentConfiguration": {
+      "createIncident": true,
+      "groupingConfiguration": {
+        "enabled": true,
+        "reopenClosedIncident": false,
+        "lookbackDuration": "PT1H",
+        "matchingMethod": "AllEntities"
+      }
+    }
+  }
+}

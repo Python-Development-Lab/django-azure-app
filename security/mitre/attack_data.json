@@ -24,7 +24,14 @@
           "name": "Exploit Public-Facing Application",
           "status": "detected",
           "control": "OWASP ZAP DAST scan on every pipeline run",
-          "detection": "DAST pipeline job + Bandit SAST findings"
+          "detection": "DAST pipeline + Defender for App Service kernel alerts"
+        },
+        {
+          "id": "T1595",
+          "name": "Active Scanning",
+          "status": "gap",
+          "control": "No WAF or IP restriction rules configured",
+          "detection": "Defender for App Service detected NMap (T1595.001)"
         }
       ]
     },
@@ -77,13 +84,13 @@
           "name": "Masquerading",
           "status": "detected",
           "control": "Device fingerprint middleware",
-          "detection": "auth_app.device_middleware → Sentinel"
+          "detection": "auth_app.device_middleware \u2192 Sentinel"
         },
         {
           "id": "T1027",
           "name": "Obfuscated Files or Information",
           "status": "gap",
-          "control": "Not implemented — no content inspection on uploads",
+          "control": "Not implemented \u2014 no content inspection on uploads",
           "detection": "No coverage yet"
         }
       ]
@@ -129,9 +136,9 @@
         {
           "id": "T1046",
           "name": "Network Service Discovery",
-          "status": "mitigated",
-          "control": "NSG deny-all + Private Endpoints",
-          "detection": "NSG flow logs"
+          "status": "detected",
+          "control": "NSG deny-all (ports only), Private Endpoints",
+          "detection": "Defender for App Service \u2014 NMap scan detected 2026-06-26"
         }
       ]
     },
@@ -184,7 +191,7 @@
           "name": "Account Access Removal",
           "status": "gap",
           "control": "No documented incident response runbook for account compromise",
-          "detection": "No automated playbook — manual process only"
+          "detection": "No automated playbook \u2014 manual process only"
         }
       ]
     }
