@@ -3,7 +3,6 @@
 
 {% block content %}
 <div style="padding: 2rem; font-family: system-ui, sans-serif;">
-
   <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.25rem;">
     FinOps Dashboard
   </h1>
@@ -11,298 +10,103 @@
     Azure Cost Management · {{ period_from }} — {{ period_to }} · Subscription: django-azure-security-template
   </p>
 
-  {% if error %}
-  <div style="background:#fff3cd; border:1px solid #ffc107; border-radius:8px;
-              padding:1rem; margin-bottom:1.5rem; font-size:0.9rem; color:#856404;">
-    <strong>⚠ Cost API unavailable:</strong> {{ error }}<br>
-    <span style="font-size:0.8rem;">MSI token may not be available in this environment.</span>
-  </div>
-  {% endif %}
-
-  <!-- Summary Cards -->
-  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-              gap:1rem; margin-bottom:2rem;">
-    <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
-                padding:1.25rem; border-left:4px solid #0078d4;">
-      <p style="font-size:0.8rem; color:#666; margin-bottom:4px;">Total · {{ period_month }}</p>
-      <p style="font-size:2rem; font-weight:700; color:#0078d4;">${{ total }}</p>
-      <p style="font-size:0.75rem; color:#999;">USD · {{ period_from }} — {{ period_to }}</p>
-    </div>
-    <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
-                padding:1.25rem; border-left:4px solid #2e7d32;">
-      <p style="font-size:0.8rem; color:#666; margin-bottom:4px;">Active Resource Groups</p>
-      <p style="font-size:2rem; font-weight:700; color:#2e7d32;">{{ costs|length }}</p>
-      <p style="font-size:0.75rem; color:#999;">with non-zero spend</p>
-    </div>
-    <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
-                padding:1.25rem; border-left:4px solid #e65100;">
-      <p style="font-size:0.8rem; color:#666; margin-bottom:4px;">Largest Spend</p>
-      <p style="font-size:2rem; font-weight:700; color:#e65100;">
-        {% if costs %}${{ costs.0.cost }}{% else %}—{% endif %}
-      </p>
-      <p style="font-size:0.75rem; color:#999;">
-        {% if costs %}{{ costs.0.resource_group }}{% endif %}
-      </p>
+  <!-- HTMX: Summary cards -->
+  <div id="summary-section"
+       hx-get="{% url 'core:finops_summary' %}"
+       hx-trigger="load"
+       hx-swap="innerHTML"
+       hx-indicator="#summary-spinner">
+    <div id="summary-spinner" style="display:flex; gap:1rem; margin-bottom:2rem;">
+      {% for i in "123" %}
+      <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
+                  padding:1.25rem; flex:1; border-left:4px solid #ddd;">
+        <div style="background:#f0f0f0; height:2rem; border-radius:4px; margin-bottom:0.5rem;
+                    animation:pulse 1.5s infinite;"></div>
+        <div style="background:#f0f0f0; height:1rem; border-radius:4px; width:60%;
+                    animation:pulse 1.5s infinite;"></div>
+      </div>
+      {% endfor %}
     </div>
   </div>
 
-  <!-- Daily Trend -->
+  <!-- HTMX: Daily Trend -->
   <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
               padding:1.25rem; margin-bottom:2rem;">
     <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">
       Daily Spend Trend — {{ period_month }}
     </h2>
-    <div style="position:relative; height:200px;">
-      <canvas id="dailyChart"></canvas>
-    </div>
-  </div>
-
-  <!-- Charts Row -->
-  <div style="display:grid; grid-template-columns:2fr 1fr; gap:1.5rem; margin-bottom:2rem;">
-    <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:1.25rem;">
-      <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">
-        Cost by Resource Group (USD)
-      </h2>
-      <div style="position:relative; height:280px;">
-        <canvas id="barChart"></canvas>
-      </div>
-    </div>
-    <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:1.25rem;">
-      <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">Distribution</h2>
-      <div style="position:relative; height:280px;">
-        <canvas id="doughnutChart"></canvas>
+    <div id="daily-section"
+         hx-get="{% url 'core:finops_daily' %}"
+         hx-trigger="load"
+         hx-swap="innerHTML"
+         hx-indicator="#daily-spinner">
+      <div id="daily-spinner" style="height:200px; display:flex; align-items:center;
+                                     justify-content:center; color:#999;">
+        ⏳ Loading daily trend...
       </div>
     </div>
   </div>
 
-  <!-- Cost Table -->
-  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:1.25rem;">
+  <!-- HTMX: Cost by Resource Group -->
+  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
+              padding:1.25rem; margin-bottom:2rem;">
     <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">
+      Cost by Resource Group (USD)
+    </h2>
+    <div id="rg-summary-section"
+         hx-get="{% url 'core:finops_rg_summary' %}"
+         hx-trigger="load"
+         hx-swap="innerHTML"
+         hx-indicator="#rg-summary-spinner">
+      <div id="rg-summary-spinner" style="height:280px; display:flex; align-items:center;
+                                          justify-content:center; color:#999;">
+        ⏳ Loading resource group data...
+      </div>
+    </div>
+  </div>
+
+  <!-- HTMX: rg-django-azure-staging Breakdown -->
+  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
+              padding:1.25rem; margin-bottom:2rem;">
+    <h2 style="font-size:1rem; font-weight:600; margin-bottom:0.25rem;">
       rg-django-azure-staging — Service Breakdown
     </h2>
     <p style="font-size:0.8rem; color:#666; margin-bottom:1rem;">
-      Our project resource group · Total: ${{ rg_total }} MTD
+      Our project resource group · MTD costs by service
     </p>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
-      <div style="position:relative; height:220px;">
-        <canvas id="rgBreakdownChart"></canvas>
+    <div id="breakdown-section"
+         hx-get="{% url 'core:finops_breakdown' %}"
+         hx-trigger="load"
+         hx-swap="innerHTML"
+         hx-indicator="#breakdown-spinner">
+      <div id="breakdown-spinner" style="height:220px; display:flex; align-items:center;
+                                         justify-content:center; color:#999;">
+        ⏳ Loading service breakdown...
       </div>
-      <table style="width:100%; border-collapse:collapse; font-size:0.82rem;">
-        <thead>
-          <tr style="background:#f5f5f5;">
-            <th style="padding:6px 10px; text-align:left; border-bottom:2px solid #ddd;">Service</th>
-            <th style="padding:6px 10px; text-align:left; border-bottom:2px solid #ddd;">Meter</th>
-            <th style="padding:6px 10px; text-align:right; border-bottom:2px solid #ddd;">Cost</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in rg_breakdown %}
-          <tr style="border-bottom:1px solid #eee;">
-            <td style="padding:6px 10px; font-weight:500;">{{ item.service }}</td>
-            <td style="padding:6px 10px; color:#666; font-size:0.78rem;">{{ item.meter }}</td>
-            <td style="padding:6px 10px; text-align:right; font-family:monospace;
-                       font-weight:600; color:#e65100;">${{ item.cost }}</td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="3" style="padding:1rem; text-align:center; color:#999;">No data</td></tr>
-          {% endfor %}
-        </tbody>
-        <tfoot>
-          <tr style="background:#f5f5f5; font-weight:600;">
-            <td colspan="2" style="padding:6px 10px;">Total</td>
-            <td style="padding:6px 10px; text-align:right; font-family:monospace;
-                       color:#0078d4;">${{ rg_total }}</td>
-          </tr>
-        </tfoot>
-      </table>
     </div>
+  </div>
+
+  <!-- HTMX: Resource Group Table -->
+  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
+              padding:1.25rem;">
     <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">
       Resource Group Breakdown
     </h2>
-    <table style="width:100%; border-collapse:collapse; font-size:0.875rem;">
-      <thead>
-        <tr style="background:#f5f5f5;">
-          <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">
-            Resource Group
-          </th>
-          <th style="padding:8px 12px; text-align:right; border-bottom:2px solid #ddd;">
-            Cost (USD)
-          </th>
-          <th style="padding:8px 12px; text-align:right; border-bottom:2px solid #ddd;">
-            % of Total
-          </th>
-          <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">
-            Share
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in costs %}
-        <tr style="border-bottom:1px solid #eee;">
-          <td style="padding:8px 12px; font-family:monospace; font-size:0.82rem;">
-            {{ item.resource_group }}
-          </td>
-          <td style="padding:8px 12px; text-align:right; font-weight:600;">
-            ${{ item.cost }}
-          </td>
-          <td style="padding:8px 12px; text-align:right; color:#666;">
-            {% widthratio item.cost total 100 %}%
-          </td>
-          <td style="padding:8px 12px;">
-            <div style="background:#e0e0e0; border-radius:4px; height:8px; width:100%;">
-              <div style="background:#0078d4; border-radius:4px; height:8px;
-                          width:{% widthratio item.cost total 100 %}%;"></div>
-            </div>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="4" style="padding:2rem; text-align:center; color:#999;">
-            No cost data available
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-      <tfoot>
-        <tr style="background:#f5f5f5; font-weight:600;">
-          <td style="padding:8px 12px;">Total</td>
-          <td style="padding:8px 12px; text-align:right;">${{ total }}</td>
-          <td style="padding:8px 12px; text-align:right;">100%</td>
-          <td></td>
-        </tr>
-      </tfoot>
-    </table>
+    <div id="rg-table-section"
+         hx-get="{% url 'core:finops_summary' %}"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+      <div style="text-align:center; padding:1rem; color:#999;">⏳ Loading...</div>
+    </div>
   </div>
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script>
-const costs = {{ costs_json|safe }};
-const labels = costs.map(c => c.resource_group.length > 20
-  ? c.resource_group.substring(0, 20) + '...'
-  : c.resource_group);
-const values = costs.map(c => c.cost);
-const colors = [
-  '#0078d4','#2e7d32','#e65100','#6a1b9a',
-  '#00838f','#ad1457','#37474f','#f57f17'
-];
-
-// Bar Chart
-new Chart(document.getElementById('barChart'), {
-  type: 'bar',
-  data: {
-    labels,
-    datasets: [{
-      data: values,
-      backgroundColor: colors,
-      borderRadius: 4,
-      borderSkipped: 'bottom',
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { ticks: { color: '#666', font: { size: 10 } }, grid: { display: false } },
-      y: {
-        ticks: { color: '#666', font: { size: 11 },
-                 callback: v => '$' + v.toFixed(2) },
-        grid: { color: '#f0f0f0' }
-      }
-    }
-  }
-});
-
-// Daily Trend Chart
-const dailyTrend = {{ daily_trend_json|safe }};
-if (dailyTrend.length > 0) {
-  new Chart(document.getElementById('dailyChart'), {
-    type: 'line',
-    data: {
-      labels: dailyTrend.map(d => d.date),
-      datasets: [{
-        label: 'Daily Cost (USD)',
-        data: dailyTrend.map(d => d.cost),
-        borderColor: '#0078d4',
-        backgroundColor: 'rgba(0,120,212,0.08)',
-        borderWidth: 2,
-        pointRadius: 4,
-        pointBackgroundColor: '#0078d4',
-        fill: true,
-        tension: 0.3,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: '#666', font: { size: 11 } }, grid: { display: false } },
-        y: {
-          ticks: { color: '#666', font: { size: 11 },
-                   callback: v => '$' + v.toFixed(2) },
-          grid: { color: '#f0f0f0' },
-          beginAtZero: true,
-        }
-      }
-    }
-  });
+<style>
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
-
-// rg-django-azure-staging Breakdown Chart
-const rgBreakdown = {{ rg_breakdown_json|safe }};
-if (rgBreakdown.length > 0) {
-  new Chart(document.getElementById('rgBreakdownChart'), {
-    type: 'bar',
-    data: {
-      labels: rgBreakdown.map(d => d.meter.length > 25 ? d.meter.substring(0,25)+'...' : d.meter),
-      datasets: [{
-        data: rgBreakdown.map(d => d.cost),
-        backgroundColor: ['#e24b4a','#2a78d6','#eda100','#1baf7a','#888780'],
-        borderRadius: 4,
-        borderSkipped: 'bottom',
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: '#666', font: { size: 10 } }, grid: { display: false } },
-        y: {
-          ticks: { color: '#666', font: { size: 11 },
-                   callback: v => '$' + v.toFixed(2) },
-          grid: { color: '#f0f0f0' }, beginAtZero: true,
-        }
-      }
-    }
-  });
-}
-
-// Doughnut Chart
-new Chart(document.getElementById('doughnutChart'), {
-  type: 'doughnut',
-  data: {
-    labels,
-    datasets: [{
-      data: values,
-      backgroundColor: colors,
-      borderWidth: 2,
-      borderColor: '#fff'
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: { color: '#666', font: { size: 10 }, boxWidth: 10, padding: 6 }
-      }
-    }
-  }
-});
-</script>
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.10/htmx.min.js"></script>
 {% endblock %}

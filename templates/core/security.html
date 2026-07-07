@@ -3,234 +3,37 @@
 
 {% block content %}
 <div style="padding: 2rem; font-family: system-ui, sans-serif;">
-
   <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.25rem;">
     Security Dashboard
   </h1>
   <p style="color: #666; margin-bottom: 2rem; font-size: 0.9rem;">
-    MITRE ATT&CK Coverage — {{ attack_data.project }}
+    MITRE ATT&CK Coverage · Zero Trust Monitoring · Live Defender Alerts
   </p>
 
-  <!-- Coverage Summary -->
-  <div id="coverage-summary" style="display:flex; gap:1rem; margin-bottom:2rem; flex-wrap:wrap;"></div>
-
-  <!-- ATT&CK Graph -->
-  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:1rem; margin-bottom:2rem;">
-    <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">MITRE ATT&CK Force Graph</h2>
-    <svg id="attack-graph" width="100%" height="500"
-         style="background:#f8f9fa; border-radius:6px;"></svg>
-    <div id="tooltip" style="position:absolute; background:#222; color:#fff; padding:8px 12px;
-         border-radius:6px; font-size:12px; pointer-events:none; display:none; max-width:280px;
-         line-height:1.5;"></div>
-  </div>
-
-  <!-- Coverage Matrix -->
-  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:1rem;">
-    <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">Coverage Matrix</h2>
-    <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
-      <thead>
-        <tr style="background:#f5f5f5;">
-          <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Technique</th>
-          <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Tactic</th>
-          <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Status</th>
-          <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Control</th>
-          <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Detection</th>
-        </tr>
-      </thead>
-      <tbody id="coverage-table"></tbody>
-    </table>
-  </div>
-
-  <!-- Defender for Cloud Alerts -->
-  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
-              padding:1.25rem; margin-top:2rem;">
-    <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">
-      🛡 Active Threats — Microsoft Defender for Cloud
-    </h2>
-
-    {% if defender_error %}
-    <div style="background:#fff3cd; border:1px solid #ffc107; border-radius:6px;
-                padding:0.75rem; font-size:0.85rem; color:#856404; margin-bottom:1rem;">
-      <strong>⚠ Defender API unavailable:</strong> {{ defender_error }}
+  <!-- HTMX: ATT&CK Coverage (loads on page load) -->
+  <div id="coverage-section"
+       hx-get="{% url 'core:security_coverage' %}"
+       hx-trigger="load"
+       hx-swap="innerHTML"
+       hx-indicator="#coverage-spinner">
+    <div id="coverage-spinner" style="text-align:center; padding:3rem; color:#666;">
+      <div style="font-size:2rem; margin-bottom:0.5rem;">⏳</div>
+      Loading ATT&CK coverage data...
     </div>
-    {% endif %}
-
-    {% if defender_alerts %}
-    <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
-      <thead>
-        <tr style="background:#f5f5f5;">
-          <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Date</th>
-          <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Alert</th>
-          <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Severity</th>
-          <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Intent</th>
-          <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Source IP</th>
-          <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Target URI</th>
-          <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for alert in defender_alerts %}
-        <tr style="border-bottom:1px solid #eee;">
-          <td style="padding:8px 12px; font-family:monospace; font-size:0.8rem;">
-            {{ alert.time }}
-          </td>
-          <td style="padding:8px 12px; font-weight:500;">{{ alert.name }}</td>
-          <td style="padding:8px 12px;">
-            <span style="padding:2px 8px; border-radius:12px; font-size:0.78rem; font-weight:500;
-              {% if alert.severity == 'High' %}background:#fce4ec; color:#b71c1c;
-              {% elif alert.severity == 'Medium' %}background:#fff3e0; color:#e65100;
-              {% elif alert.severity == 'Low' %}background:#e8f5e9; color:#2e7d32;
-              {% else %}background:#e3f2fd; color:#1565c0;{% endif %}">
-              {{ alert.severity }}
-            </span>
-          </td>
-          <td style="padding:8px 12px; color:#666; font-size:0.82rem;">{{ alert.intent }}</td>
-          <td style="padding:8px 12px; font-family:monospace; font-size:0.8rem; color:#6a1b9a;">
-            {{ alert.source_ip|default:"—" }}
-          </td>
-          <td style="padding:8px 12px; font-family:monospace; font-size:0.8rem; color:#1b5e20;">
-            {{ alert.target_uri|default:"—" }}
-          </td>
-          <td style="padding:8px 12px;">
-            <span style="padding:2px 8px; border-radius:12px; font-size:0.78rem;
-              {% if alert.status == 'Active' %}background:#fce4ec; color:#b71c1c;
-              {% else %}background:#e8f5e9; color:#2e7d32;{% endif %}">
-              {{ alert.status }}
-            </span>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <p style="color:#999; font-size:0.875rem; text-align:center; padding:1rem;">
-      No active Defender alerts {% if not defender_error %}✅{% endif %}
-    </p>
-    {% endif %}
   </div>
 
+  <!-- HTMX: Defender Alerts (loads on page load, parallel) -->
+  <div id="alerts-section"
+       hx-get="{% url 'core:security_alerts' %}"
+       hx-trigger="load"
+       hx-swap="innerHTML"
+       hx-indicator="#alerts-spinner">
+    <div id="alerts-spinner" style="text-align:center; padding:2rem; color:#666;">
+      <div style="font-size:1.5rem; margin-bottom:0.5rem;">🛡</div>
+      Loading Defender alerts...
+    </div>
+  </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script>
-const data = {{ attack_data_json|safe }};
-
-const statusColor = {
-  mitigated: '#2e7d32',
-  detected:  '#1565c0',
-  monitored: '#e65100',
-  gap:       '#c62828',
-};
-const statusLabel = {
-  mitigated: '✅ Mitigated',
-  detected:  '🔵 Detected',
-  monitored: '🟠 Monitored',
-  gap:       '🔴 Gap',
-};
-
-// ── Coverage Summary ──────────────────────────────────────────
-const counts = {mitigated:0, detected:0, monitored:0, gap:0};
-data.tactics.forEach(t => t.techniques.forEach(tech => counts[tech.status]++));
-const total = Object.values(counts).reduce((a,b)=>a+b,0);
-
-const summary = document.getElementById('coverage-summary');
-Object.entries(counts).forEach(([status, count]) => {
-  const card = document.createElement('div');
-  card.style.cssText = `background:#fff; border:1px solid #e0e0e0; border-radius:8px;
-    padding:1rem 1.5rem; min-width:140px; border-left:4px solid ${statusColor[status]};`;
-  card.innerHTML = `<div style="font-size:1.8rem; font-weight:700; color:${statusColor[status]};">${count}</div>
-    <div style="font-size:0.8rem; color:#666;">${statusLabel[status]}</div>
-    <div style="font-size:0.75rem; color:#999;">${Math.round(count/total*100)}% of ${total}</div>`;
-  summary.appendChild(card);
-});
-
-// ── D3 Force Graph ────────────────────────────────────────────
-const svg = d3.select('#attack-graph');
-const W = svg.node().getBoundingClientRect().width || 800;
-const H = 500;
-svg.attr('viewBox', `0 0 ${W} ${H}`);
-
-const nodes = [], links = [];
-
-data.tactics.forEach(tactic => {
-  nodes.push({id: tactic.id, label: tactic.name, type: 'tactic'});
-  tactic.techniques.forEach(tech => {
-    nodes.push({id: tech.id, label: tech.name, type: 'technique',
-                status: tech.status, control: tech.control, detection: tech.detection});
-    links.push({source: tactic.id, target: tech.id});
-  });
-});
-
-const sim = d3.forceSimulation(nodes)
-  .force('link', d3.forceLink(links).id(d=>d.id).distance(110))
-  .force('charge', d3.forceManyBody().strength(-300))
-  .force('center', d3.forceCenter(W/2, H/2))
-  .force('collision', d3.forceCollide(40));
-
-const g = svg.append('g');
-
-svg.call(d3.zoom().scaleExtent([0.4,3])
-  .on('zoom', e => g.attr('transform', e.transform)));
-
-const link = g.append('g').selectAll('line').data(links).join('line')
-  .attr('stroke', '#ccc').attr('stroke-width', 1.5);
-
-const node = g.append('g').selectAll('g').data(nodes).join('g')
-  .call(d3.drag()
-    .on('start', (e,d) => { if(!e.active) sim.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; })
-    .on('drag',  (e,d) => { d.fx=e.x; d.fy=e.y; })
-    .on('end',   (e,d) => { if(!e.active) sim.alphaTarget(0); d.fx=null; d.fy=null; }));
-
-node.append('circle')
-  .attr('r', d => d.type==='tactic' ? 28 : 20)
-  .attr('fill', d => d.type==='tactic' ? '#37474f' : statusColor[d.status] || '#888')
-  .attr('stroke', '#fff').attr('stroke-width', 2);
-
-node.append('text')
-  .attr('text-anchor','middle').attr('dy','0.35em')
-  .attr('fill','#fff').attr('font-size', d => d.type==='tactic' ? '9px' : '8px')
-  .attr('font-weight', d => d.type==='tactic' ? '600' : '400')
-  .text(d => d.type==='tactic' ? d.label : d.id);
-
-const tooltip = document.getElementById('tooltip');
-node.on('mouseover', (e, d) => {
-  if (d.type === 'technique') {
-    tooltip.style.display = 'block';
-    tooltip.innerHTML = `<strong>${d.id} — ${d.label}</strong><br>
-      Status: ${statusLabel[d.status]}<br>
-      Control: ${d.control}<br>
-      Detection: ${d.detection}`;
-  }
-}).on('mousemove', e => {
-  tooltip.style.left = (e.pageX + 12) + 'px';
-  tooltip.style.top  = (e.pageY - 28) + 'px';
-}).on('mouseout', () => { tooltip.style.display = 'none'; });
-
-sim.on('tick', () => {
-  link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y)
-      .attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
-  node.attr('transform', d=>`translate(${d.x},${d.y})`);
-});
-
-// ── Coverage Table ────────────────────────────────────────────
-const tbody = document.getElementById('coverage-table');
-data.tactics.forEach(tactic => {
-  tactic.techniques.forEach((tech, i) => {
-    const tr = document.createElement('tr');
-    tr.style.borderBottom = '1px solid #eee';
-    tr.innerHTML = `
-      <td style="padding:8px 12px; font-family:monospace; font-weight:600;">${tech.id}<br>
-        <span style="font-family:system-ui; font-weight:400; color:#444;">${tech.name}</span></td>
-      <td style="padding:8px 12px; color:#666;">${i===0 ? tactic.name : ''}</td>
-      <td style="padding:8px 12px;">
-        <span style="background:${statusColor[tech.status]}20; color:${statusColor[tech.status]};
-          padding:2px 8px; border-radius:12px; font-size:0.8rem; font-weight:500;">
-          ${statusLabel[tech.status]}
-        </span></td>
-      <td style="padding:8px 12px; color:#444;">${tech.control}</td>
-      <td style="padding:8px 12px; color:#666; font-size:0.82rem;">${tech.detection}</td>`;
-    tbody.appendChild(tr);
-  });
-});
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.10/htmx.min.js"></script>
 {% endblock %}

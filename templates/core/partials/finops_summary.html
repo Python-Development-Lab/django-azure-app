@@ -1,0 +1,29 @@
+{% if error %}
+<div style="background:#fff3cd; border:1px solid #ffc107; border-radius:8px;
+            padding:0.75rem 1rem; margin-bottom:1.5rem; font-size:0.85rem; color:#856404;">
+  <strong>⚠ Cost API unavailable:</strong> {{ error }}
+</div>
+{% endif %}
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+            gap:1rem; margin-bottom:2rem;">
+  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
+              padding:1.25rem; border-left:4px solid #0078d4;">
+    <p style="font-size:0.8rem; color:#666; margin-bottom:4px;">Total · {{ period_month }}</p>
+    <p style="font-size:2rem; font-weight:700; color:#0078d4;">${{ total }}</p>
+    <p style="font-size:0.75rem; color:#999;">{{ period_from }} — {{ period_to }}</p>
+  </div>
+  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
+              padding:1.25rem; border-left:4px solid #2e7d32;">
+    <p style="font-size:0.8rem; color:#666; margin-bottom:4px;">Active Resource Groups</p>
+    <p style="font-size:2rem; font-weight:700; color:#2e7d32;">{{ costs|length }}</p>
+    <p style="font-size:0.75rem; color:#999;">with non-zero spend</p>
+  </div>
+  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
+              padding:1.25rem; border-left:4px solid #e65100;">
+    <p style="font-size:0.8rem; color:#666; margin-bottom:4px;">Largest Spend</p>
+    <p style="font-size:2rem; font-weight:700; color:#e65100;">
+      {% if costs %}${{ costs.0.cost }}{% else %}—{% endif %}
+    </p>
+    <p style="font-size:0.75rem; color:#999;">{% if costs %}{{ costs.0.resource_group }}{% endif %}</p>
+  </div>
+</div>
