@@ -137,7 +137,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-document.addEventListener("htmx:afterSettle", function() {
+setTimeout(function() {
 const costs = {{ costs_json|safe }};
 const daily = {{ daily_trend_json|safe }};
 const rgBreakdown = {{ rg_breakdown_json|safe }};
@@ -186,6 +186,5 @@ if (rgBreakdown.length > 0) {
       scales:{ x:{ticks:{color:'#666',font:{size:10}},grid:{display:false}},
         y:{ticks:{color:'#666',callback:v=>'$'+v.toFixed(2)},grid:{color:'#f0f0f0'},beginAtZero:true} } }
   });
-}
-});
+}, 100);
 </script>
