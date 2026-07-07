@@ -10,103 +10,23 @@
     Azure Cost Management · {{ period_from }} — {{ period_to }} · Subscription: django-azure-security-template
   </p>
 
-  <!-- HTMX: Summary cards -->
-  <div id="summary-section"
+  <div id="finops-content"
        hx-get="{% url 'core:finops_summary' %}"
        hx-trigger="load"
        hx-swap="innerHTML"
-       hx-indicator="#summary-spinner">
-    <div id="summary-spinner" style="display:flex; gap:1rem; margin-bottom:2rem;">
-      {% for i in "123" %}
-      <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
-                  padding:1.25rem; flex:1; border-left:4px solid #ddd;">
-        <div style="background:#f0f0f0; height:2rem; border-radius:4px; margin-bottom:0.5rem;
-                    animation:pulse 1.5s infinite;"></div>
-        <div style="background:#f0f0f0; height:1rem; border-radius:4px; width:60%;
-                    animation:pulse 1.5s infinite;"></div>
+       hx-indicator="#finops-spinner">
+    <div id="finops-spinner" style="text-align:center; padding:4rem; color:#666;">
+      <div style="font-size:3rem; margin-bottom:1rem;">💰</div>
+      <div style="font-size:1rem; font-weight:500;">Loading cost data...</div>
+      <div style="font-size:0.85rem; color:#999; margin-top:0.5rem;">
+        Fetching Azure Cost Management API...
       </div>
-      {% endfor %}
+      <style>
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+      </style>
     </div>
   </div>
-
-  <!-- HTMX: Daily Trend -->
-  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
-              padding:1.25rem; margin-bottom:2rem;">
-    <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">
-      Daily Spend Trend — {{ period_month }}
-    </h2>
-    <div id="daily-section"
-         hx-get="{% url 'core:finops_daily' %}"
-         hx-trigger="load"
-         hx-swap="innerHTML"
-         hx-indicator="#daily-spinner">
-      <div id="daily-spinner" style="height:200px; display:flex; align-items:center;
-                                     justify-content:center; color:#999;">
-        ⏳ Loading daily trend...
-      </div>
-    </div>
-  </div>
-
-  <!-- HTMX: Cost by Resource Group -->
-  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
-              padding:1.25rem; margin-bottom:2rem;">
-    <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">
-      Cost by Resource Group (USD)
-    </h2>
-    <div id="rg-summary-section"
-         hx-get="{% url 'core:finops_rg_summary' %}"
-         hx-trigger="load"
-         hx-swap="innerHTML"
-         hx-indicator="#rg-summary-spinner">
-      <div id="rg-summary-spinner" style="height:280px; display:flex; align-items:center;
-                                          justify-content:center; color:#999;">
-        ⏳ Loading resource group data...
-      </div>
-    </div>
-  </div>
-
-  <!-- HTMX: rg-django-azure-staging Breakdown -->
-  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
-              padding:1.25rem; margin-bottom:2rem;">
-    <h2 style="font-size:1rem; font-weight:600; margin-bottom:0.25rem;">
-      rg-django-azure-staging — Service Breakdown
-    </h2>
-    <p style="font-size:0.8rem; color:#666; margin-bottom:1rem;">
-      Our project resource group · MTD costs by service
-    </p>
-    <div id="breakdown-section"
-         hx-get="{% url 'core:finops_breakdown' %}"
-         hx-trigger="load"
-         hx-swap="innerHTML"
-         hx-indicator="#breakdown-spinner">
-      <div id="breakdown-spinner" style="height:220px; display:flex; align-items:center;
-                                         justify-content:center; color:#999;">
-        ⏳ Loading service breakdown...
-      </div>
-    </div>
-  </div>
-
-  <!-- HTMX: Resource Group Table -->
-  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
-              padding:1.25rem;">
-    <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">
-      Resource Group Breakdown
-    </h2>
-    <div id="rg-table-section"
-         hx-get="{% url 'core:finops_summary' %}"
-         hx-trigger="load"
-         hx-swap="innerHTML">
-      <div style="text-align:center; padding:1rem; color:#999;">⏳ Loading...</div>
-    </div>
-  </div>
-
 </div>
 
-<style>
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.10/htmx.min.js"></script>
 {% endblock %}

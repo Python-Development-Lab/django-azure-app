@@ -197,16 +197,30 @@ def finops_dashboard(request):
 
 @login_required(login_url='/auth/login/')
 def finops_summary(request):
+    """Single HTMX endpoint — returns all FinOps content at once (avoids 429)"""
     error = None
-    costs, total = [], 0.0
+    costs, total, daily, breakdown = [], 0.0, [], []
     try:
         b = _all_cost_data()
-        costs, total = b["costs"], b["total"]
+        costs = b["costs"]
+        total = b["total"]
+        daily = b["daily"]
+        breakdown = b["breakdown"]
     except Exception as e:
         error = str(e)
     ctx = _period_ctx()
-    ctx.update({"costs": costs, "total": total, "error": error})
-    return render(request, 'core/partials/finops_summary.html', ctx)
+    ctx.update({
+        "costs": costs,
+        "costs_json": _json.dumps(costs),
+        "total": total,
+        "error": error,
+        "daily_trend": daily,
+        "daily_trend_json": _json.dumps(daily),
+        "rg_breakdown": breakdown,
+        "rg_breakdown_json": _json.dumps(breakdown),
+        "rg_total": round(sum(r["cost"] for r in breakdown), 3),
+    })
+    return render(request, 'core/partials/finops_all.html', ctx)
 
 
 @login_required(login_url='/auth/login/')
