@@ -177,6 +177,7 @@ def finops_dashboard(request):
     costs = []
     total = 0.0
     daily_trend = []
+    rg_breakdown = []
 
     today = date.today()
     period_from = today.replace(day=1).strftime("%d %b %Y")
