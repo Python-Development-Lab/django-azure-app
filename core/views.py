@@ -117,6 +117,40 @@ def _get_cost_by_rg(token):
     })
 
 
+def _get_rg_breakdown(token):
+    """Витрати по сервісах всередині rg-django-azure-staging"""
+    data = _cost_query(token, {
+        "type": "ActualCost",
+        "timeframe": "MonthToDate",
+        "dataset": {
+            "granularity": "None",
+            "aggregation": {"totalCost": {"name": "PreTaxCost", "function": "Sum"}},
+            "grouping": [
+                {"type": "Dimension", "name": "MeterCategory"},
+                {"type": "Dimension", "name": "MeterSubCategory"}
+            ],
+            "filter": {
+                "dimensions": {
+                    "name": "ResourceGroupName",
+                    "operator": "In",
+                    "values": ["rg-django-azure-staging"]
+                }
+            }
+        }
+    })
+    rows = data.get("properties", {}).get("rows", [])
+    breakdown = [
+        {
+            "service": r[1],
+            "meter": r[2],
+            "cost": round(r[0], 3),
+        }
+        for r in rows if r[0] > 0.001
+    ]
+    breakdown.sort(key=lambda x: x["cost"], reverse=True)
+    return breakdown
+
+
 def _get_daily_trend(token):
     """Щоденна динаміка витрат за поточний місяць"""
     data = _cost_query(token, {
@@ -159,6 +193,7 @@ def finops_dashboard(request):
         costs.sort(key=lambda x: x["cost"], reverse=True)
         total = round(sum(c["cost"] for c in costs), 2)
         daily_trend = _get_daily_trend(token)
+        rg_breakdown = _get_rg_breakdown(token)
     except Exception as e:
         error = str(e)
 
@@ -171,4 +206,7 @@ def finops_dashboard(request):
         "period_to": period_to,
         "period_month": today.strftime("%B %Y"),
         "daily_trend_json": _json.dumps(daily_trend),
+        "rg_breakdown": rg_breakdown,
+        "rg_breakdown_json": _json.dumps(rg_breakdown),
+        "rg_total": round(sum(r["cost"] for r in rg_breakdown), 3),
     })
