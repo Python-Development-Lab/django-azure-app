@@ -186,9 +186,14 @@ if (rgBreakdown.length > 0) {
         y:{ticks:{color:'#666',callback:v=>'$'+v.toFixed(2)},grid:{color:'#f0f0f0'},beginAtZero:true} } }
   });
 }
-if (typeof Chart !== "undefined") {
+// HTMX вставив контент — canvas вже в DOM
+document.body.addEventListener("htmx:afterSwap", function(evt) {
+  if (evt.detail.target.id === "finops-content") {
+    initCharts();
+  }
+});
+// Також викликаємо напряму якщо сторінка вже завантажена
+if (document.getElementById("dailyChart")) {
   initCharts();
-} else {
-  document.querySelector('script[src*="chart"]').addEventListener("load", initCharts);
 }
 </script>
