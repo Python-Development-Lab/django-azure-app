@@ -5,34 +5,49 @@ from datetime import date
 from pathlib import Path
 
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.http import HttpResponse
 from django.shortcuts import render
 
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
-
 def _get_token():
     from azure.identity import ManagedIdentityCredential
-    credential = ManagedIdentityCredential()
-    return credential.get_token("https://management.azure.com/.default").token
+    return ManagedIdentityCredential().get_token(
+        "https://management.azure.com/.default"
+    ).token
 
 
-def _cost_query(token, body):
-    subscription_id = "23ee341e-dbd1-4904-8bb2-5dde59747b5d"
+def _cost_query(token, body, cache_key=None, ttl=600):
+    if cache_key:
+        hit = cache.get(cache_key)
+        if hit is not None:
+            return hit
+    sub = "23ee341e-dbd1-4904-8bb2-5dde59747b5d"
     url = (
-        f"https://management.azure.com/subscriptions/{subscription_id}"
+        f"https://management.azure.com/subscriptions/{sub}"
         "/providers/Microsoft.CostManagement/query?api-version=2023-11-01"
     )
     req = urllib.request.Request(
-        url, data=_json.dumps(body).encode("utf-8"), method="POST",
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        url, data=_json.dumps(body).encode(), method="POST",
+        headers={"Authorization": f"Bearer {token}",
+                 "Content-Type": "application/json"}
     )
     with urllib.request.urlopen(req, timeout=30) as resp:
-        return _json.loads(resp.read())
+        result = _json.loads(resp.read())
+    if cache_key:
+        cache.set(cache_key, result, ttl)
+    return result
 
 
-def _get_cost_by_rg(token):
-    return _cost_query(token, {
+def _all_cost_data():
+    """Fetch all cost data in one cached bundle — avoids 429 from parallel HTMX"""
+    bundle = cache.get("finops_bundle")
+    if bundle is not None:
+        return bundle
+    token = _get_token()
+
+    # 1. Cost by RG
+    rg_data = _cost_query(token, {
         "type": "ActualCost", "timeframe": "MonthToDate",
         "dataset": {
             "granularity": "None",
@@ -40,27 +55,28 @@ def _get_cost_by_rg(token):
             "grouping": [{"type": "Dimension", "name": "ResourceGroupName"}]
         }
     })
+    costs = [
+        {"resource_group": r[1], "cost": round(r[0], 2), "currency": r[2]}
+        for r in rg_data.get("properties", {}).get("rows", []) if r[0] > 0
+    ]
+    costs.sort(key=lambda x: x["cost"], reverse=True)
+    total = round(sum(c["cost"] for c in costs), 2)
 
-
-def _get_daily_trend(token):
-    data = _cost_query(token, {
+    # 2. Daily trend
+    daily_data = _cost_query(token, {
         "type": "ActualCost", "timeframe": "MonthToDate",
         "dataset": {
             "granularity": "Daily",
             "aggregation": {"totalCost": {"name": "PreTaxCost", "function": "Sum"}}
         }
     })
-    rows = data.get("properties", {}).get("rows", [])
     daily = []
-    for r in rows:
-        date_str = str(r[1])
-        label = f"{date_str[6:8]}.{date_str[4:6]}"
-        daily.append({"date": label, "cost": round(r[0], 2)})
-    return daily
+    for r in daily_data.get("properties", {}).get("rows", []):
+        ds = str(r[1])
+        daily.append({"date": f"{ds[6:8]}.{ds[4:6]}", "cost": round(r[0], 2)})
 
-
-def _get_rg_breakdown(token):
-    data = _cost_query(token, {
+    # 3. RG breakdown
+    bd_data = _cost_query(token, {
         "type": "ActualCost", "timeframe": "MonthToDate",
         "dataset": {
             "granularity": "None",
@@ -78,24 +94,28 @@ def _get_rg_breakdown(token):
             }
         }
     })
-    rows = data.get("properties", {}).get("rows", [])
     breakdown = [
         {"service": r[1], "meter": r[2], "cost": round(r[0], 3)}
-        for r in rows if r[0] > 0.001
+        for r in bd_data.get("properties", {}).get("rows", []) if r[0] > 0.001
     ]
     breakdown.sort(key=lambda x: x["cost"], reverse=True)
-    return breakdown
+
+    bundle = {
+        "costs": costs, "total": total,
+        "daily": daily, "breakdown": breakdown,
+    }
+    cache.set("finops_bundle", bundle, 600)
+    return bundle
 
 
 def _get_defender_alerts():
     from azure.identity import ManagedIdentityCredential
-    credential = ManagedIdentityCredential()
-    token = credential.get_token("https://management.azure.com/.default").token
-    subscription_id = "23ee341e-dbd1-4904-8bb2-5dde59747b5d"
-    url = (
-        f"https://management.azure.com/subscriptions/{subscription_id}"
-        "/providers/Microsoft.Security/alerts?api-version=2022-01-01"
-    )
+    token = ManagedIdentityCredential().get_token(
+        "https://management.azure.com/.default"
+    ).token
+    sub = "23ee341e-dbd1-4904-8bb2-5dde59747b5d"
+    url = (f"https://management.azure.com/subscriptions/{sub}"
+           "/providers/Microsoft.Security/alerts?api-version=2022-01-01")
     req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
     with urllib.request.urlopen(req, timeout=15) as resp:
         data = _json.loads(resp.read())
@@ -108,11 +128,8 @@ def _get_defender_alerts():
             "severity": p.get("severity", ""),
             "time": p.get("timeGeneratedUtc", "")[:10],
             "status": p.get("status", ""),
-            "entity": p.get("compromisedEntity", ""),
             "intent": p.get("intent", ""),
-            "description": p.get("description", "")[:200],
             "source_ip": ext.get("Sample Source IP Addresses", ""),
-            "user_agent": ext.get("Sample User Agents", ""),
             "target_uri": ext.get("Sample URIs", ""),
         })
     alerts.sort(key=lambda x: x["time"], reverse=True)
@@ -128,8 +145,6 @@ def _period_ctx():
     }
 
 
-# ── Core views ────────────────────────────────────────────────────────────────
-
 @login_required(login_url='/auth/login/')
 def home(request):
     return render(request, 'core/home.html', {'user': request.user})
@@ -143,14 +158,14 @@ def health_check(request):
 
 @login_required(login_url='/auth/login/')
 def security_dashboard(request):
-    """Shell — loads instantly, HTMX fetches partials"""
     return render(request, 'core/security.html')
 
 
 @login_required(login_url='/auth/login/')
 def security_coverage(request):
-    """HTMX partial: ATT&CK graph + coverage matrix"""
-    data_path = Path(__file__).parent.parent / 'security' / 'mitre' / 'attack_data.json'
+    data_path = (
+        Path(__file__).parent.parent / 'security' / 'mitre' / 'attack_data.json'
+    )
     with open(data_path) as f:
         attack_data = _json.load(f)
     return render(request, 'core/partials/security_coverage.html', {
@@ -161,7 +176,6 @@ def security_coverage(request):
 
 @login_required(login_url='/auth/login/')
 def security_alerts(request):
-    """HTMX partial: Defender for Cloud alerts"""
     defender_alerts = []
     defender_error = None
     try:
@@ -178,26 +192,16 @@ def security_alerts(request):
 
 @login_required(login_url='/auth/login/')
 def finops_dashboard(request):
-    """Shell — loads instantly, HTMX fetches partials"""
     return render(request, 'core/finops.html', _period_ctx())
 
 
 @login_required(login_url='/auth/login/')
 def finops_summary(request):
-    """HTMX partial: 3 summary cards"""
-    costs = []
-    total = 0.0
     error = None
+    costs, total = [], 0.0
     try:
-        token = _get_token()
-        data = _get_cost_by_rg(token)
-        rows = data.get("properties", {}).get("rows", [])
-        costs = [
-            {"resource_group": r[1], "cost": round(r[0], 2), "currency": r[2]}
-            for r in rows if r[0] > 0
-        ]
-        costs.sort(key=lambda x: x["cost"], reverse=True)
-        total = round(sum(c["cost"] for c in costs), 2)
+        b = _all_cost_data()
+        costs, total = b["costs"], b["total"]
     except Exception as e:
         error = str(e)
     ctx = _period_ctx()
@@ -207,18 +211,10 @@ def finops_summary(request):
 
 @login_required(login_url='/auth/login/')
 def finops_rg_summary(request):
-    """HTMX partial: bar chart + doughnut by resource group"""
-    costs = []
     error = None
+    costs = []
     try:
-        token = _get_token()
-        data = _get_cost_by_rg(token)
-        rows = data.get("properties", {}).get("rows", [])
-        costs = [
-            {"resource_group": r[1], "cost": round(r[0], 2)}
-            for r in rows if r[0] > 0
-        ]
-        costs.sort(key=lambda x: x["cost"], reverse=True)
+        costs = _all_cost_data()["costs"]
     except Exception as e:
         error = str(e)
     return render(request, 'core/partials/finops_rg_summary.html', {
@@ -230,12 +226,10 @@ def finops_rg_summary(request):
 
 @login_required(login_url='/auth/login/')
 def finops_daily(request):
-    """HTMX partial: daily spend trend line chart"""
-    daily_trend = []
     error = None
+    daily_trend = []
     try:
-        token = _get_token()
-        daily_trend = _get_daily_trend(token)
+        daily_trend = _all_cost_data()["daily"]
     except Exception as e:
         error = str(e)
     ctx = _period_ctx()
@@ -249,12 +243,10 @@ def finops_daily(request):
 
 @login_required(login_url='/auth/login/')
 def finops_breakdown(request):
-    """HTMX partial: rg-django-azure-staging service breakdown"""
-    rg_breakdown = []
     error = None
+    rg_breakdown = []
     try:
-        token = _get_token()
-        rg_breakdown = _get_rg_breakdown(token)
+        rg_breakdown = _all_cost_data()["breakdown"]
     except Exception as e:
         error = str(e)
     return render(request, 'core/partials/finops_breakdown.html', {
