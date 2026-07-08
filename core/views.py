@@ -380,36 +380,34 @@ def analytics_rum(request):
     metrics = []
     exceptions = []
     try:
-        rows = _log_analytics_query("""
-AppBrowserTimings
-| where TimeGenerated > ago(24h)
-| summarize
-    AvgTotal=avg(TotalDuration),
-    AvgNetwork=avg(NetworkDuration),
-    AvgProcessing=avg(ProcessingDuration),
-    AvgSend=avg(SendDuration),
-    AvgReceive=avg(ReceiveDuration),
-    Count=count()
-  by Name
-| order by AvgTotal desc
-""")
+        rows = _log_analytics_query(
+            "AppBrowserTimings"
+            " | where TimeGenerated > ago(24h)"
+            " | summarize AvgTotal=avg(TotalDuration),"
+            " AvgNetwork=avg(NetworkDuration),"
+            " AvgProcessing=avg(ProcessingDuration),"
+            " AvgSend=avg(SendDuration),"
+            " AvgReceive=avg(ReceiveDuration),"
+            " Count=count() by Name"
+            " | order by AvgTotal desc"
+        )
         metrics = [{
-            "name": r[5],
+            "name": r[6],
             "avg_total": round(r[0] or 0),
             "avg_network": round(r[1] or 0),
             "avg_processing": round(r[2] or 0),
             "avg_send": round(r[3] or 0),
             "avg_receive": round(r[4] or 0),
-            "count": r[6],
+            "count": r[5],
         } for r in rows]
 
-        exc_rows = _log_analytics_query("""
-AppExceptions
-| where TimeGenerated > ago(24h)
-| summarize count() by ProblemId, OuterMessage=substring(OuterMessage, 0, 80)
-| order by count_ desc
-| take 5
-""")
+        exc_rows = _log_analytics_query(
+            "AppExceptions"
+            " | where TimeGenerated > ago(24h)"
+            " | summarize count() by ProblemId,"
+            " OuterMessage=substring(OuterMessage, 0, 80)"
+            " | order by count_ desc | take 5"
+        )
         exceptions = [{"id": r[0], "message": r[1], "count": r[2]}
                       for r in exc_rows]
     except Exception as e:
