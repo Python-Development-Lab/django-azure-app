@@ -18,4 +18,10 @@ urlpatterns = [
     path('finops/daily/', views.finops_daily, name='finops_daily'),
     path('finops/breakdown/', views.finops_breakdown, name='finops_breakdown'),
     path('finops/rg-summary/', views.finops_rg_summary, name='finops_rg_summary'),
+
+    # Analytics Dashboard
+    path('analytics/', views.analytics_dashboard, name='analytics_dashboard'),
+    path('analytics/pageviews/', views.analytics_pageviews, name='analytics_pageviews'),
+    path('analytics/browsers/', views.analytics_browsers, name='analytics_browsers'),
+    path('analytics/performance/', views.analytics_performance, name='analytics_performance'),
 ]

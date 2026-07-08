@@ -269,3 +269,105 @@ def finops_breakdown(request):
         'rg_total': round(sum(r["cost"] for r in rg_breakdown), 3),
         'error': error,
     })
+
+
+def _log_analytics_query(query):
+    """Query Log Analytics workspace via MSI"""
+    from azure.identity import ManagedIdentityCredential
+    credential = ManagedIdentityCredential()
+    token = credential.get_token("https://api.loganalytics.io/.default").token
+    # law-django-azure-staging workspace customerId
+    workspace_id = "040e48a1-6f6e-45c1-abbc-607fa04f16de"
+    url = f"https://api.loganalytics.io/v1/workspaces/{workspace_id}/query"
+    body = _json.dumps({"query": query}).encode()
+    req = urllib.request.Request(
+        url, data=body, method="POST",
+        headers={"Authorization": f"Bearer {token}",
+                 "Content-Type": "application/json"}
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        data = _json.loads(resp.read())
+    return data.get("tables", [{}])[0].get("rows", [])
+
+
+@login_required(login_url='/auth/login/')
+def analytics_dashboard(request):
+    return render(request, 'core/analytics.html')
+
+
+@login_required(login_url='/auth/login/')
+def analytics_pageviews(request):
+    error = None
+    rows = []
+    try:
+        rows = _log_analytics_query("""
+AppPageViews
+| where TimeGenerated > ago(24h)
+| summarize Views=count(), AvgDuration=avg(DurationMs)
+  by Name, Url=tostring(Url)
+| order by Views desc
+| take 10
+""")
+    except Exception as e:
+        error = str(e)
+    pages = [{"name": r[0], "url": r[1], "views": r[2],
+              "avg_ms": round(r[3] or 0)} for r in rows]
+    total_views = sum(p["views"] for p in pages)
+    return render(request, 'core/partials/analytics_pageviews.html', {
+        'pages': pages,
+        'total_views': total_views,
+        'error': error,
+    })
+
+
+@login_required(login_url='/auth/login/')
+def analytics_browsers(request):
+    error = None
+    browser_data, os_data = [], []
+    try:
+        browser_data = _log_analytics_query("""
+AppPageViews
+| where TimeGenerated > ago(24h)
+| summarize count() by ClientBrowser
+| order by count_ desc | take 8
+""")
+        os_data = _log_analytics_query("""
+AppPageViews
+| where TimeGenerated > ago(24h)
+| summarize count() by ClientOS
+| order by count_ desc | take 6
+""")
+    except Exception as e:
+        error = str(e)
+    browsers = [{"name": r[0] or "Unknown", "count": r[1]} for r in browser_data]
+    os_list = [{"name": r[0] or "Unknown", "count": r[1]} for r in os_data]
+    return render(request, 'core/partials/analytics_browsers.html', {
+        'browsers': browsers,
+        'os_list': os_list,
+        'browsers_json': _json.dumps(browsers),
+        'os_json': _json.dumps(os_list),
+        'error': error,
+    })
+
+
+@login_required(login_url='/auth/login/')
+def analytics_performance(request):
+    error = None
+    trend = []
+    try:
+        rows = _log_analytics_query("""
+AppPageViews
+| where TimeGenerated > ago(24h)
+| summarize Views=count(), AvgMs=avg(DurationMs)
+  by bin(TimeGenerated, 1h)
+| order by TimeGenerated asc
+""")
+        trend = [{"hour": str(r[0])[:16], "views": r[1],
+                  "avg_ms": round(r[2] or 0)} for r in rows]
+    except Exception as e:
+        error = str(e)
+    return render(request, 'core/partials/analytics_performance.html', {
+        'trend': trend,
+        'trend_json': _json.dumps(trend),
+        'error': error,
+    })

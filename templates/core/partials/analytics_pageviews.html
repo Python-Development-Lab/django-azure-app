@@ -1,0 +1,65 @@
+{% if error %}
+<div style="background:#fff3cd; border:1px solid #ffc107; border-radius:8px;
+            padding:0.75rem 1rem; margin-bottom:1.5rem; font-size:0.85rem; color:#856404;">
+  <strong>⚠ Analytics API unavailable:</strong> {{ error }}
+</div>
+{% endif %}
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.5rem;">
+  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
+              padding:1.25rem; border-left:4px solid #0078d4;">
+    <p style="font-size:0.8rem; color:#666; margin-bottom:4px;">Total Page Views</p>
+    <p style="font-size:2rem; font-weight:700; color:#0078d4;">{{ total_views }}</p>
+    <p style="font-size:0.75rem; color:#999;">last 24 hours</p>
+  </div>
+  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
+              padding:1.25rem; border-left:4px solid #2e7d32;">
+    <p style="font-size:0.8rem; color:#666; margin-bottom:4px;">Unique Pages</p>
+    <p style="font-size:2rem; font-weight:700; color:#2e7d32;">{{ pages|length }}</p>
+    <p style="font-size:0.75rem; color:#999;">tracked routes</p>
+  </div>
+  <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px;
+              padding:1.25rem; border-left:4px solid #e65100;">
+    <p style="font-size:0.8rem; color:#666; margin-bottom:4px;">Top Page</p>
+    <p style="font-size:1rem; font-weight:700; color:#e65100;">
+      {% if pages %}{{ pages.0.name|truncatechars:20 }}{% else %}—{% endif %}
+    </p>
+    <p style="font-size:0.75rem; color:#999;">
+      {% if pages %}{{ pages.0.views }} views{% endif %}
+    </p>
+  </div>
+</div>
+<div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:1.25rem;">
+  <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">Top Pages — Last 24h</h2>
+  <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+    <thead>
+      <tr style="background:#f5f5f5;">
+        <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Page</th>
+        <th style="padding:8px 12px; text-align:right; border-bottom:2px solid #ddd;">Views</th>
+        <th style="padding:8px 12px; text-align:right; border-bottom:2px solid #ddd;">Avg Load</th>
+        <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Share</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for page in pages %}
+      <tr style="border-bottom:1px solid #eee;">
+        <td style="padding:8px 12px;">
+          <div style="font-weight:500;">{{ page.name }}</div>
+          <div style="font-size:0.78rem; color:#999; font-family:monospace;">{{ page.url }}</div>
+        </td>
+        <td style="padding:8px 12px; text-align:right; font-weight:600;">{{ page.views }}</td>
+        <td style="padding:8px 12px; text-align:right; color:#666;">{{ page.avg_ms }}ms</td>
+        <td style="padding:8px 12px;">
+          <div style="background:#e0e0e0; border-radius:4px; height:8px; width:100%;">
+            <div style="background:#0078d4; border-radius:4px; height:8px;
+                        width:{% widthratio page.views total_views 100 %}%;"></div>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="padding:2rem; text-align:center; color:#999;">
+        No page view data yet — visit some pages first
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

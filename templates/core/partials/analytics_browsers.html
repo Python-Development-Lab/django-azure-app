@@ -1,0 +1,49 @@
+{% if error %}
+<div style="background:#fff3cd; border:1px solid #ffc107; border-radius:6px;
+            padding:0.75rem; font-size:0.85rem; color:#856404;">⚠ {{ error }}</div>
+{% else %}
+<div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:1.25rem;">
+  <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">Browsers & OS</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+    <div>
+      <p style="font-size:0.8rem; color:#666; margin-bottom:0.5rem; font-weight:500;">Browsers</p>
+      <div style="position:relative; height:180px;"><canvas id="browserChart"></canvas></div>
+    </div>
+    <div>
+      <p style="font-size:0.8rem; color:#666; margin-bottom:0.5rem; font-weight:500;">OS</p>
+      <div style="position:relative; height:180px;"><canvas id="osChart"></canvas></div>
+    </div>
+  </div>
+</div>
+<script>
+(function() {
+  var browsers = {{ browsers_json|safe }};
+  var osList = {{ os_json|safe }};
+  var colors = ['#0078d4','#2e7d32','#e65100','#6a1b9a','#00838f','#ba7517','#c62828','#37474f'];
+  if (browsers.length > 0) {
+    new Chart(document.getElementById('browserChart'), {
+      type: 'doughnut',
+      data: {
+        labels: browsers.map(function(b){return b.name;}),
+        datasets: [{data: browsers.map(function(b){return b.count;}),
+          backgroundColor: colors, borderWidth:2, borderColor:'#fff'}]
+      },
+      options: {responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10,padding:4}}}}
+    });
+  }
+  if (osList.length > 0) {
+    new Chart(document.getElementById('osChart'), {
+      type: 'doughnut',
+      data: {
+        labels: osList.map(function(o){return o.name;}),
+        datasets: [{data: osList.map(function(o){return o.count;}),
+          backgroundColor: colors, borderWidth:2, borderColor:'#fff'}]
+      },
+      options: {responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10,padding:4}}}}
+    });
+  }
+})();
+</script>
+{% endif %}
