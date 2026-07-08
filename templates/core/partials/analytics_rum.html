@@ -1,0 +1,115 @@
+{% if error %}
+<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;
+            padding:.75rem 1rem;margin-bottom:1rem;font-size:.85rem;color:#856404;">
+  <strong>⚠ RUM API unavailable:</strong> {{ error }}
+</div>
+{% endif %}
+
+<div style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;">
+  <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">
+    ⚡ Real User Monitoring — Page Load Breakdown
+  </h2>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;">
+    <div style="background:#f8f9ff;border-radius:8px;padding:1rem;border-left:4px solid #0078d4;">
+      <p style="font-size:.78rem;color:#666;margin-bottom:4px;">Avg Total Load</p>
+      <p style="font-size:1.8rem;font-weight:700;color:#0078d4;">{{ overall_avg }}ms</p>
+      <p style="font-size:.72rem;color:#999;">all pages · last 24h</p>
+    </div>
+    <div style="background:#f8fff9;border-radius:8px;padding:1rem;border-left:4px solid #2e7d32;">
+      <p style="font-size:.78rem;color:#666;margin-bottom:4px;">Pages Measured</p>
+      <p style="font-size:1.8rem;font-weight:700;color:#2e7d32;">{{ metrics|length }}</p>
+      <p style="font-size:.72rem;color:#999;">unique routes</p>
+    </div>
+    <div style="background:#fff8f5;border-radius:8px;padding:1rem;border-left:4px solid #c62828;">
+      <p style="font-size:.78rem;color:#666;margin-bottom:4px;">JS Exceptions</p>
+      <p style="font-size:1.8rem;font-weight:700;color:#c62828;">{{ exceptions|length }}</p>
+      <p style="font-size:.72rem;color:#999;">unique errors · 24h</p>
+    </div>
+  </div>
+
+  <div style="position:relative;height:220px;margin-bottom:1rem;">
+    <canvas id="rumChart"></canvas>
+  </div>
+
+  <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+    <thead>
+      <tr style="background:#f5f5f5;">
+        <th style="padding:6px 10px;text-align:left;border-bottom:2px solid #ddd;">Page</th>
+        <th style="padding:6px 10px;text-align:right;border-bottom:2px solid #ddd;">Total</th>
+        <th style="padding:6px 10px;text-align:right;border-bottom:2px solid #ddd;">Network</th>
+        <th style="padding:6px 10px;text-align:right;border-bottom:2px solid #ddd;">Processing</th>
+        <th style="padding:6px 10px;text-align:right;border-bottom:2px solid #ddd;">Samples</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in metrics %}
+      <tr style="border-bottom:1px solid #eee;">
+        <td style="padding:6px 10px;font-weight:500;">{{ m.name }}</td>
+        <td style="padding:6px 10px;text-align:right;font-weight:600;color:#0078d4;">{{ m.avg_total }}ms</td>
+        <td style="padding:6px 10px;text-align:right;color:#2e7d32;">{{ m.avg_network }}ms</td>
+        <td style="padding:6px 10px;text-align:right;color:#e65100;">{{ m.avg_processing }}ms</td>
+        <td style="padding:6px 10px;text-align:right;color:#666;">{{ m.count }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="padding:1.5rem;text-align:center;color:#999;">
+        No RUM data yet — visit pages to collect browser timing data
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if exceptions %}
+<div style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:1.25rem;">
+  <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">🔴 JS Exceptions</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+    <thead>
+      <tr style="background:#f5f5f5;">
+        <th style="padding:6px 10px;text-align:left;border-bottom:2px solid #ddd;">Error</th>
+        <th style="padding:6px 10px;text-align:left;border-bottom:2px solid #ddd;">Message</th>
+        <th style="padding:6px 10px;text-align:right;border-bottom:2px solid #ddd;">Count</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for exc in exceptions %}
+      <tr style="border-bottom:1px solid #eee;">
+        <td style="padding:6px 10px;font-family:monospace;font-size:.78rem;color:#c62828;">{{ exc.id }}</td>
+        <td style="padding:6px 10px;color:#666;font-size:.78rem;">{{ exc.message }}</td>
+        <td style="padding:6px 10px;text-align:right;font-weight:600;">{{ exc.count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<script>
+(function() {
+  var metrics = {{ metrics_json|safe }};
+  if (metrics.length === 0) return;
+  new Chart(document.getElementById('rumChart'), {
+    type: 'bar',
+    data: {
+      labels: metrics.map(function(m) { return m.name; }),
+      datasets: [
+        { label: 'Network', data: metrics.map(function(m){return m.avg_network;}),
+          backgroundColor: '#2e7d32', borderRadius: 3, stack: 'stack' },
+        { label: 'Processing', data: metrics.map(function(m){return m.avg_processing;}),
+          backgroundColor: '#e65100', borderRadius: 3, stack: 'stack' },
+        { label: 'Send/Receive', data: metrics.map(function(m){return m.avg_send + m.avg_receive;}),
+          backgroundColor: '#0078d4', borderRadius: 3, stack: 'stack' },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 10 } } },
+      scales: {
+        x: { stacked: true, ticks: { color: '#666', font: { size: 10 } }, grid: { display: false } },
+        y: { stacked: true, ticks: { color: '#666', callback: function(v) { return v + 'ms'; } },
+             grid: { color: '#f0f0f0' } }
+      }
+    }
+  });
+})();
+</script>

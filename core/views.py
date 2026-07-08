@@ -371,3 +371,56 @@ AppPageViews
         'trend_json': _json.dumps(trend),
         'error': error,
     })
+
+
+@login_required(login_url='/auth/login/')
+def analytics_rum(request):
+    """RUM — Real User Monitoring via AppBrowserTimings"""
+    error = None
+    metrics = []
+    exceptions = []
+    try:
+        rows = _log_analytics_query("""
+AppBrowserTimings
+| where TimeGenerated > ago(24h)
+| summarize
+    AvgTotal=avg(TotalDuration),
+    AvgNetwork=avg(NetworkDuration),
+    AvgProcessing=avg(ProcessingDuration),
+    AvgSend=avg(SendDuration),
+    AvgReceive=avg(ReceiveDuration),
+    Count=count()
+  by Name
+| order by AvgTotal desc
+""")
+        metrics = [{
+            "name": r[5],
+            "avg_total": round(r[0] or 0),
+            "avg_network": round(r[1] or 0),
+            "avg_processing": round(r[2] or 0),
+            "avg_send": round(r[3] or 0),
+            "avg_receive": round(r[4] or 0),
+            "count": r[6],
+        } for r in rows]
+
+        exc_rows = _log_analytics_query("""
+AppExceptions
+| where TimeGenerated > ago(24h)
+| summarize count() by ProblemId, OuterMessage=substring(OuterMessage, 0, 80)
+| order by count_ desc
+| take 5
+""")
+        exceptions = [{"id": r[0], "message": r[1], "count": r[2]}
+                      for r in exc_rows]
+    except Exception as e:
+        error = str(e)
+
+    overall_avg = round(sum(m["avg_total"] for m in metrics) / len(metrics)) if metrics else 0
+
+    return render(request, 'core/partials/analytics_rum.html', {
+        'metrics': metrics,
+        'metrics_json': _json.dumps(metrics),
+        'exceptions': exceptions,
+        'overall_avg': overall_avg,
+        'error': error,
+    })

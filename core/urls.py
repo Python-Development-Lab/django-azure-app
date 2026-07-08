@@ -24,4 +24,5 @@ urlpatterns = [
     path('analytics/pageviews/', views.analytics_pageviews, name='analytics_pageviews'),
     path('analytics/browsers/', views.analytics_browsers, name='analytics_browsers'),
     path('analytics/performance/', views.analytics_performance, name='analytics_performance'),
+    path('analytics/rum/', views.analytics_rum, name='analytics_rum'),
 ]
