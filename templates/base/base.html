@@ -59,7 +59,20 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.10/htmx.min.js"></script>
 <script>htmx.config.allowScriptTags = true;</script>
 <script type="text/javascript">
-!function(T,l,y){var S=T.location,k="script",D="instrumentationKey",C="ingestionendpoint",I="disableExceptionTracking",E="ai.device.",b="toLowerCase",w="crossOriginAttribute",N="getElementById",O="name",B="getItem",H="setItem",P="head",A="MI",j="readyState",L="domContentLoaded",M="processId",R="h6e|javascript|ftp|mailto",V="complete",q="/",G="interval",Z="button",z="input",X="APPLICATION_INSIGHTS_CONNECTION_STRING",Y="appInsights",K="enable",J="track",Q="Event",W="Exception",F="Trace",U="Metric";var n,o={config:{connectionString:"InstrumentationKey=e478956c-056f-41cd-ba04-fe7331cab625;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com/;ApplicationId=572986e0-67ef-45f0-9387-ce5b20cdc7cb",disableFetchTracking:false,enableAutoRouteTracking:true,enableRequestHeaderTracking:true,enableResponseHeaderTracking:true}};T[Y]=o;function d(e){T[Y].queue&&T[Y].queue.push(function(){T[Y][e]&&T[Y][e].apply(T[Y],arguments)})}var e=T[Y];e.queue=[];var i=function(){var e=l.createElement(k);e.async=!0;e.src="https://js.monitor.azure.com/scripts/b/ai.2.min.js";var t=l.getElementsByTagName(k)[0];t&&t.parentNode&&t.parentNode.insertBefore(e,t)};"undefined"==typeof Promise||T.fetch?i():T.fetch=function(e,t){return new Promise(function(n,i){var r=new XMLHttpRequest;r.open(t&&t.method||"GET",e),t&&t.headers&&Object.keys(t.headers).forEach(function(e){r.setRequestHeader(e,t.headers[e])}),r.onload=function(){n(r)},r.onerror=i,r.send(t&&t.body||"")})},(T[Y].SeverityLevel={Verbose:0,Information:1,Warning:2,Error:3,Critical:4}),(n=l[P]||l.body).insertBefore(i(),n.firstChild),T[Y].config=[T[Y].config]}(window,document);
+var sdkInstance="appInsightsSDK";window[sdkInstance]="appInsights";
+var aiName=window[sdkInstance],aisdk=window[aiName]||function(e){
+function n(e){t[e]=function(){var n=arguments;t.queue.push(function(){t[e].apply(t,n)})}}
+var t={initialize:!0,queue:[],sv:"5",version:2,config:e};
+function r(e,n){var t=document.createElement(e);t.src=n;
+var r=document.getElementsByTagName(e)[0];r&&r.parentNode&&r.parentNode.insertBefore(t,r)}
+return t.track=function(e,n){(t.queue.push(function(){t.track(e,n)}))},
+n("trackEvent"),n("trackPageView"),n("trackException"),n("trackTrace"),
+n("trackMetric"),n("trackDependencyData"),n("startTrackPage"),n("stopTrackPage"),
+r("script","https://js.monitor.azure.com/scripts/b/ai.2.min.js"),t}({
+  connectionString:"InstrumentationKey=e478956c-056f-41cd-ba04-fe7331cab625;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/",
+  enableAutoRouteTracking:true
+});
+window[aiName]=aisdk,aisdk.queue&&0===aisdk.queue.length&&aisdk.trackPageView({});
 </script>
 </head>
 <body>
