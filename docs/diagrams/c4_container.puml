@@ -1,0 +1,89 @@
+@startuml C4 Container Diagram
+!theme plain
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title C4 Container Diagram\nDjango Azure Security Template
+
+LAYOUT_WITH_LEGEND()
+
+' ── People ───────────────────────────────────────────────
+Person(user, "Authenticated User", "Browser via HTTPS 443\nEntra ID / Google OAuth2")
+Person(devops, "DevOps Engineer", "GitHub Codespaces\nPushes to develop branch")
+
+' ── External Systems ─────────────────────────────────────
+System_Ext(entra, "Microsoft Entra\nExternal ID CIAM", "OAuth2 / OIDC\nIdentity provider")
+System_Ext(github, "GitHub Actions", "DevSecOps CI/CD pipeline\n7 jobs: SAST → DAST → Deploy")
+System_Ext(sentinel, "Microsoft Sentinel", "SIEM\n3 Analytics Rules + Data Connector")
+System_Ext(defender, "Defender for App Service", "Kernel-level detection\nNMap scan detected 2026-06-26")
+
+' ── System Boundary: Azure (rg-django-azure-staging) ─────
+System_Boundary(azure, "Azure — rg-django-azure-staging") {
+
+    Container(app, "Django App", "Python 3.12 / Django 6\nGunicorn / App Service Linux B1",
+        "Zero Trust middleware, HTMX\nSecurity + FinOps + Analytics dashboards")
+
+    Container(kv, "Azure Key Vault", "Key Vault\nPrivate Endpoint (kv-subnet)",
+        "Stores CLIENT_ID, CLIENT_SECRET,\nDATABASE_URL, SECRET_KEY")
+
+    ContainerDb(pg, "PostgreSQL", "Azure PostgreSQL Flexible Server\nPrivate Endpoint (data-subnet)",
+        "Django sessions, user model")
+
+    Container(otel, "Application Insights", "OpenTelemetry\nAzureMonitorLogExporter + JS SDK",
+        "AppTraces, AppRequests, AppMetrics\nAppPageViews, AppBrowserTimings")
+
+    ContainerDb(law, "Log Analytics Workspace", "law-django-azure-staging",
+        "AppTraces · AppPageViews · AppBrowserTimings\nSecurityAlert · SecurityIncident")
+
+    Container(vnet, "VNet + NSG", "10.0.0.0/16\nNSG: Allow 443, Deny All",
+        "3 subnets: app/data/kv\nPrivate Endpoints for KV + PG")
+}
+
+' ── Dashboards (logical containers) ──────────────────────
+System_Boundary(dashboards, "HTMX Dashboards (django-htmx 1.27.0)") {
+
+    Container(security_dash, "Security Dashboard\n/security/", "D3.js v7 + HTMX",
+        "MITRE ATT&CK force graph\n20 techniques × 9 tactics\nLive Defender for Cloud alerts")
+
+    Container(finops_dash, "FinOps Dashboard\n/finops/", "Chart.js 4.4 + HTMX",
+        "Cost Management API via MSI\nDaily trend + RG breakdown\n$13/month MTD July 2026")
+
+    Container(analytics_dash, "Analytics Dashboard\n/analytics/", "Chart.js 4.4 + HTMX",
+        "AppPageViews + AppBrowserTimings\nReal User Monitoring (RUM)\nJS Exceptions tracking")
+}
+
+' ── MSI Roles ─────────────────────────────────────────────
+note right of app
+  System-Assigned MSI Roles:
+  • Key Vault Secrets User
+  • Cost Management Reader
+  • Security Reader
+  • Log Analytics Reader
+end note
+
+' ── Relationships ─────────────────────────────────────────
+Rel(user, app, "HTTPS 443", "TLS 1.2+")
+Rel(devops, github, "git push develop", "triggers pipeline")
+Rel(github, app, "zip deploy", "Oryx build + startup.sh")
+
+Rel(app, entra, "OAuth2 PKCE", "HTTPS")
+Rel_Back(app, entra, "access_token + id_token", "HTTPS")
+
+Rel(app, kv, "MSI secret read", "Private EP, HTTPS")
+Rel(app, pg, "SQL queries", "Private EP, port 5432")
+Rel(app, otel, "OpenTelemetry logs", "BatchLogRecordProcessor")
+Rel(otel, law, "ingestion", "HTTPS")
+Rel(law, sentinel, "KQL analytics", "PT5M + PT1H")
+Rel(defender, law, "SecurityAlert", "AzureSecurityCenter connector")
+
+Rel(app, security_dash, "serves", "HTMX partial /security/coverage/ + /alerts/")
+Rel(app, finops_dash, "serves", "HTMX partial /finops/summary/")
+Rel(app, analytics_dash, "serves", "HTMX partial /analytics/pageviews/ + /rum/")
+
+Rel(analytics_dash, law, "Log Analytics Query", "MSI token, AppPageViews + AppBrowserTimings")
+Rel(finops_dash, app, "Cost Management API", "MSI token, MonthToDate")
+
+Rel(user, security_dash, "views", "HTTPS")
+Rel(user, finops_dash, "views", "HTTPS")
+Rel(user, analytics_dash, "views", "HTTPS")
+
+@enduml
