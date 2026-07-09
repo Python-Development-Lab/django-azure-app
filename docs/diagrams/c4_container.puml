@@ -10,14 +10,14 @@ LAYOUT_WITH_LEGEND()
 Person(user, "Authenticated User", "Browser via HTTPS 443\nEntra ID / Google OAuth2")
 Person(devops, "DevOps Engineer", "GitHub Codespaces\nPushes to develop branch")
 
-' === External ===Systems ─────────────────────────────────────
+' === External ===Systems -------------------------------------
 System_Ext(entra, "Microsoft Entra\nExternal ID CIAM", "OAuth2 / OIDC\nIdentity provider")
 System_Ext(github, "GitHub Actions", "DevSecOps CI/CD pipeline\n7 jobs: SAST → DAST → Deploy")
 System_Ext(sentinel, "Microsoft Sentinel", "SIEM\n3 Analytics Rules + Data Connector")
 System_Ext(defender, "Defender for App Service", "Kernel-level detection\nNMap scan detected 2026-06-26")
 
-' === System ===Boundary: Azure (rg-django-azure-staging) ─────
-System_Boundary(azure, "Azure — rg-django-azure-staging") {
+' === System ===Boundary: Azure (rg-django-azure-staging) -----
+System_Boundary(azure, "Azure - rg-django-azure-staging") {
 
     Container(app, "Django App", "Python 3.12 / Django 6\nGunicorn / App Service Linux B1",
         "Zero Trust middleware, HTMX\nSecurity + FinOps + Analytics dashboards")
@@ -32,13 +32,13 @@ System_Boundary(azure, "Azure — rg-django-azure-staging") {
         "AppTraces, AppRequests, AppMetrics\nAppPageViews, AppBrowserTimings")
 
     ContainerDb(law, "Log Analytics Workspace", "law-django-azure-staging",
-        "AppTraces · AppPageViews · AppBrowserTimings\nSecurityAlert · SecurityIncident")
+        "AppTraces . AppPageViews . AppBrowserTimings\nSecurityAlert . SecurityIncident")
 
     Container(vnet, "VNet + NSG", "10.0.0.0/16\nNSG: Allow 443, Deny All",
         "3 subnets: app/data/kv\nPrivate Endpoints for KV + PG")
 }
 
-' === Dashboards ===(logical containers) ──────────────────────
+' === Dashboards ===(logical containers) ----------------------
 System_Boundary(dashboards, "HTMX Dashboards (django-htmx 1.27.0)") {
 
     Container(security_dash, "Security Dashboard\n/security/", "D3.js v7 + HTMX",
@@ -51,7 +51,7 @@ System_Boundary(dashboards, "HTMX Dashboards (django-htmx 1.27.0)") {
         "AppPageViews + AppBrowserTimings\nReal User Monitoring (RUM)\nJS Exceptions tracking")
 }
 
-' === MSI ===Roles ─────────────────────────────────────────────
+' === MSI ===Roles ---------------------------------------------
 note right of app
   System-Assigned MSI Roles:
   • Key Vault Secrets User
