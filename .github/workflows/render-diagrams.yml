@@ -1,0 +1,113 @@
+name: Render PlantUML Diagrams
+
+on:
+  workflow_dispatch:
+    inputs:
+      format:
+        description: 'Output format'
+        required: true
+        default: 'svg'
+        type: choice
+        options:
+          - svg
+          - png
+          - both
+      commit_output:
+        description: 'Commit rendered diagrams to repo'
+        required: true
+        default: 'true'
+        type: boolean
+
+jobs:
+  render:
+    name: Render PlantUML → ${{ github.event.inputs.format }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Graphviz
+        run: sudo apt-get install -y graphviz
+
+      - name: Download PlantUML
+        run: |
+          curl -fsSL \
+            "https://github.com/plantuml/plantuml/releases/download/v1.2024.6/plantuml-1.2024.6.jar" \
+            -o /usr/local/bin/plantuml.jar
+          echo "PlantUML downloaded: $(java -jar /usr/local/bin/plantuml.jar -version 2>&1 | head -1)"
+
+      - name: List diagrams
+        run: |
+          echo "=== PlantUML files found ==="
+          find docs/diagrams -name "*.puml" | sort
+
+      - name: Render SVG
+        if: ${{ github.event.inputs.format == 'svg' || github.event.inputs.format == 'both' }}
+        run: |
+          mkdir -p docs/diagrams/output/svg
+          java -jar /usr/local/bin/plantuml.jar \
+            -tsvg \
+            -o "$(pwd)/docs/diagrams/output/svg" \
+            docs/diagrams/*.puml
+          echo "=== SVG output ==="
+          ls -la docs/diagrams/output/svg/
+
+      - name: Render PNG
+        if: ${{ github.event.inputs.format == 'png' || github.event.inputs.format == 'both' }}
+        run: |
+          mkdir -p docs/diagrams/output/png
+          java -jar /usr/local/bin/plantuml.jar \
+            -tpng \
+            -o "$(pwd)/docs/diagrams/output/png" \
+            docs/diagrams/*.puml
+          echo "=== PNG output ==="
+          ls -la docs/diagrams/output/png/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagrams-${{ github.event.inputs.format }}-${{ github.run_number }}
+          path: docs/diagrams/output/
+          retention-days: 30
+
+      - name: Commit rendered diagrams
+        if: ${{ github.event.inputs.commit_output == 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add docs/diagrams/output/
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs: auto-render PlantUML diagrams [${{ github.event.inputs.format }}]
+
+  Rendered by GitHub Actions workflow_dispatch
+  Run: #${{ github.run_number }}
+  Format: ${{ github.event.inputs.format }}
+  Diagrams: $(find docs/diagrams -name '*.puml' | wc -l) files"
+            git push
+          fi
+
+      - name: Summary
+        run: |
+          echo "## 🎨 PlantUML Render Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Format:** ${{ github.event.inputs.format }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Diagrams rendered:**" >> $GITHUB_STEP_SUMMARY
+          find docs/diagrams -name "*.puml" | while read f; do
+            echo "- \`$(basename $f)\`" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Output files:**" >> $GITHUB_STEP_SUMMARY
+          find docs/diagrams/output -type f | while read f; do
+            echo "- \`$f\`" >> $GITHUB_STEP_SUMMARY
+          done
