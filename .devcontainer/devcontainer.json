@@ -1,14 +1,17 @@
 {
   "name": "Django Azure Security Template",
   "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
-
   "features": {
     "ghcr.io/devcontainers/features/azure-cli:1": {
       "version": "latest"
     },
-    "ghcr.io/devcontainers/features/git:1": {}
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21",
+      "installMaven": "false",
+      "installGradle": "false"
+    }
   },
-
   "customizations": {
     "vscode": {
       "extensions": [
@@ -19,12 +22,17 @@
         "hashicorp.hcl",
         "ms-azuretools.vscode-azureresourcegroups",
         "ms-vscode.azurecli",
-        "GitHub.vscode-pull-request-github"
+        "GitHub.vscode-pull-request-github",
+        "jebbs.plantuml",
+        "hediet.vscode-drawio",
+        "ms-azuretools.vscode-azureterraform"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
         "editor.formatOnSave": true,
-        "editor.rulers": [120],
+        "editor.rulers": [
+          120
+        ],
         "[terraform]": {
           "editor.defaultFormatter": "hashicorp.terraform",
           "editor.formatOnSave": true,
@@ -32,24 +40,31 @@
         },
         "terraform.languageServer": {
           "enabled": true,
-          "args": ["serve"]
-        }
+          "args": [
+            "serve"
+          ]
+        },
+        "plantuml.render": "Local",
+        "plantuml.java": "/usr/local/sdkman/candidates/java/current/bin/java",
+        "plantuml.exportFormat": "svg",
+        "plantuml.diagramsRoot": "docs/diagrams",
+        "plantuml.exportOutDir": "docs/diagrams/output"
       }
     },
     "codespaces": {
-      "openFiles": ["README.md"]
+      "openFiles": [
+        "README.md"
+      ]
     }
   },
-
   "postCreateCommand": "bash .devcontainer/install-tools.sh",
-
   "remoteEnv": {
     "TF_LOG": "WARN",
     "DJANGO_SETTINGS_MODULE": "djangoapp.settings"
   },
-
-  "forwardPorts": [8000],
-
+  "forwardPorts": [
+    8000
+  ],
   "portsAttributes": {
     "8000": {
       "label": "Django Dev Server",

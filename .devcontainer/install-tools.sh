@@ -18,6 +18,18 @@ echo "=== Installing Python deps ==="
 pip install -r requirements.txt
 pip install pytest pytest-django coverage flake8
 
+
+echo "=== Installing PlantUML ==="
+PLANTUML_VERSION="1.2024.6"
+sudo curl -fsSL "https://github.com/plantuml/plantuml/releases/download/v${PLANTUML_VERSION}/plantuml-${PLANTUML_VERSION}.jar" \
+  -o /usr/local/bin/plantuml.jar
+echo '#!/bin/bash\njava -jar /usr/local/bin/plantuml.jar "$@"' | sudo tee /usr/local/bin/plantuml
+sudo chmod +x /usr/local/bin/plantuml
+echo "PlantUML: $(plantuml -version 2>&1 | head -1)"
+
+echo "=== Installing Graphviz (for PlantUML) ==="
+sudo apt-get update -qq && sudo apt-get install -y -qq graphviz
+
 echo "=== Versions ==="
 terraform version
 az version
