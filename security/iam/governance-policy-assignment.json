@@ -1,0 +1,10 @@
+{
+  "properties": {
+    "displayName": "Require 'project' tag on all resources",
+    "description": "Deny resource creation without a 'project' tag. Added after untagged AKS cluster (mc_rg-polished-garfish) appeared in cost analysis undetected.",
+    "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/871b6d14-10aa-478d-b590-94f262ecfa99",
+    "parameters": {
+      "tagName": { "value": "project" }
+    }
+  }
+}
