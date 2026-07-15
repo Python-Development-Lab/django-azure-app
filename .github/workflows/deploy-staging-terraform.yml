@@ -64,14 +64,7 @@ jobs:
         continue-on-error: true
 
       - name: Gitleaks — SARIF output
-        run: |
-          ./gitleaks detect \
-            --source . \
-            --config .gitleaks.toml \
-            --report-format sarif \
-            --report-path gitleaks-results.sarif \
-            --no-git \
-            --exit-code 0 || true
+        run: python3 scripts/gitleaks_to_sarif.py gitleaks-report.json gitleaks-results.sarif
         continue-on-error: true
 
       - name: Upload Gitleaks SARIF
