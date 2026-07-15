@@ -63,6 +63,7 @@ module "key_vault" {
   django_secret_key   = var.django_secret_key
   azure_client_id     = var.azure_client_id
   azure_client_secret = var.azure_client_secret
+  terraform_object_id = var.terraform_object_id
   tags                = local.tags
 }
 

@@ -41,3 +41,8 @@ variable "azure_client_secret" {
 variable "tags" {
   type = map(string)
 }
+
+variable "terraform_object_id" {
+  description = "Object ID of the user/SP running Terraform (Key Vault Administrator access)"
+  type        = string
+}
