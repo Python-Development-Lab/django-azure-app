@@ -1,0 +1,172 @@
+{
+  "component-definition": {
+    "uuid": "8f3e2b1a-4c5d-4e6f-9a0b-1c2d3e4f5a6b",
+    "metadata": {
+      "title": "Django Azure Security Template - Zero Trust Component Definition",
+      "last-modified": "2026-07-15T00:00:00Z",
+      "version": "0.1.0",
+      "oscal-version": "1.1.2",
+      "parties": [
+        {
+          "uuid": "1a2b3c4d-5e6f-4a5b-8c9d-0e1f2a3b4c5d",
+          "type": "person",
+          "name": "Vitalii Shevchuk",
+          "props": [
+            {"name": "role", "value": "Systems Engineer / Security Junior Adoption Program"}
+          ]
+        }
+      ]
+    },
+    "components": [
+      {
+        "uuid": "2b3c4d5e-6f7a-4b5c-9d0e-1f2a3b4c5d6e",
+        "type": "software",
+        "title": "DeviceVerificationMiddleware",
+        "description": "Application-layer Zero Trust Policy Enforcement Point. Performs device fingerprinting via User-Agent analysis, detects IP address changes, and flags suspicious scanning tools (sqlmap, nikto, nmap) at request time.",
+        "props": [
+          {"name": "implementation-point", "value": "system"},
+          {"name": "source-file", "value": "auth_app/device_middleware.py"}
+        ],
+        "control-implementations": [
+          {
+            "uuid": "3c4d5e6f-7a8b-4c5d-9e0f-1a2b3c4d5e6f",
+            "source": "https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final",
+            "description": "NIST SP 800-53 Rev 5 controls implemented by application-layer device verification",
+            "implemented-requirements": [
+              {
+                "uuid": "4d5e6f7a-8b9c-4d5e-9f0a-1b2c3d4e5f6a",
+                "control-id": "ia-2",
+                "description": "Identification and Authentication (Organizational Users) is reinforced through continuous device-context verification beyond initial login, per Zero Trust Policy Enforcement Point pattern from NIST SP 800-207."
+              },
+              {
+                "uuid": "5e6f7a8b-9c0d-4e5f-8a1b-2c3d4e5f6a7b",
+                "control-id": "si-4",
+                "description": "System Monitoring: real-time detection of scanning tool signatures (sqlmap, nikto, nmap) in User-Agent headers, logged to AppTraces for Sentinel correlation."
+              },
+              {
+                "uuid": "6f7a8b9c-0d1e-4f5a-9b2c-3d4e5f6a7b8c",
+                "control-id": "ac-2",
+                "description": "Account Management: IP-address-change detection supports anomalous session identification for authenticated accounts."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "uuid": "7a8b9c0d-1e2f-4a5b-8c3d-4e5f6a7b8c9d",
+        "type": "software",
+        "title": "Azure Key Vault + System-Assigned Managed Identity",
+        "description": "Centralized secrets management with RBAC-based access control, no credentials in code or environment variables. Access enforced via Managed Identity, not static secrets.",
+        "props": [
+          {"name": "implementation-point", "value": "system"},
+          {"name": "source-file", "value": "terraform/modules/key_vault/main.tf"}
+        ],
+        "control-implementations": [
+          {
+            "uuid": "8b9c0d1e-2f3a-4b5c-9d4e-5f6a7b8c9d0e",
+            "source": "https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final",
+            "description": "NIST SP 800-53 Rev 5 controls implemented by centralized secrets management",
+            "implemented-requirements": [
+              {
+                "uuid": "9c0d1e2f-3a4b-4c5d-8e5f-6a7b8c9d0e1f",
+                "control-id": "sc-12",
+                "description": "Cryptographic Key Establishment and Management via Azure Key Vault with Private Endpoint isolation."
+              },
+              {
+                "uuid": "0d1e2f3a-4b5c-4d6e-9f7a-8b9c0d1e2f3a",
+                "control-id": "ac-3",
+                "description": "Access Enforcement: Key Vault Secrets User role assignment scoped to System-Assigned MSI only, enforcing least-privilege access to secrets."
+              },
+              {
+                "uuid": "1e2f3a4b-5c6d-4e7f-8a9b-0c1d2e3f4a5b",
+                "control-id": "ia-5",
+                "description": "Authenticator Management: no static credentials stored in code, environment variables, or CI/CD secrets for accessing application secrets; Managed Identity token exchange replaces long-lived credentials."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "uuid": "2f3a4b5c-6d7e-4f8a-9b0c-1d2e3f4a5b6c",
+        "type": "software",
+        "title": "Microsoft Sentinel Analytics Rules",
+        "description": "Scheduled KQL-based detection rules mapped to MITRE ATT&CK, correlating Defender for Cloud alerts and application-layer telemetry into Sentinel incidents.",
+        "props": [
+          {"name": "implementation-point", "value": "system"},
+          {"name": "source-file", "value": "security/sentinel/analytics-rules/"}
+        ],
+        "control-implementations": [
+          {
+            "uuid": "3a4b5c6d-7e8f-4a9b-8c1d-2e3f4a5b6c7d",
+            "source": "https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final",
+            "description": "NIST SP 800-53 Rev 5 controls implemented by continuous automated detection",
+            "implemented-requirements": [
+              {
+                "uuid": "4b5c6d7e-8f9a-4b0c-9d2e-3f4a5b6c7d8e",
+                "control-id": "au-6",
+                "description": "Audit Record Review, Analysis, and Reporting: automated correlation via BuiltInFusion (cross-signal ML) and scheduled Analytics Rules (zero-trust-device-verification, defender-active-scanning-nmap)."
+              },
+              {
+                "uuid": "5c6d7e8f-9a0b-4c1d-8e3f-4a5b6c7d8e9f",
+                "control-id": "si-4",
+                "description": "System Monitoring: kernel-level scan detection (Defender for App Service) correlated with application-layer signals, mapped to MITRE ATT&CK T1595/T1046/T1078/T1036."
+              },
+              {
+                "uuid": "6d7e8f9a-0b1c-4d2e-9f4a-5b6c7d8e9f0a",
+                "control-id": "ir-4",
+                "description": "Incident Handling: automated incident creation with AllEntities grouping and lookback correlation (PT1H/PT5M) upon rule trigger."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "uuid": "7e8f9a0b-1c2d-4e3f-8a5b-6c7d8e9f0a1b",
+        "type": "network",
+        "title": "VNet Segmentation + NSG Deny-All + Private Endpoints",
+        "description": "Three-subnet VNet (app/data/kv) with NSG default-deny posture and Private Endpoints isolating Key Vault and PostgreSQL from public network access.",
+        "props": [
+          {"name": "implementation-point", "value": "system"},
+          {"name": "source-file", "value": "terraform/modules/network/main.tf"}
+        ],
+        "control-implementations": [
+          {
+            "uuid": "8f9a0b1c-2d3e-4f4a-9b6c-7d8e9f0a1b2c",
+            "source": "https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final",
+            "description": "NIST SP 800-53 Rev 5 controls implemented by network segmentation, aligned to NIST SP 800-207 micro-segmentation principle",
+            "implemented-requirements": [
+              {
+                "uuid": "9a0b1c2d-3e4f-4a5b-8c7d-8e9f0a1b2c3d",
+                "control-id": "sc-7",
+                "description": "Boundary Protection: NSG deny-all default with explicit allow on 443; Private Endpoints remove Key Vault and PostgreSQL from the public network boundary entirely."
+              },
+              {
+                "uuid": "0b1c2d3e-4f5a-4b6c-9d8e-9f0a1b2c3d4e",
+                "control-id": "sc-32",
+                "description": "System Partitioning: three-subnet segmentation (app-subnet, data-subnet, kv-subnet) separating application, data, and secrets tiers."
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "back-matter": {
+      "resources": [
+        {
+          "uuid": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
+          "title": "NIST SP 800-207 Zero Trust Architecture",
+          "rlinks": [
+            {"href": "https://csrc.nist.gov/pubs/sp/800/207/final"}
+          ]
+        },
+        {
+          "uuid": "2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f6a",
+          "title": "MITRE ATT&CK Coverage Matrix (attack_data.json)",
+          "rlinks": [
+            {"href": "security/mitre/attack_data.json"}
+          ]
+        }
+      ]
+    }
+  }
+}

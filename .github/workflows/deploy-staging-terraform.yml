@@ -39,12 +39,48 @@ jobs:
           echo "=== Bandit summary ==="
           bandit -r .             --exclude ./packages,./venv,./staticfiles,./terraform             --severity-level medium             --quiet || true
 
+      - name: Bandit — SARIF output
+        run: |
+          pip install bandit-sarif-formatter --quiet --break-system-packages
+          bandit -r . \
+            --exclude ./packages,./venv,./staticfiles,./terraform \
+            --format sarif \
+            --output bandit-results.sarif \
+            --severity-level medium || true
+
+      - name: Upload Bandit SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        continue-on-error: true
+        with:
+          sarif_file: bandit-results.sarif
+          category: bandit-sast
+
       - name: Gitleaks — secrets detection
         run: |
           curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.27.2/gitleaks_8.27.2_linux_x64.tar.gz             | tar -xz gitleaks
           ./gitleaks detect             --source .             --config .gitleaks.toml             --report-format json             --report-path gitleaks-report.json             --no-git             --exit-code 0 || true
           echo "Gitleaks scan complete"
         continue-on-error: true
+
+      - name: Gitleaks — SARIF output
+        run: |
+          ./gitleaks detect \
+            --source . \
+            --config .gitleaks.toml \
+            --report-format sarif \
+            --report-path gitleaks-results.sarif \
+            --no-git \
+            --exit-code 0 || true
+        continue-on-error: true
+
+      - name: Upload Gitleaks SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        continue-on-error: true
+        with:
+          sarif_file: gitleaks-results.sarif
+          category: gitleaks-secrets
 
       - name: pip-audit — dependency vulnerabilities
         run: |
@@ -100,7 +136,9 @@ jobs:
           path: |
             pip-audit-report.json
             bandit-report.json
+            bandit-results.sarif
             gitleaks-report.json
+            gitleaks-results.sarif
             trivy-results.sarif
             sbom-cyclonedx.json
           if-no-files-found: warn
@@ -404,6 +442,18 @@ jobs:
           fail_action: false
           allow_issue_writing: false
 
+      - name: Convert ZAP report to SARIF
+        if: always()
+        run: python3 scripts/zap_to_sarif.py report_json.json zap-results.sarif
+
+      - name: Upload ZAP SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        continue-on-error: true
+        with:
+          sarif_file: zap-results.sarif
+          category: zap-dast
+
       - name: Upload ZAP report
         uses: actions/upload-artifact@v4
         if: always()
@@ -413,5 +463,6 @@ jobs:
             report_html.html
             report_md.md
             report_json.json
+            zap-results.sarif
           if-no-files-found: warn
 
