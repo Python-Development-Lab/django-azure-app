@@ -80,7 +80,10 @@ def main(path: str) -> int:
     for anchor, block, position in INSERTIONS:
         matches = [i for i, l in enumerate(lines) if l == anchor]
         if len(matches) != 1:
-            print(f"ABORT: anchor {anchor!r} found {len(matches)} times (expected 1). No changes written.")
+            print(
+                f"ABORT: anchor {anchor!r} found {len(matches)} times "
+                f"(expected 1). No changes written."
+            )
             return 1
         idx = matches[0]
         block_lines = block.splitlines(keepends=True)
@@ -89,7 +92,10 @@ def main(path: str) -> int:
     for anchor, new_line in ARTIFACT_LIST_INSERTIONS:
         matches = [i for i, l in enumerate(lines) if l == anchor]
         if len(matches) != 1:
-            print(f"ABORT: artifact anchor {anchor!r} found {len(matches)} times (expected 1). No changes written.")
+            print(
+                f"ABORT: artifact anchor {anchor!r} found {len(matches)} times "
+                f"(expected 1). No changes written."
+            )
             return 1
         idx = matches[0]
         lines.insert(idx + 1, new_line)
@@ -97,7 +103,10 @@ def main(path: str) -> int:
     with open(path, "w") as f:
         f.writelines(lines)
 
-    print(f"Patched {path} successfully: {len(INSERTIONS)} step blocks + {len(ARTIFACT_LIST_INSERTIONS)} artifact lines inserted.")
+    print(
+        f"Patched {path} successfully: {len(INSERTIONS)} step blocks + "
+        f"{len(ARTIFACT_LIST_INSERTIONS)} artifact lines inserted."
+    )
     return 0
 
 
