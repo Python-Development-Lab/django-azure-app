@@ -30,3 +30,9 @@ terraform/terraform.tfvars
 packages/
 terraform/plan-output.txt
 terraform/tfplan
+
+# Terraform state and vars — never commit real secrets
+terraform/terraform.tfvars
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/*.tfstate.*.backup
