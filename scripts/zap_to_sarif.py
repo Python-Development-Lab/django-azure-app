@@ -32,18 +32,22 @@ def convert(input_path: str, output_path: str) -> int:
             level = RISK_TO_LEVEL.get(str(alert.get("riskcode", "1")), "warning")
             instances = alert.get("instances") or [{"uri": site_name}]
             for instance in instances:
+                live_uri = instance.get("uri", site_name)
                 results.append(
                     {
                         "ruleId": rule_id,
                         "level": level,
                         "message": {
-                            "text": (alert.get("desc") or alert.get("alert", ""))[:2000]
+                            "text": (
+                                f"{alert.get('desc') or alert.get('alert', '')} "
+                                f"[Live URL: {live_uri}]"
+                            )[:2000]
                         },
                         "locations": [
                             {
                                 "physicalLocation": {
                                     "artifactLocation": {
-                                        "uri": instance.get("uri", site_name)
+                                        "uri": ".zap/rules.tsv"
                                     }
                                 }
                             }
