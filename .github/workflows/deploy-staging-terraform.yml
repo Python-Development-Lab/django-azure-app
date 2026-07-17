@@ -121,6 +121,25 @@ jobs:
           output: sbom-cyclonedx.json
           exit-code: 0
 
+      - name: Azure Login (for Blob archive)
+        if: always()
+        uses: azure/login@v2
+        continue-on-error: true
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Archive SARIF files to Blob Storage
+        if: always()
+        continue-on-error: true
+        run: |
+          az storage blob upload-batch \
+            --account-name stdjangosarif89420 \
+            --destination "sarif-archive/${{ github.run_id }}" \
+            --source . \
+            --pattern "*.sarif" \
+            --auth-mode login \
+            --overwrite
+
       - name: Upload security reports
         uses: actions/upload-artifact@v4
         if: always()
