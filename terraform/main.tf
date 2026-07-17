@@ -109,4 +109,12 @@ module "monitoring" {
   tags                = local.tags
 }
 
+module "sarif_archive" {
+  source              = "./modules/sarif_archive"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  tags                = local.tags
+  cicd_principal_id   = var.terraform_object_id
+}
+
 data "azurerm_client_config" "current" {}
