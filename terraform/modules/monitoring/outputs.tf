@@ -11,3 +11,7 @@ output "app_insights_instrumentation_key" {
 output "log_analytics_workspace_id" {
   value = azurerm_log_analytics_workspace.main.id
 }
+
+output "app_service_diagnostic_setting_id" {
+  value = azurerm_monitor_diagnostic_setting.app_service.id
+}

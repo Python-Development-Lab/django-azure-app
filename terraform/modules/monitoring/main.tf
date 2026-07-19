@@ -46,3 +46,22 @@ resource "azurerm_monitor_diagnostic_setting" "sentinel_activity" {
 
   depends_on = [azurerm_sentinel_log_analytics_workspace_onboarding.main]
 }
+
+resource "azurerm_monitor_diagnostic_setting" "app_service" {
+  name                       = "diag-app-http-logs"
+  target_resource_id         = var.app_service_id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
+
+  enabled_log {
+    category = "AppServiceHTTPLogs"
+  }
+
+  enabled_log {
+    category = "AppServiceConsoleLogs"
+  }
+
+  metric {
+    category = "AllMetrics"
+    enabled  = true
+  }
+}
