@@ -59,3 +59,60 @@
   </p>
   {% endif %}
 </div>
+
+<div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:1.25rem; margin-top:1.5rem;">
+  <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">
+    🌐 Recent HTTP Anomalies — Top 5 Source IPs (24h)
+  </h2>
+  {% if http_anomalies_error %}
+  <div style="background:#fff3cd; border:1px solid #ffc107; border-radius:6px;
+              padding:0.75rem; font-size:0.85rem; color:#856404; margin-bottom:1rem;">
+    <strong>⚠ HTTP Anomalies API unavailable:</strong> {{ http_anomalies_error }}
+  </div>
+  {% endif %}
+  {% if http_anomalies %}
+  <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+    <thead>
+      <tr style="background:#f5f5f5;">
+        <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Source IP</th>
+        <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Requests</th>
+        <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Status Codes</th>
+        <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">Paths</th>
+        <th style="padding:8px 12px; text-align:left; border-bottom:2px solid #ddd;">User Agents</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in http_anomalies %}
+      <tr style="border-bottom:1px solid #eee;">
+        <td style="padding:8px 12px; font-family:monospace; font-size:0.8rem; color:#6a1b9a;">
+          {{ a.source_ip }}
+        </td>
+        <td style="padding:8px 12px;">
+          <span style="padding:2px 8px; border-radius:12px; font-size:0.78rem; font-weight:500;
+            {% if a.requests > 50 %}background:#fce4ec; color:#b71c1c;
+            {% elif a.requests > 15 %}background:#fff3e0; color:#e65100;
+            {% else %}background:#e3f2fd; color:#1565c0;{% endif %}">
+            {{ a.requests }}
+          </span>
+        </td>
+        <td style="padding:8px 12px; font-family:monospace; font-size:0.78rem; color:#666;">
+          {{ a.statuses }}
+        </td>
+        <td style="padding:8px 12px; font-family:monospace; font-size:0.78rem; color:#1b5e20;
+                   max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+          {{ a.paths }}
+        </td>
+        <td style="padding:8px 12px; font-size:0.78rem; color:#666;
+                   max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+          {{ a.user_agents }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#999; font-size:0.875rem; text-align:center; padding:1rem;">
+    No HTTP anomalies detected {% if not http_anomalies_error %}✅{% endif %}
+  </p>
+  {% endif %}
+</div>

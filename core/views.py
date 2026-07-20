@@ -136,6 +136,52 @@ def _get_defender_alerts():
     return alerts
 
 
+def _get_http_anomalies():
+    """Top-5 suspicious HTTP requests from AppServiceHTTPLogs — 4xx/5xx spikes,
+    scanner tool signatures, and failed-auth clusters. Uses the same MSI +
+    Log Analytics REST pattern as analytics_rum, scoped to Security Reader."""
+    query = """
+AppServiceHTTPLogs
+| where TimeGenerated > ago(24h)
+| where ScStatus >= 400
+    or CsUriStem !startswith "/static/"
+       and UserAgent has_any ("sqlmap", "nikto", "nmap", "masscan", "nessus", "dirbuster")
+| summarize
+    Requests = count(),
+    Statuses = make_set(ScStatus),
+    Paths = make_set(CsUriStem, 5),
+    UserAgents = make_set(UserAgent, 3)
+  by CIp
+| order by Requests desc
+| take 5
+"""
+    rows = _log_analytics_query(query)
+    anomalies = []
+    for r in rows:
+        def _parse_dynamic(val):
+            if not val:
+                return []
+            if isinstance(val, str):
+                try:
+                    val = _json.loads(val)
+                except (ValueError, TypeError):
+                    return [val]
+            return val if isinstance(val, list) else [val]
+
+        statuses = _parse_dynamic(r[2])
+        paths = _parse_dynamic(r[3])
+        user_agents = [ua for ua in _parse_dynamic(r[4]) if ua]
+
+        anomalies.append({
+            "source_ip": r[0],
+            "requests": r[1],
+            "statuses": ", ".join(str(s) for s in statuses) if statuses else "—",
+            "paths": ", ".join(paths) if paths else "—",
+            "user_agents": ", ".join(user_agents) if user_agents else "—",
+        })
+    return anomalies
+
+
 def _period_ctx():
     today = date.today()
     return {
@@ -182,9 +228,19 @@ def security_alerts(request):
         defender_alerts = _get_defender_alerts()
     except Exception as e:
         defender_error = str(e)
+
+    http_anomalies = []
+    http_anomalies_error = None
+    try:
+        http_anomalies = _get_http_anomalies()
+    except Exception as e:
+        http_anomalies_error = str(e)
+
     return render(request, 'core/partials/security_alerts.html', {
         'defender_alerts': defender_alerts,
         'defender_error': defender_error,
+        'http_anomalies': http_anomalies,
+        'http_anomalies_error': http_anomalies_error,
     })
 
 
