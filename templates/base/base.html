@@ -73,6 +73,27 @@ r("script","https://js.monitor.azure.com/scripts/b/ai.2.min.js"),t}({
   enableAutoRouteTracking:true
 });
 window[aiName]=aisdk,aisdk.queue&&0===aisdk.queue.length&&aisdk.trackPageView({});
+// Security: strip query strings from tracked page URLs before they leave the
+// browser. OAuth callback URLs (/auth/callback/, /auth/external/callback/)
+// carry authorization codes and state tokens in the query string — without
+// this, they would be logged in plaintext into Application Insights and
+// rendered in the /analytics/ dashboard.
+aisdk.queue.push(function () {
+    aisdk.addTelemetryInitializer(function (envelope) {
+        if (envelope.baseData) {
+            if (envelope.baseData.uri) {
+                envelope.baseData.uri = envelope.baseData.uri.split("?")[0];
+            }
+            if (envelope.baseData.refUri) {
+                envelope.baseData.refUri = envelope.baseData.refUri.split("?")[0];
+            }
+            if (envelope.baseData.name && envelope.baseData.name.indexOf("?") !== -1) {
+                envelope.baseData.name = envelope.baseData.name.split("?")[0];
+            }
+        }
+        return true;
+    });
+});
 </script>
 </head>
 <body>

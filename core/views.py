@@ -303,8 +303,9 @@ def analytics_pageviews(request):
         rows = _log_analytics_query("""
 AppPageViews
 | where TimeGenerated > ago(24h)
+| extend CleanUrl = tostring(split(Url, "?")[0])
 | summarize Views=count(), AvgDuration=avg(DurationMs)
-  by Name, Url=tostring(Url)
+  by Name, Url=CleanUrl
 | order by Views desc
 | take 10
 """)
