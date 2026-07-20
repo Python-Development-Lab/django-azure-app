@@ -46,3 +46,9 @@ variable "terraform_object_id" {
   description = "Object ID of the user/SP running Terraform (Key Vault Administrator access)"
   type        = string
 }
+
+variable "human_admin_object_id" {
+  description = "Optional: Object ID of a human operator who should retain Key Vault Administrator access independently of the CI/CD service principal (e.g. for manual debugging via az cli). Leave empty to skip."
+  type        = string
+  default     = ""
+}

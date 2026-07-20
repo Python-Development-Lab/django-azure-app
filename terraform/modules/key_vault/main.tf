@@ -1,12 +1,12 @@
 data "azurerm_client_config" "current" {}
 
 resource "azurerm_key_vault" "main" {
-  name                       = "kv-${var.prefix}"
-  location                   = var.location
-  resource_group_name        = var.resource_group_name
-  tenant_id                  = var.tenant_id
-  sku_name                   = "standard"
-  enable_rbac_authorization  = true
+  name                      = "kv-${var.prefix}"
+  location                  = var.location
+  resource_group_name       = var.resource_group_name
+  tenant_id                 = var.tenant_id
+  sku_name                  = "standard"
+  enable_rbac_authorization = true
   #tfsec:ignore:azure-keyvault-specify-network-acl
   purge_protection_enabled   = false #tfsec:ignore:azure-keyvault-no-purge
   soft_delete_retention_days = 7
@@ -69,4 +69,14 @@ resource "azurerm_role_assignment" "terraform_admin" {
   scope                = azurerm_key_vault.main.id
   role_definition_name = "Key Vault Administrator"
   principal_id         = var.terraform_object_id
+}
+
+# Separate, independent role assignment for a human operator (e.g. project owner).
+# Kept apart from terraform_admin so that CI/CD service principal rotation
+# (var.terraform_object_id) never revokes a human's manual access, and vice versa.
+resource "azurerm_role_assignment" "human_admin" {
+  count                = var.human_admin_object_id != "" ? 1 : 0
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Administrator"
+  principal_id         = var.human_admin_object_id
 }

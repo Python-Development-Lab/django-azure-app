@@ -53,18 +53,19 @@ module "network" {
 }
 
 module "key_vault" {
-  source              = "./modules/key_vault"
-  prefix              = local.prefix
-  location            = var.location
-  resource_group_name = azurerm_resource_group.main.name
-  tenant_id           = var.tenant_id
-  data_subnet_id      = module.network.kv_subnet_id
-  kv_dns_zone_id      = module.network.kv_dns_zone_id
-  django_secret_key   = var.django_secret_key
-  azure_client_id     = var.azure_client_id
-  azure_client_secret = var.azure_client_secret
-  terraform_object_id = var.terraform_object_id
-  tags                = local.tags
+  source                = "./modules/key_vault"
+  prefix                = local.prefix
+  location              = var.location
+  resource_group_name   = azurerm_resource_group.main.name
+  tenant_id             = var.tenant_id
+  data_subnet_id        = module.network.kv_subnet_id
+  kv_dns_zone_id        = module.network.kv_dns_zone_id
+  django_secret_key     = var.django_secret_key
+  azure_client_id       = var.azure_client_id
+  azure_client_secret   = var.azure_client_secret
+  terraform_object_id   = var.terraform_object_id
+  human_admin_object_id = var.human_admin_object_id
+  tags                  = local.tags
 }
 
 module "database" {

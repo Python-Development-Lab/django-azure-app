@@ -64,3 +64,9 @@ variable "terraform_object_id" {
   type        = string
   description = "Object ID of the user/SP running Terraform (Key Vault access)"
 }
+
+variable "human_admin_object_id" {
+  type        = string
+  description = "Optional: Object ID of a human operator who should retain independent Key Vault Administrator access (e.g. project owner). Leave empty (default) to skip."
+  default     = ""
+}
