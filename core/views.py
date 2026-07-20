@@ -393,13 +393,13 @@ def analytics_rum(request):
             " | order by AvgTotal desc"
         )
         metrics = [{
-            "name": r[6],
-            "avg_total": round(r[0] or 0),
-            "avg_network": round(r[1] or 0),
-            "avg_processing": round(r[2] or 0),
-            "avg_send": round(r[3] or 0),
-            "avg_receive": round(r[4] or 0),
-            "count": r[5],
+            "name": r[0],
+            "avg_total": round(r[1] or 0),
+            "avg_network": round(r[2] or 0),
+            "avg_processing": round(r[3] or 0),
+            "avg_send": round(r[4] or 0),
+            "avg_receive": round(r[5] or 0),
+            "count": r[6],
         } for r in rows]
 
         exc_rows = _log_analytics_query(
