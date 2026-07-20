@@ -1,0 +1,27 @@
+{
+  "kind": "Scheduled",
+  "properties": {
+    "displayName": "HTTP Brute Force - Repeated Auth Failures on /auth/login/",
+    "description": "Detects repeated 401/403 HTTP responses on /auth/login/ from a single client IP within a short window, indicating a credential brute-force attempt. Based on AppServiceHTTPLogs (application layer), complementing the existing kernel-layer Defender NMap detection. Maps to MITRE ATT&CK T1110 (Brute Force).",
+    "severity": "Medium",
+    "enabled": true,
+    "query": "AppServiceHTTPLogs\n| where TimeGenerated > ago(5m)\n| where CsUriStem == \"/auth/login/\"\n| where ScStatus in (401, 403)\n| summarize FailedAttempts = count(), Methods = make_set(CsMethod), UserAgents = make_set(UserAgent) by CIp, bin(TimeGenerated, 5m)\n| where FailedAttempts > 10\n| project TimeGenerated, CIp, FailedAttempts, Methods, UserAgents",
+    "queryFrequency": "PT5M",
+    "queryPeriod": "PT5M",
+    "triggerOperator": "GreaterThan",
+    "triggerThreshold": 0,
+    "suppressionDuration": "PT1H",
+    "suppressionEnabled": false,
+    "tactics": ["CredentialAccess"],
+    "techniques": ["T1110"],
+    "incidentConfiguration": {
+      "createIncident": true,
+      "groupingConfiguration": {
+        "enabled": true,
+        "reopenClosedIncident": false,
+        "lookbackDuration": "PT5M",
+        "matchingMethod": "AllEntities"
+      }
+    }
+  }
+}
