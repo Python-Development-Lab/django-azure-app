@@ -384,11 +384,11 @@ def analytics_rum(request):
         rows = _log_analytics_query(
             "AppBrowserTimings"
             " | where TimeGenerated > ago(24h)"
-            " | summarize AvgTotal=avg(TotalDuration),"
-            " AvgNetwork=avg(NetworkDuration),"
-            " AvgProcessing=avg(ProcessingDuration),"
-            " AvgSend=avg(SendDuration),"
-            " AvgReceive=avg(ReceiveDuration),"
+            " | summarize AvgTotal=avg(TotalDurationMs),"
+            " AvgNetwork=avg(NetworkDurationMs),"
+            " AvgProcessing=avg(ProcessingDurationMs),"
+            " AvgSend=avg(SendDurationMs),"
+            " AvgReceive=avg(ReceiveDurationMs),"
             " Count=count() by Name"
             " | order by AvgTotal desc"
         )
