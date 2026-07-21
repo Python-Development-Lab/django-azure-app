@@ -1,7 +1,3 @@
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"
-        onload="window.__initSecurityGeoMap && window.__initSecurityGeoMap()"></script>
-
 <div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:1.25rem; margin-top:1.5rem;">
   <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">
     🗺️ Traffic Origin Map — Last 24h
@@ -16,10 +12,16 @@
 </div>
 
 <script>
-window.__initSecurityGeoMap = function () {
+(function () {
     var mapEl = document.getElementById('geo-map');
     if (!mapEl || mapEl._leafletMapInitialized) return;
-    if (typeof L === 'undefined') return;
+
+    if (typeof L === 'undefined') {
+        var errEl0 = document.getElementById('geo-error');
+        errEl0.style.display = 'block';
+        errEl0.innerHTML = '<strong>⚠ Map library not loaded.</strong> Leaflet.js should be loaded globally in base.html.';
+        return;
+    }
     mapEl._leafletMapInitialized = true;
 
     var map = L.map('geo-map').setView([20, 10], 2);
@@ -74,25 +76,5 @@ window.__initSecurityGeoMap = function () {
             errEl.style.display = 'block';
             errEl.innerHTML = '<strong>⚠ Failed to load geo data:</strong> ' + err;
         });
-};
-
-if (typeof L !== 'undefined') {
-    window.__initSecurityGeoMap();
-} else {
-    var __geoMapAttempts = 0;
-    var __geoMapPoll = setInterval(function () {
-        __geoMapAttempts++;
-        if (typeof L !== 'undefined') {
-            clearInterval(__geoMapPoll);
-            window.__initSecurityGeoMap();
-        } else if (__geoMapAttempts > 40) {
-            clearInterval(__geoMapPoll);
-            var errEl = document.getElementById('geo-error');
-            if (errEl) {
-                errEl.style.display = 'block';
-                errEl.innerHTML = '<strong>⚠ Map library failed to load.</strong> Check network/CSP restrictions on cdnjs.cloudflare.com.';
-            }
-        }
-    }, 100);
-}
+})();
 </script>
