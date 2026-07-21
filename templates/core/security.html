@@ -33,6 +33,18 @@
       Loading Defender alerts...
     </div>
   </div>
+
+  <!-- HTMX: Traffic Geo Map (loads on page load, parallel) -->
+  <div id="geo-section"
+       hx-get="{% url 'core:security_geo' %}"
+       hx-trigger="load"
+       hx-swap="innerHTML"
+       hx-indicator="#geo-spinner">
+    <div id="geo-spinner" style="text-align:center; padding:2rem; color:#666;">
+      <div style="font-size:1.5rem; margin-bottom:0.5rem;">🗺️</div>
+      Loading traffic map...
+    </div>
+  </div>
 </div>
 
 {% endblock %}

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 
 
@@ -182,6 +182,34 @@ AppServiceHTTPLogs
     return anomalies
 
 
+def _get_traffic_geo():
+    """Aggregate request counts by geographic location (24h) using
+    geo_info_from_ip_address() — no external GeoIP service needed."""
+    query = """
+AppServiceHTTPLogs
+| where TimeGenerated > ago(24h)
+| extend geo = geo_info_from_ip_address(CIp)
+| extend Country = tostring(geo.country), City = tostring(geo.city),
+         Lat = todouble(geo.latitude), Lon = todouble(geo.longitude)
+| where isnotempty(Country) and isnotnull(Lat) and isnotnull(Lon)
+| summarize Requests = count(), ErrorCount = countif(ScStatus >= 400)
+  by Country, City, Lat, Lon
+| order by Requests desc
+"""
+    rows = _log_analytics_query(query)
+    points = []
+    for r in rows:
+        points.append({
+            "country": r[0],
+            "city": r[1],
+            "lat": r[2],
+            "lon": r[3],
+            "requests": r[4],
+            "errors": r[5],
+        })
+    return points
+
+
 def _period_ctx():
     today = date.today()
     return {
@@ -218,6 +246,20 @@ def security_coverage(request):
         'attack_data': attack_data,
         'attack_data_json': _json.dumps(attack_data),
     })
+
+
+@login_required(login_url='/auth/login/')
+def security_geo(request):
+    return render(request, 'core/partials/security_geo.html', {})
+
+
+@login_required(login_url='/auth/login/')
+def security_geo_data(request):
+    try:
+        points = _get_traffic_geo()
+        return JsonResponse({"points": points, "error": None})
+    except Exception as e:
+        return JsonResponse({"points": [], "error": str(e)})
 
 
 @login_required(login_url='/auth/login/')

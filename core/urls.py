@@ -11,6 +11,8 @@ urlpatterns = [
     path('security/', views.security_dashboard, name='security_dashboard'),
     path('security/coverage/', views.security_coverage, name='security_coverage'),
     path('security/alerts/', views.security_alerts, name='security_alerts'),
+    path('security/geo/', views.security_geo, name='security_geo'),
+    path('security/geo-data/', views.security_geo_data, name='security_geo_data'),
 
     # FinOps Dashboard
     path('finops/', views.finops_dashboard, name='finops_dashboard'),

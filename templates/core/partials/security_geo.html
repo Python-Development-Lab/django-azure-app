@@ -1,0 +1,76 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+<div style="background:#fff; border:1px solid #e0e0e0; border-radius:8px; padding:1.25rem; margin-top:1.5rem;">
+  <h2 style="font-size:1rem; font-weight:600; margin-bottom:1rem;">
+    🗺️ Traffic Origin Map — Last 24h
+  </h2>
+  <div id="geo-error" style="display:none; background:#fff3cd; border:1px solid #ffc107; border-radius:6px;
+              padding:0.75rem; font-size:0.85rem; color:#856404; margin-bottom:1rem;"></div>
+  <div id="geo-map" style="height:420px; border-radius:6px;"></div>
+  <p style="font-size:0.75rem; color:#999; margin-top:0.5rem;">
+    Circle size = request volume · Red = contains error responses (4xx/5xx) ·
+    Geolocation derived server-side via <code>geo_info_from_ip_address()</code>, no external GeoIP service.
+  </p>
+</div>
+
+<script>
+(function () {
+    var mapEl = document.getElementById('geo-map');
+    if (!mapEl || mapEl._leafletMapInitialized) return;
+    mapEl._leafletMapInitialized = true;
+
+    var map = L.map('geo-map').setView([20, 10], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 18
+    }).addTo(map);
+
+    fetch('/security/geo-data/')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.error) {
+                var errEl = document.getElementById('geo-error');
+                errEl.style.display = 'block';
+                errEl.innerHTML = '<strong>⚠ Geo data unavailable:</strong> ' + data.error;
+                return;
+            }
+            if (!data.points || data.points.length === 0) {
+                var errEl2 = document.getElementById('geo-error');
+                errEl2.style.display = 'block';
+                errEl2.style.background = '#e8f5e9';
+                errEl2.style.borderColor = '#a5d6a7';
+                errEl2.style.color = '#2e7d32';
+                errEl2.innerHTML = 'No traffic recorded in the last 24 hours.';
+                return;
+            }
+            var bounds = [];
+            data.points.forEach(function (p) {
+                var radius = Math.min(6 + Math.sqrt(p.requests) * 3, 40);
+                var hasErrors = p.errors > 0;
+                var circle = L.circleMarker([p.lat, p.lon], {
+                    radius: radius,
+                    fillColor: hasErrors ? '#e53935' : '#1e88e5',
+                    color: hasErrors ? '#b71c1c' : '#1565c0',
+                    weight: 1,
+                    opacity: 0.8,
+                    fillOpacity: 0.5
+                }).addTo(map);
+                circle.bindPopup(
+                    '<strong>' + p.city + ', ' + p.country + '</strong><br>' +
+                    p.requests + ' requests' +
+                    (hasErrors ? ' (' + p.errors + ' errors)' : '')
+                );
+                bounds.push([p.lat, p.lon]);
+            });
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [30, 30], maxZoom: 5 });
+            }
+        })
+        .catch(function (err) {
+            var errEl = document.getElementById('geo-error');
+            errEl.style.display = 'block';
+            errEl.innerHTML = '<strong>⚠ Failed to load geo data:</strong> ' + err;
+        });
+})();
+</script>
