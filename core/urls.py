@@ -13,6 +13,7 @@ urlpatterns = [
     path('security/alerts/', views.security_alerts, name='security_alerts'),
     path('security/geo/', views.security_geo, name='security_geo'),
     path('security/geo-data/', views.security_geo_data, name='security_geo_data'),
+    path('security/threat-intel/', views.security_threat_intel, name='security_threat_intel'),
 
     # FinOps Dashboard
     path('finops/', views.finops_dashboard, name='finops_dashboard'),

@@ -45,6 +45,17 @@
       Loading traffic map...
     </div>
   </div>
+  <!-- HTMX: Threat Intelligence (MDTI), loads on page load, parallel -->
+  <div id="threat-intel-section"
+       hx-get="{% url 'core:security_threat_intel' %}"
+       hx-trigger="load"
+       hx-swap="innerHTML"
+       hx-indicator="#threat-intel-spinner">
+    <div id="threat-intel-spinner" style="text-align:center; padding:2rem; color:#666;">
+      <div style="font-size:1.5rem; margin-bottom:0.5rem;">🌐</div>
+      Loading Threat Intelligence...
+    </div>
+  </div>
 </div>
 
 {% endblock %}

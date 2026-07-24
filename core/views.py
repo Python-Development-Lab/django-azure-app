@@ -182,6 +182,66 @@ AppServiceHTTPLogs
     return anomalies
 
 
+def _get_threat_intel_data():
+    """Threat Intelligence summary from MDTI connector (ThreatIntelIndicators).
+    Uses the same MSI + Log Analytics REST pattern as _get_http_anomalies."""
+
+    summary_rows = []
+    recent_rows = []
+    error = None
+
+    try:
+        summary_rows = _log_analytics_query("""
+ThreatIntelIndicators
+| where TimeGenerated > ago(7d)
+| where IsActive == true
+| summarize count() by ObservableKey
+| order by count_ desc
+""")
+
+        recent_rows = _log_analytics_query("""
+ThreatIntelIndicators
+| where TimeGenerated > ago(7d)
+| where IsActive == true
+| project TimeGenerated, ObservableKey, ObservableValue, Confidence, Data
+| top 10 by TimeGenerated desc
+""")
+    except Exception as e:
+        error = f"Threat Intelligence query failed: {e}"
+
+    breakdown = []
+    total_count = 0
+    for row in summary_rows:
+        observable_key, count = row[0], row[1]
+        breakdown.append({"type": observable_key, "count": count})
+        total_count += count
+
+    recent_indicators = []
+    for row in recent_rows:
+        time_generated, obs_key, obs_value, confidence, data_raw = row
+        description = ""
+        if data_raw:
+            try:
+                data_parsed = _json.loads(data_raw) if isinstance(data_raw, str) else data_raw
+                description = data_parsed.get("description", "")
+            except (ValueError, TypeError, AttributeError):
+                description = ""
+        recent_indicators.append({
+            "time_generated": time_generated,
+            "observable_key": obs_key,
+            "observable_value": obs_value,
+            "confidence": confidence,
+            "description": description[:120],
+        })
+
+    return {
+        "total_count": total_count,
+        "breakdown": breakdown,
+        "recent_indicators": recent_indicators,
+        "error": error,
+    }
+
+
 def _get_traffic_geo():
     """Aggregate request counts by geographic location (24h) using
     geo_info_from_ip_address() — no external GeoIP service needed."""
@@ -284,6 +344,10 @@ def security_alerts(request):
         'http_anomalies': http_anomalies,
         'http_anomalies_error': http_anomalies_error,
     })
+
+def security_threat_intel(request):
+    context = _get_threat_intel_data()
+    return render(request, 'core/partials/security_threat_intel.html', context)
 
 
 # ── FinOps Dashboard ──────────────────────────────────────────────────────────

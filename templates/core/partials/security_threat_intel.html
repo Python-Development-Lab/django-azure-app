@@ -1,0 +1,54 @@
+{# templates/core/partials/security_threat_intel.html #}
+
+<div class="ti-panel">
+    <h3 class="ti-panel-title">Threat Intelligence (MDTI)</h3>
+
+    {% if error %}
+        <div class="ti-error">
+            ⚠️ {{ error }}
+        </div>
+    {% else %}
+        <div class="ti-summary-row">
+            <div class="ti-summary-card">
+                <span class="ti-summary-number">{{ total_count }}</span>
+                <span class="ti-summary-label">Активних TI-індикаторів (7д)</span>
+            </div>
+
+            <div class="ti-breakdown">
+                {% for item in breakdown %}
+                    <div class="ti-breakdown-item">
+                        <span class="ti-breakdown-type">{{ item.type }}</span>
+                        <span class="ti-breakdown-count">{{ item.count }}</span>
+                    </div>
+                {% empty %}
+                    <p class="ti-empty">Дані ще не завантажені — MDTI-конектор може потребувати кілька хвилин на перше заповнення.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <table class="ti-table">
+            <thead>
+                <tr>
+                    <th>Час</th>
+                    <th>Тип</th>
+                    <th>Значення</th>
+                    <th>Довіра</th>
+                    <th>Опис</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for indicator in recent_indicators %}
+                    <tr>
+                        <td>{{ indicator.time_generated|date:"d.m H:i" }}</td>
+                        <td><span class="ti-type-badge">{{ indicator.observable_key }}</span></td>
+                        <td class="ti-value">{{ indicator.observable_value }}</td>
+                        <td>{{ indicator.confidence }}</td>
+                        <td class="ti-description">{{ indicator.description }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5" class="ti-empty">Немає індикаторів за останні 7 днів.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
