@@ -345,6 +345,7 @@ def security_alerts(request):
         'http_anomalies_error': http_anomalies_error,
     })
 
+
 def security_threat_intel(request):
     context = _get_threat_intel_data()
     return render(request, 'core/partials/security_threat_intel.html', context)
