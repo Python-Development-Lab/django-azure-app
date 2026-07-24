@@ -2,6 +2,7 @@ import json as _json
 import urllib.request
 import urllib.error
 from datetime import date
+from datetime import datetime as _datetime_cls
 from pathlib import Path
 
 from django.contrib.auth.decorators import login_required
@@ -218,7 +219,16 @@ ThreatIntelIndicators
 
     recent_indicators = []
     for row in recent_rows:
-        time_generated, obs_key, obs_value, confidence, data_raw = row
+        time_generated_raw, obs_key, obs_value, confidence, data_raw = row
+        try:
+            if isinstance(time_generated_raw, str):
+                time_generated = _datetime_cls.fromisoformat(
+                    time_generated_raw.replace("Z", "+00:00")
+                )
+            else:
+                time_generated = time_generated_raw
+        except (ValueError, AttributeError):
+            time_generated = None
         description = ""
         if data_raw:
             try:
