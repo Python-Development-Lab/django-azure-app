@@ -1,4 +1,4 @@
-{# templates/core/partials/security_compliance.html — English version #}
+{# templates/core/partials/security_compliance.html — matrix/grid layout #}
 
 <div class="compliance-panel">
     <h3 class="compliance-panel-title">Compliance Mapping — ISO/IEC 27001:2022 Annex A (Technological)</h3>
@@ -9,37 +9,114 @@
         </div>
     {% else %}
         <p class="compliance-summary">
-            Selected controls shown: <strong>{{ total_controls }}</strong> of 34 A.8.x Technological controls
+            {{ total_controls }} of 34 A.8.x Technological controls shown
             ({{ implemented_count }} implemented, {{ partial_count }} partial).
             Organizational, People and Physical themes (59 further controls) are not covered here.
         </p>
 
-        {% for item in mappings %}
-            <div class="compliance-card compliance-{{ item.status }}">
-                <div class="compliance-header">
-                    <span class="compliance-regulation-badge">{{ item.regulation }}</span>
-                    <span class="compliance-control-badge">{{ item.control_id }}</span>
-                    <span class="compliance-status-badge status-{{ item.status }}">
-                        {% if item.status == "implemented" %}✓ Implemented
-                        {% elif item.status == "partial" %}◐ Partial
-                        {% elif item.status == "planned" %}○ Planned
-                        {% elif item.status == "not_applicable" %}— N/A
-                        {% elif item.status == "gap" %}✕ Gap
-                        {% else %}{{ item.status }}
+        <div class="compliance-legend">
+            <span class="legend-item"><span class="legend-swatch status-implemented"></span> Implemented</span>
+            <span class="legend-item"><span class="legend-swatch status-partial"></span> Partial</span>
+            <span class="legend-item"><span class="legend-swatch status-planned"></span> Planned</span>
+            <span class="legend-item"><span class="legend-swatch status-gap"></span> Gap</span>
+            <span class="legend-item"><span class="legend-swatch status-not_applicable"></span> N/A</span>
+        </div>
+
+        <div class="compliance-matrix">
+            {% for item in mappings %}
+                <details class="matrix-tile status-{{ item.status }}">
+                    <summary>
+                        <span class="tile-control-id">{{ item.control_id }}</span>
+                        <span class="tile-title">{{ item.title }}</span>
+                    </summary>
+                    <div class="tile-detail">
+                        <p class="tile-description">{{ item.description }}</p>
+                        {% if item.evidence %}
+                            <p class="tile-evidence"><strong>Evidence:</strong> {{ item.evidence }}</p>
                         {% endif %}
-                    </span>
-                </div>
-                <h4 class="compliance-title">{{ item.title }}</h4>
-                <p class="compliance-description">{{ item.description }}</p>
-                {% if item.evidence %}
-                    <p class="compliance-evidence"><strong>Evidence:</strong> {{ item.evidence }}</p>
-                {% endif %}
-                {% if item.gaps %}
-                    <p class="compliance-gaps"><strong>Gaps:</strong> {{ item.gaps }}</p>
-                {% endif %}
-            </div>
-        {% empty %}
-            <p class="compliance-empty">No compliance mappings documented yet.</p>
-        {% endfor %}
+                        {% if item.gaps %}
+                            <p class="tile-gaps"><strong>Gaps:</strong> {{ item.gaps }}</p>
+                        {% endif %}
+                    </div>
+                </details>
+            {% empty %}
+                <p class="compliance-empty">No compliance mappings documented yet.</p>
+            {% endfor %}
+        </div>
     {% endif %}
 </div>
+
+<style>
+.compliance-panel { padding: 1rem; }
+.compliance-summary { font-size: 0.85rem; color: #999; margin-bottom: 0.75rem; }
+
+.compliance-legend {
+    display: flex; flex-wrap: wrap; gap: 1rem;
+    margin-bottom: 1rem; font-size: 0.8rem; color: #ccc;
+}
+.legend-item { display: flex; align-items: center; gap: 0.35rem; }
+.legend-swatch {
+    display: inline-block; width: 12px; height: 12px; border-radius: 2px;
+}
+
+.compliance-matrix {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.5rem;
+}
+
+.matrix-tile {
+    border-radius: 4px;
+    border-left: 4px solid #666;
+    background: rgba(255,255,255,0.04);
+    font-size: 0.8rem;
+    overflow: hidden;
+}
+.matrix-tile summary {
+    padding: 0.5rem 0.6rem;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+.matrix-tile summary::-webkit-details-marker { display: none; }
+.matrix-tile summary:hover { background: rgba(255,255,255,0.06); }
+
+.tile-control-id {
+    font-family: monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    opacity: 0.8;
+}
+.tile-title {
+    font-size: 0.78rem;
+    line-height: 1.2;
+}
+
+.tile-detail {
+    padding: 0 0.6rem 0.6rem 0.6rem;
+    font-size: 0.75rem;
+    color: #ccc;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+.tile-detail p { margin: 0.4rem 0; }
+
+.status-implemented, .legend-swatch.status-implemented { border-color: #38a169; }
+.legend-swatch.status-implemented { background: #38a169; }
+
+.status-partial, .legend-swatch.status-partial { border-color: #d69e2e; }
+.legend-swatch.status-partial { background: #d69e2e; }
+
+.status-planned, .legend-swatch.status-planned { border-color: #3182ce; }
+.legend-swatch.status-planned { background: #3182ce; }
+
+.status-gap, .legend-swatch.status-gap { border-color: #e53e3e; }
+.legend-swatch.status-gap { background: #e53e3e; }
+
+.status-not_applicable, .legend-swatch.status-not_applicable { border-color: #718096; }
+.legend-swatch.status-not_applicable { background: #718096; }
+
+.compliance-error { color: #e53e3e; padding: 0.5rem; }
+.compliance-empty { color: #888; font-style: italic; }
+</style>
