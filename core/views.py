@@ -361,6 +361,90 @@ def security_threat_intel(request):
     return render(request, 'core/partials/security_threat_intel.html', context)
 
 
+def _parse_compliance_file(file_path):
+    """Parses a single compliance .md file: frontmatter (control_id,
+    regulation, title, status, date) + '## Description' / '## Evidence' /
+    optional '## Gaps' sections."""
+    with open(file_path, encoding='utf-8') as f:
+        content = f.read()
+
+    parts = content.split('---', 2)
+    if len(parts) < 3:
+        return None
+
+    frontmatter_raw, body = parts[1], parts[2]
+
+    meta = {}
+    for line in frontmatter_raw.strip().splitlines():
+        if ':' not in line:
+            continue
+        key, _, value = line.partition(':')
+        meta[key.strip()] = value.strip()
+
+    sections = {}
+    current_key = None
+    current_lines = []
+    for line in body.splitlines():
+        if line.startswith('## '):
+            if current_key:
+                sections[current_key] = '\n'.join(current_lines).strip()
+            current_key = line[3:].strip()
+            current_lines = []
+        elif current_key:
+            current_lines.append(line)
+    if current_key:
+        sections[current_key] = '\n'.join(current_lines).strip()
+
+    return {
+        'control_id': meta.get('control_id', ''),
+        'regulation': meta.get('regulation', ''),
+        'title': meta.get('title', file_path.stem),
+        'status': meta.get('status', 'unknown'),
+        'date': meta.get('date', ''),
+        'description': sections.get('Description', ''),
+        'evidence': sections.get('Evidence', ''),
+        'gaps': sections.get('Gaps', ''),
+    }
+
+
+def _get_compliance_mappings():
+    """Scans docs/compliance/*.md, parses each file, sorted by filename."""
+    compliance_dir = Path(__file__).parent.parent / 'docs' / 'compliance'
+    mappings = []
+    error = None
+
+    try:
+        if not compliance_dir.exists():
+            return [], f"Directory {compliance_dir} not found"
+
+        md_files = sorted(compliance_dir.glob('*.md'))
+        for file_path in md_files:
+            parsed = _parse_compliance_file(file_path)
+            if parsed:
+                mappings.append(parsed)
+    except Exception as e:
+        error = f"Error reading compliance files: {e}"
+
+    return mappings, error
+
+
+def security_compliance(request):
+    """HTMX partial — GET /security/compliance/"""
+    mappings, error = _get_compliance_mappings()
+
+    total = len(mappings)
+    implemented = sum(1 for m in mappings if m['status'] == 'implemented')
+    partial = sum(1 for m in mappings if m['status'] == 'partial')
+
+    return render(request, 'core/partials/security_compliance.html', {
+        'mappings': mappings,
+        'error': error,
+        'total_controls': total,
+        'implemented_count': implemented,
+        'partial_count': partial,
+    })
+
+
 # ── FinOps Dashboard ──────────────────────────────────────────────────────────
 
 @login_required(login_url='/auth/login/')

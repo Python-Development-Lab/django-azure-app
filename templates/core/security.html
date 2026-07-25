@@ -56,6 +56,17 @@
       Loading Threat Intelligence...
     </div>
   </div>
+  <!-- HTMX: Compliance Mapping, loads on page load, parallel -->
+  <div id="compliance-section"
+       hx-get="{% url 'core:security_compliance' %}"
+       hx-trigger="load"
+       hx-swap="innerHTML"
+       hx-indicator="#compliance-spinner">
+    <div id="compliance-spinner" style="text-align:center; padding:2rem; color:#666;">
+      <div style="font-size:1.5rem; margin-bottom:0.5rem;">📜</div>
+      Loading compliance mapping...
+    </div>
+  </div>
 </div>
 
 {% endblock %}

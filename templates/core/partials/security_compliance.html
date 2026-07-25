@@ -1,0 +1,45 @@
+{# templates/core/partials/security_compliance.html — English version #}
+
+<div class="compliance-panel">
+    <h3 class="compliance-panel-title">Compliance Mapping — ISO/IEC 27001:2022 Annex A (Technological)</h3>
+
+    {% if error %}
+        <div class="compliance-error">
+            ⚠️ {{ error }}
+        </div>
+    {% else %}
+        <p class="compliance-summary">
+            Selected controls shown: <strong>{{ total_controls }}</strong> of 34 A.8.x Technological controls
+            ({{ implemented_count }} implemented, {{ partial_count }} partial).
+            Organizational, People and Physical themes (59 further controls) are not covered here.
+        </p>
+
+        {% for item in mappings %}
+            <div class="compliance-card compliance-{{ item.status }}">
+                <div class="compliance-header">
+                    <span class="compliance-regulation-badge">{{ item.regulation }}</span>
+                    <span class="compliance-control-badge">{{ item.control_id }}</span>
+                    <span class="compliance-status-badge status-{{ item.status }}">
+                        {% if item.status == "implemented" %}✓ Implemented
+                        {% elif item.status == "partial" %}◐ Partial
+                        {% elif item.status == "planned" %}○ Planned
+                        {% elif item.status == "not_applicable" %}— N/A
+                        {% elif item.status == "gap" %}✕ Gap
+                        {% else %}{{ item.status }}
+                        {% endif %}
+                    </span>
+                </div>
+                <h4 class="compliance-title">{{ item.title }}</h4>
+                <p class="compliance-description">{{ item.description }}</p>
+                {% if item.evidence %}
+                    <p class="compliance-evidence"><strong>Evidence:</strong> {{ item.evidence }}</p>
+                {% endif %}
+                {% if item.gaps %}
+                    <p class="compliance-gaps"><strong>Gaps:</strong> {{ item.gaps }}</p>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p class="compliance-empty">No compliance mappings documented yet.</p>
+        {% endfor %}
+    {% endif %}
+</div>

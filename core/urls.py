@@ -14,6 +14,7 @@ urlpatterns = [
     path('security/geo/', views.security_geo, name='security_geo'),
     path('security/geo-data/', views.security_geo_data, name='security_geo_data'),
     path('security/threat-intel/', views.security_threat_intel, name='security_threat_intel'),
+    path('security/compliance/', views.security_compliance, name='security_compliance'),
 
     # FinOps Dashboard
     path('finops/', views.finops_dashboard, name='finops_dashboard'),
