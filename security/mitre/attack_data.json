@@ -62,9 +62,9 @@
         {
           "id": "T1068",
           "name": "Exploitation for Privilege Escalation",
-          "status": "detected",
-          "control": "Threat Ontology pattern: privilege_escalation (KBSSE)",
-          "detection": "RiskScoringMiddleware confidence threshold"
+          "status": "gap",
+          "control": "Threat Ontology pattern: privilege_escalation (KBSSE) — planned, not implemented",
+          "detection": "Planned: RiskScoringMiddleware (concept only, no code yet — see backlog)"
         },
         {
           "id": "T1078.004b",
@@ -116,16 +116,16 @@
         {
           "id": "T1110.004",
           "name": "Credential Stuffing",
-          "status": "detected",
-          "control": "Threat Ontology pattern: credential_stuffing (KBSSE)",
-          "detection": "RiskScoringMiddleware IoC signals"
+          "status": "gap",
+          "control": "Threat Ontology pattern: credential_stuffing (KBSSE) — planned, not implemented",
+          "detection": "Planned: RiskScoringMiddleware (concept only, no code yet — see backlog)"
         },
         {
           "id": "T1528",
           "name": "Steal Application Access Token",
-          "status": "detected",
-          "control": "Threat Ontology pattern: token_theft (KBSSE)",
-          "detection": "MSAL token refresh middleware anomaly check"
+          "status": "gap",
+          "control": "Threat Ontology pattern: token_theft (KBSSE) — planned, not implemented",
+          "detection": "TokenRefreshMiddleware refreshes tokens but performs no anomaly detection — gap"
         }
       ]
     },
