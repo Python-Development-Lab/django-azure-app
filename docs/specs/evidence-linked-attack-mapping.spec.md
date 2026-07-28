@@ -175,3 +175,10 @@ All four entries are marked `status: "gap"` (not `mitigated`/`detected`) since t
 ## 9. Traceability
 
 This spec directly implements the "Evidence-Linked ATT&CK Mapping" half of the 27.07.2026 backlog item. The IOC Reputation Lookup half of that backlog item is a separate, independent spec (not covered here) since it touches a different code path (`_get_defender_alerts()`) with no data-model overlap.
+
+## Revision Log
+
+| Date | Change | Reason |
+|---|---|---|
+| 27.07.2026 | Initial draft created | Formalizes the "Evidence-Linked ATT&CK Mapping" half of the AdversaryGraph-comparison backlog item |
+| 28.07.2026 | Open Question 1 resolved; section 4.1 added with 4 confirmed evidence entries (T1552, T1555.005, T1021, T1021.007); REQ-12 added (remediation tracking, `remediated_date`); acceptance criteria checklist updated | Direct portal inspection of the Critical Attack Path's MITRE ATT&CK tactics panel confirmed the exact technique IDs, replacing the placeholder "likely T1021, to be confirmed" |

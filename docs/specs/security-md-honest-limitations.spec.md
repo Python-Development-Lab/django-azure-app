@@ -96,3 +96,8 @@ SECURITY.md
 ## 9. Traceability
 
 This spec depends on findings already recorded from prior sessions: the 25.07.2026 MCSB regulatory compliance review, the 25.07.2026 and 27.07.2026 RBAC over-privilege findings (manual review and independent CSPM confirmation), and the 27.07.2026 Critical Attack Path discovery. It cross-references `docs/compliance/azure-platform-certifications.md` (shared responsibility mapping) and anticipates the still-unwritten `docs/compliance/mcsb-cross-reference.md`. It is independent of the three other specs from this session (Evidence-Linked ATT&CK Mapping, Sentinel Rules Validation Trail, Evidence-Chain PlantUML Diagrams) — no shared data model — though all four specs draw on the same underlying set of real findings from this project's July 2026 sessions, and should be kept mutually consistent on dates and technical facts where they describe the same incidents.
+## Revision Log
+
+| Date | Change | Reason |
+|---|---|---|
+| 28.07.2026 | Initial draft created, including the disclosure-detail decision in Open Question 2 from the outset | Authored after the Critical Attack Path finding was already known in the same session, prompting explicit consideration of what level of exploit detail is safe to publish in a public `SECURITY.md` before remediation is complete |

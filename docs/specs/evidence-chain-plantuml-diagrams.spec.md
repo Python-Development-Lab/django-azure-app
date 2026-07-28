@@ -91,3 +91,8 @@ docs/diagrams/
 ## 9. Traceability
 
 This spec depends on both the Evidence-Linked ATT&CK Mapping spec (`docs/specs/evidence-linked-attack-mapping.spec.md`) and the Sentinel Rules Validation Trail spec (`docs/specs/sentinel-rules-validation-trail.spec.md`) as its sole sources of truth (per REQ-02) — this spec should be implemented last among the three, after both source documents exist, to avoid diagrams drifting from not-yet-finalized evidence/validation content. If a future Security Dashboard Phase 2 (graph database) is pursued, the 8 step-types defined here become the starting schema for graph nodes/edges, per the original 27.07.2026 backlog item's stated upgrade path.
+## Revision Log
+
+| Date | Change | Reason |
+|---|---|---|
+| 28.07.2026 | Initial draft created, including the third diagram (Critical Attack Path) alongside the two originally-scoped incidents | Authored after the Critical Attack Path finding was already confirmed with all 4 technique IDs in the same session, so it was included as a third diagram from the outset rather than added later |

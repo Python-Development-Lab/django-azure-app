@@ -89,3 +89,8 @@ docs/security/rule-validation/
 ## 9. Traceability
 
 This spec operationalizes the "Sentinel Rules Validation Trail" backlog item (27.07.2026). It shares incident-evidence data with the Evidence-Linked ATT&CK Mapping spec (`docs/specs/evidence-linked-attack-mapping.spec.md`) — both must stay in sync on incident dates/IDs (see REQ-02 and the final acceptance criterion). It is independent of the IOC Reputation Lookup spec (`docs/specs/ioc-reputation-lookup.spec.md`), which touches a different code path with no overlap. This spec is also the natural precursor to the separately-tracked Evidence-Chain PlantUML Diagrams backlog item — once this validation trail exists in prose form, the PlantUML diagrams can visualize the same 8-section chain rather than being authored independently.
+## Revision Log
+
+| Date | Change | Reason |
+|---|---|---|
+| 28.07.2026 | Initial draft created, including REQ-04/REQ-05 (Critical Attack Path coverage check) from the outset | Authored after the Critical Attack Path (`c81dcadc-7b9c-3066-79cc-74be12d8b64f`) was already confirmed in the same session, so the coverage-check requirement was built in from the first draft rather than added as a later revision |

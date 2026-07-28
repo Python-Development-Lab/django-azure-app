@@ -111,3 +111,11 @@ The originally proposed backlog item ("investigate enabling a Threat Intelligenc
 ## 9. Traceability
 
 This spec implements the "IOC Reputation Lookup" half of the 27.07.2026 backlog item. It is independent of the Evidence-Linked ATT&CK Mapping spec (`docs/specs/evidence-linked-attack-mapping.spec.md`) — no shared data model, though both specs originate from the same backlog entry and the same AdversaryGraph article comparison that prompted the scoped-down approach (full CTI-workbench IOC enrichment explicitly rejected as out of scope; see backlog rationale).
+
+## Revision Log
+
+| Date | Change | Reason |
+|---|---|---|
+| 27.07.2026 | Initial draft created | Formalizes the "IOC Reputation Lookup" half of the AdversaryGraph-comparison backlog item |
+| 28.07.2026 (revision 1) | REQ-02 deprioritized as "not yet functional"; REQ-03/REQ-04 (fallback path) promoted to primary; section 8a added proposing a new backlog item to enable a TI connector | Direct query against `ThreatIntelligenceIndicator` returned zero rows, misread as "no TI connector configured" |
+| 28.07.2026 (revision 2, correction) | REQ-02 restored as primary and confirmed functional; corrected table name throughout (`ThreatIntelIndicators`, not the deprecated `ThreatIntelligenceIndicator`); REQ-13, REQ-14 added (short-validity-window classification wording and cache TTL handling); section 8a retracted; data model, acceptance criteria, and NFR-01 updated to match | Revision 1's diagnosis queried the wrong (legacy, deprecated-since-July-2025) table. A follow-up query against the correct current table confirmed the Microsoft Defender Threat Intelligence connector is active and populated with real, high-confidence indicators |
