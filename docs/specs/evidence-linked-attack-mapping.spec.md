@@ -53,6 +53,69 @@ Each technique entry in `attack_data.json` gains an optional `evidence` array:
 
 Field `attack_path_id` is used when evidence originates from a Defender for Cloud Attack Path (e.g., `c81dcadc-7b9c-3066-79cc-74be12d8b64f` for the App Service → Key Vault path) rather than a Sentinel alert.
 
+### 4.1 Confirmed evidence entries for the Critical Attack Path
+
+The App Service → Managed Identity → Key Vault path (`c81dcadc-7b9c-3066-79cc-74be12d8b64f`, Critical severity, root cause: outdated `cryptography` package) produces **four** evidence entries across two tactics, all sharing the same `attack_path_id`:
+
+```json
+[
+  {
+    "technique_id": "T1552",
+    "status": "gap",
+    "evidence": [
+      {
+        "incident_date": "2026-07-27",
+        "source": "defender-cspm-attack-path-analysis",
+        "detected_by": "Attack Path Analysis: Internet exposed Azure Web App with high severity vulnerabilities allows lateral movement to Critical Azure Key Vault",
+        "attack_path_id": "c81dcadc-7b9c-3066-79cc-74be12d8b64f",
+        "note": "Tactic: Credential Access. Root cause: outdated cryptography package on app-django-azure-staging enabling lateral movement to kv-django-azure-staging."
+      }
+    ]
+  },
+  {
+    "technique_id": "T1555.005",
+    "status": "gap",
+    "evidence": [
+      {
+        "incident_date": "2026-07-27",
+        "source": "defender-cspm-attack-path-analysis",
+        "detected_by": "Attack Path Analysis: Internet exposed Azure Web App with high severity vulnerabilities allows lateral movement to Critical Azure Key Vault",
+        "attack_path_id": "c81dcadc-7b9c-3066-79cc-74be12d8b64f",
+        "note": "Tactic: Credential Access. Microsoft's classification of Key Vault credential-theft step within this attack path -- not a literal password-manager application."
+      }
+    ]
+  },
+  {
+    "technique_id": "T1021",
+    "status": "gap",
+    "evidence": [
+      {
+        "incident_date": "2026-07-27",
+        "source": "defender-cspm-attack-path-analysis",
+        "detected_by": "Attack Path Analysis: Internet exposed Azure Web App with high severity vulnerabilities allows lateral movement to Critical Azure Key Vault",
+        "attack_path_id": "c81dcadc-7b9c-3066-79cc-74be12d8b64f",
+        "note": "Tactic: Lateral Movement. Attacker authenticates as the Managed Identity to reach Key Vault."
+      }
+    ]
+  },
+  {
+    "technique_id": "T1021.007",
+    "status": "gap",
+    "evidence": [
+      {
+        "incident_date": "2026-07-27",
+        "source": "defender-cspm-attack-path-analysis",
+        "detected_by": "Attack Path Analysis: Internet exposed Azure Web App with high severity vulnerabilities allows lateral movement to Critical Azure Key Vault",
+        "attack_path_id": "c81dcadc-7b9c-3066-79cc-74be12d8b64f",
+        "note": "Tactic: Lateral Movement (Cloud Services sub-technique). Cloud-native equivalent of T1021 specific to Managed Identity authentication."
+      }
+    ]
+  }
+]
+```
+
+All four entries are marked `status: "gap"` (not `mitigated`/`detected`) since the remediation (updating `cryptography`, tightening Managed Identity permissions, hardening internet exposure per Defender's "Additional recommendations") has not yet been applied as of this spec's authoring date. Once remediated, these statuses should be revisited and the evidence entries kept as historical record (do not delete evidence when a gap is closed -- append a `remediated_date` field instead, see REQ-12 below).
+
 ## 5. Requirements (EARS notation)
 
 ### 5.1 Data layer
@@ -61,6 +124,7 @@ Field `attack_path_id` is used when evidence originates from a Defender for Clou
 - **REQ-02 (Ubiquitous):** The system shall treat a technique with an empty `evidence` array as "theoretically mapped, not yet verified."
 - **REQ-03 (Unwanted behavior):** If an evidence entry references a `technique_id` that does not exist in the technique list, then the build/validation step shall fail with a clear error identifying the invalid entry.
 - **REQ-04 (Unwanted behavior):** If an evidence entry is missing `incident_date` or `detected_by`, then validation shall fail — every evidence entry must be independently traceable.
+- **REQ-12 (Event-driven):** When a gap identified by an evidence entry is remediated, the system shall retain the original evidence entry and add a `remediated_date` field rather than deleting the entry — evidence is a historical record, not a live-status field.
 
 ### 5.2 Visualization layer (D3.js graph)
 
@@ -87,7 +151,7 @@ Field `attack_path_id` is used when evidence originates from a Defender for Clou
 ## 7. Acceptance Criteria (checklist)
 
 - [ ] `attack_data.json` schema documented with the `evidence` field (optional, array, can be empty)
-- [ ] Evidence populated for: NMap scan (T1595, T1046), Zero Trust device alerts (T1078, T1036), and the Critical Attack Path finding (new technique entry — likely T1021 Remote Services and/or a Credential Access technique, to be confirmed from the Defender for Cloud MITRE ATT&CK tactics panel)
+- [ ] Evidence populated for: NMap scan (T1595, T1046), Zero Trust device alerts (T1078, T1036), and the Critical Attack Path finding — **confirmed** four entries: T1552 (Unsecured Credentials), T1555.005 (Password Managers), T1021 (Remote Services), T1021.007 (Cloud Services) — see section 4.1
 - [ ] D3.js graph visually distinguishes evidence-backed nodes from theoretical-only nodes
 - [ ] Coverage matrix table has a sortable "Evidence count" column
 - [ ] CI fails the build if an evidence entry is malformed or references an unknown technique
@@ -95,7 +159,17 @@ Field `attack_path_id` is used when evidence originates from a Defender for Clou
 
 ## 8. Open Questions
 
-1. Exact technique ID and tactic for the second MITRE ATT&CK icon shown in the Defender for Cloud Attack Path screen (partially obscured in the reviewed screenshot) — confirm before populating that evidence entry.
+1. ~~Exact technique ID and tactic for the second MITRE ATT&CK icon shown in the Defender for Cloud Attack Path screen~~ **RESOLVED (28.07.2026):** confirmed via direct portal inspection. The Critical Attack Path (`c81dcadc-7b9c-3066-79cc-74be12d8b64f`) maps to four techniques across two tactics:
+
+   | Tactic | Technique ID | Name |
+   |---|---|---|
+   | Lateral Movement | T1021 | Remote Services |
+   | Lateral Movement | T1021.007 | Cloud Services |
+   | Credential Access | T1552 | Unsecured Credentials |
+   | Credential Access | T1555.005 | Password Managers |
+
+   Note: T1555.005 ("Password Managers") is Microsoft's classification of the Key Vault credential-theft step within this attack path — not a literal password-manager application. This should be noted inline in the evidence entry's `detected_by`/context field to avoid confusion during future review.
+
 2. Whether `attack_path_id` should eventually support a live deep-link to the Azure Portal Attack Path view (would require storing the full portal URL pattern, which is version-dependent — see prior discussion on portal deep-link fragility). Decision: keep as plain-text ID for now; revisit only if the deep-link pattern proves stable across portal sessions.
 
 ## 9. Traceability
