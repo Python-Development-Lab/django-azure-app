@@ -148,6 +148,7 @@ While running the Security Dashboard baseline spec's Verification Batches, direc
 | External articles/sources reviewed | 11 | See `docs/research-notes.md` for the full registry |
 | Terminal heredoc failures (`cat > ... << 'EOF'` breaking on long pastes) | 3 | Resolved by switching to VS Code Explorer paste or base64-encoded single-line `bash` commands for files beyond ~100 lines |
 | Sessions to reach first Tier 2 (Spec-Anchored) pilot | 1 | Security Dashboard baseline spec, same session as SDD adoption itself |
+| **Secure Score breakdown confirmed (28.07.2026)** | 6.8/19 = 36% | Verified via `az rest` against `secureScoreControls` API — matches portal exactly. Single highest-leverage fix identified: "Remediate vulnerabilities" is 0/6 (100% lost, the single largest weighted category) — almost certainly the `cryptography` CVEs already tracked as CRITICAL. Fixing it alone projects to ~67% Secure Score (12.8/19), nearly doubling the current score from one already-planned action. |
 
 **Interpretation:** the 4 verify-before-lock catches and 7 pre-existing-artifact discoveries are the strongest evidence that the methodology is earning its overhead — each one would very likely have caused wasted implementation time or duplicated work if undiscovered. The 3 heredoc failures are a minor but real operational cost of the chosen file-delivery method; documented here so the lesson (prefer VS Code paste or base64 for large files) isn't relearned from scratch next time.
 
