@@ -65,8 +65,8 @@
 | Batch | REQs covered | Description | Depends on | Azure write required? |
 |---|---|---|---|---|
 | 1 | REQ-01, REQ-0N | [Short description — e.g., "data schema + validation"] | — | No |
-| 2 | REQ-0N-REQ-0N | [...] | Batch 1 | No / Yes |
-| 3 | REQ-0N-REQ-0N | [...] | Batch 1, 2 | Yes |
+| 2 | REQ-0N–REQ-0N | [...] | Batch 1 | No / Yes |
+| 3 | REQ-0N–REQ-0N | [...] | Batch 1, 2 | Yes |
 
 **Guidance for filling this table:**
 - Each batch should be small enough to implement, test, and review within a single fresh agent session — as a rule of thumb, prefer 3-6 requirements per batch over dumping 10+ into one.
@@ -96,6 +96,21 @@
 
 ---
 
+## Requirement Traceability Verification (fill in only after implementation)
+
+**Do not populate this section while authoring the spec.** This is a separate, post-implementation verification pass — ideally run in a fresh agent session, not the same conversation that wrote the implementation, to avoid the self-review blind spot (an agent that just wrote code is biased toward believing it's correct). Green tests are necessary but not sufficient: a passing test suite can still hide a requirement that was quietly never implemented. Prompt used for this pass:
+
+> Audit the completed implementation against `docs/specs/[this-file].spec.md`. Do not modify code during this pass. For every requirement REQ-01 through REQ-NN, provide: Status (satisfied / partially satisfied / missing), implementation file and symbol, test file and test name.
+
+| REQ | Status | Implementation (file:symbol) | Test (file::test_name) | Notes |
+|---|---|---|---|---|
+| REQ-01 | — | — | — | — |
+| REQ-02 | — | — | — | — |
+
+Only change the spec's **Status** field (top of file) from `Draft` to `Implemented` once this table is fully populated and every requirement is `satisfied` (or any `partially satisfied`/`missing` entries have been explicitly accepted as known limitations, cross-referenced in Open Questions or a new SECURITY.md Honest Limitations entry rather than silently ignored).
+
+---
+
 ## Usage Notes (delete this section when creating a real spec from this template)
 
 **File naming:** `kebab-case-feature-name.spec.md`, placed in `docs/specs/`.
@@ -106,7 +121,10 @@
 1. Every Open Question should be either resolved (with the real check performed and the answer recorded) or have an explicit recommendation — don't leave a spec "ready for implementation" with unresolved blind guesses baked into the Requirements section.
 2. Every claim in Problem Statement, Data Model, and Requirements should trace back to something real and already documented elsewhere in the project (an incident, a session finding, a prior spec) — do not invent hypothetical scenarios to justify a requirement.
 3. Fill in the Task Breakdown table (section 7) — group requirements into batches sized for a single fresh agent session before handing the spec to Claude Code, rather than requesting all requirements in one long conversation.
-4. Add the new spec to `docs/specs/README.md`'s Index table and Implementation Order section.
-5. If the spec depends on or is depended on by another spec, cross-reference both directions (in this spec's Traceability, and by updating the other spec's Traceability if needed).
+4. **Before handing any batch to Claude Code, run an Explore step first** ("Explore [relevant files] without modifying anything. Confirm the current schema/conventions and report any discrepancy with this spec's Data Model/Requirements section.") — do not let Claude Code implement directly against a spec's assumptions without confirming them against the live codebase first. This is exactly the gap that surfaced in `security-dashboard-baseline.spec.md`'s Open Question 1.
+5. Add the new spec to `docs/specs/README.md`'s Index table and Implementation Order section.
+6. If the spec depends on or is depended on by another spec, cross-reference both directions (in this spec's Traceability, and by updating the other spec's Traceability if needed).
+
+**After implementation:** populate the Requirement Traceability Verification table above (ideally in a fresh session — see `.claude/agents/security-reviewer.md` for a ready-made independent-review subagent) before changing Status to Implemented.
 
 **After any post-creation revision:** add an entry to this spec's own Revision Log (date, what changed, why) — do not silently edit Requirements or Acceptance Criteria without a record. See `docs/specs/ioc-reputation-lookup.spec.md` for a real example of a spec that went through two corrective revisions, and why the log matters there.
