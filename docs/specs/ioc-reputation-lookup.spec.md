@@ -87,7 +87,18 @@ Example real match (from confirmed live data, 28.07.2026): an alert with source 
 - **NFR-03:** The enrichment step shall not introduce a new HTMX endpoint — it is folded into the existing `_get_defender_alerts()` code path and existing template.
 - **NFR-04:** Reputation lookups shall not cause the existing `/security/alerts/` load time to regress by more than a small, acceptable margin (informal target: no more than +500ms on first load per distinct uncached IP; cached loads should show no measurable regression).
 
-## 7. Acceptance Criteria (checklist)
+## 7. Task Breakdown
+
+**Why this section exists:** batching requirements avoids handing an AI coding agent a dozen-plus requirements in one shot, which risks context rot (see `docs/specs/TEMPLATE.md` section 7 for the full rationale). Each batch below is sized for a single fresh Claude Code session.
+
+| Batch | REQs covered | Description | Depends on | Azure write required? |
+|---|---|---|---|---|
+| 1 | REQ-01, REQ-02, REQ-13 | Primary lookup against `ThreatIntelIndicators` + short-validity-window classification wording | - | Mixed (code writable now; live query test needs stable Azure access) |
+| 2 | REQ-03, REQ-04, REQ-07 | Fallback public reputation API path + Key Vault secret for the API key | Batch 1 | Yes (one `azurerm_key_vault_secret` via Terraform) |
+| 3 | REQ-05, REQ-06, REQ-14 | Per-IP caching, 24h TTL, `ValidUntil`-aware cache expiry | Batch 1 | No |
+| 4 | REQ-08, REQ-09, REQ-10 | Badge template rendering, styling, graceful failure handling | Batch 1 | No |
+
+## 8. Acceptance Criteria (checklist)
 
 - [ ] Reputation badge appears next to each alert's source IP on `/security/alerts/`
 - [ ] `ThreatIntelIndicators` (not the deprecated `ThreatIntelligenceIndicator`) is queried as the primary, working source, filtered on `IsActive == true`
@@ -98,7 +109,7 @@ Example real match (from confirmed live data, 28.07.2026): an alert with source 
 - [ ] A total lookup failure (both sources unreachable) does not break alert rendering
 - [ ] No new HTMX endpoint added; no regression to the existing single-bundle-style loading pattern
 
-## 8. Open Questions
+## 9. Open Questions
 
 1. ~~Whether `ThreatIntelligenceIndicator` in `law-django-azure-staging` currently has any populated threat intelligence data~~ **RESOLVED and CORRECTED (28.07.2026):** initial check queried the deprecated legacy table (`ThreatIntelligenceIndicator`), which Microsoft stopped ingesting into as of July 2025 — its emptiness was a false signal. A follow-up query against the **current** table, `ThreatIntelIndicators`, confirmed the Microsoft Defender Threat Intelligence connector (`BasicMDTIConnector`) is active and populated with high-confidence (100) botnet/brute-force IP indicators from MSTIC honeypots, each with a short (~5 hour) validity window. **REQ-02 is fully functional today.**
 
@@ -108,7 +119,7 @@ Example real match (from confirmed live data, 28.07.2026): an alert with source 
 
 The originally proposed backlog item ("investigate enabling a Threat Intelligence data connector") is **not needed** — the MDTI connector is already active and populated, confirmed via direct query against the correct (non-deprecated) table. This section is retained only to document that the investigation was done and the item was retracted, avoiding future re-investigation of the same question.
 
-## 9. Traceability
+## 10. Traceability
 
 This spec implements the "IOC Reputation Lookup" half of the 27.07.2026 backlog item. It is independent of the Evidence-Linked ATT&CK Mapping spec (`docs/specs/evidence-linked-attack-mapping.spec.md`) — no shared data model, though both specs originate from the same backlog entry and the same AdversaryGraph article comparison that prompted the scoped-down approach (full CTI-workbench IOC enrichment explicitly rejected as out of scope; see backlog rationale).
 

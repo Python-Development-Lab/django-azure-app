@@ -148,7 +148,18 @@ All four entries are marked `status: "gap"` (not `mitigated`/`detected`) since t
 - **NFR-02:** No new Azure resources, API calls, or Terraform changes.
 - **NFR-03:** Validation (REQ-03, REQ-04) shall run as part of the existing CI pipeline (a simple JSON schema check step is sufficient — no new pipeline job required if it can be folded into an existing lint/test step).
 
-## 7. Acceptance Criteria (checklist)
+## 7. Task Breakdown
+
+**Why this section exists:** batching requirements avoids handing an AI coding agent a dozen-plus requirements in one shot, which risks context rot (see `docs/specs/TEMPLATE.md` section 7 for the full rationale). Each batch below is sized for a single fresh Claude Code session.
+
+| Batch | REQs covered | Description | Depends on | Azure write required? |
+|---|---|---|---|---|
+| 1 | REQ-01, REQ-02, REQ-03, REQ-04, REQ-12 | Data schema (`evidence` array) + validation (unknown `technique_id`, missing required fields) + remediation tracking (`remediated_date`) | - | No |
+| 2 | REQ-05, REQ-06, REQ-07 | D3.js graph visual marker for evidence-backed nodes + hover tooltip/panel | Batch 1 | No |
+| 3 | REQ-08, REQ-09 | Coverage matrix table: sortable "Evidence count" column | Batch 1 | No |
+| 4 | REQ-10, REQ-11 | Link evidence entries to Sentinel incident refs / Attack Path IDs in the tooltip | Batch 1 | No |
+
+## 8. Acceptance Criteria (checklist)
 
 - [ ] `attack_data.json` schema documented with the `evidence` field (optional, array, can be empty)
 - [ ] Evidence populated for: NMap scan (T1595, T1046), Zero Trust device alerts (T1078, T1036), and the Critical Attack Path finding — **confirmed** four entries: T1552 (Unsecured Credentials), T1555.005 (Password Managers), T1021 (Remote Services), T1021.007 (Cloud Services) — see section 4.1
@@ -157,7 +168,7 @@ All four entries are marked `status: "gap"` (not `mitigated`/`detected`) since t
 - [ ] CI fails the build if an evidence entry is malformed or references an unknown technique
 - [ ] No regressions to existing `/security/coverage/` load time or the existing 4-color status scheme
 
-## 8. Open Questions
+## 9. Open Questions
 
 1. ~~Exact technique ID and tactic for the second MITRE ATT&CK icon shown in the Defender for Cloud Attack Path screen~~ **RESOLVED (28.07.2026):** confirmed via direct portal inspection. The Critical Attack Path (`c81dcadc-7b9c-3066-79cc-74be12d8b64f`) maps to four techniques across two tactics:
 
@@ -172,7 +183,7 @@ All four entries are marked `status: "gap"` (not `mitigated`/`detected`) since t
 
 2. Whether `attack_path_id` should eventually support a live deep-link to the Azure Portal Attack Path view (would require storing the full portal URL pattern, which is version-dependent — see prior discussion on portal deep-link fragility). Decision: keep as plain-text ID for now; revisit only if the deep-link pattern proves stable across portal sessions.
 
-## 9. Traceability
+## 10. Traceability
 
 This spec directly implements the "Evidence-Linked ATT&CK Mapping" half of the 27.07.2026 backlog item. The IOC Reputation Lookup half of that backlog item is a separate, independent spec (not covered here) since it touches a different code path (`_get_defender_alerts()`) with no data-model overlap.
 

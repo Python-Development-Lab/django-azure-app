@@ -78,7 +78,17 @@ SECURITY.md
 - **NFR-02:** This spec does not require the separate `docs/compliance/mcsb-cross-reference.md` document to exist first — it may reference the raw 25.07.2026 session findings directly, and can be refined to point at that document once it is written.
 - **NFR-03:** Each "Honest Limitations" entry shall be concise (a few sentences) with a reference/link to fuller detail elsewhere, rather than restating full compliance-report-level detail inline — `SECURITY.md` should stay a readable, scannable document, not a duplicate of the compliance documentation.
 
-## 7. Acceptance Criteria (checklist)
+## 7. Task Breakdown
+
+**Why this section exists:** batching requirements avoids handing an AI coding agent a dozen-plus requirements in one shot, which risks context rot (see `docs/specs/TEMPLATE.md` section 7 for the full rationale). Each batch below is sized for a single fresh Claude Code session.
+
+| Batch | REQs covered | Description | Depends on | Azure write required? |
+|---|---|---|---|---|
+| 1 | REQ-01, REQ-02, REQ-07 | Standard `SECURITY.md` sections (VDP, Supported Versions) + Honest Limitations section skeleton | - | No |
+| 2 | REQ-05, REQ-06 | Shared-responsibility framing + ISO 27001 / compliance-doc cross-references | Batch 1 | No |
+| 3 | REQ-03, REQ-04 | "Resolved Limitations" subsection + process for adding future gaps | Batch 1 | No |
+
+## 8. Acceptance Criteria (checklist)
 
 - [ ] `SECURITY.md` exists at repository root with standard "Reporting a Vulnerability" and "Supported Versions" sections satisfying CRA Annex I intent
 - [ ] "Honest Limitations" section present with all subsections outlined in section 4 (3a through 3f)
@@ -87,13 +97,13 @@ SECURITY.md
 - [ ] No entry duplicates full MCSB or ISO 27001 compliance-report detail — references only, per NFR-03
 - [ ] The Critical Attack Path entry (3c) follows the disclosure-detail decision made in Open Question 2 below
 
-## 8. Open Questions
+## 9. Open Questions
 
 1. Whether to include the currently unresolved Azure subscription billing incident (`Auto pay failed`, `ReadOnlyDisabledSubscription`) as a limitation. **Recommendation: do not include it.** This is an account-administration/billing issue, not a limitation of the application's or infrastructure's security posture — it is out of scope for a security-disclosure document and would confuse readers about what `SECURITY.md` is meant to communicate.
 
 2. Whether the Critical Attack Path entry (3c) should name specific exploit-enabling details (the exact outdated package, the precise attack chain, the Defender Attack Path ID) in a file that is publicly visible on GitHub, given the underlying vulnerability is not yet remediated as of this spec's authoring date. **Recommendation:** describe the gap category and remediation status without naming the specific vulnerable package or exact exploit chain until remediation is complete — e.g., "An outdated cryptographic dependency was identified via automated attack path analysis in July 2026, creating a potential lateral-movement path to a critical secrets store; remediation is in progress" rather than naming the package, CVE identifiers, or exact resource names. Once remediated, the entry can move to "Resolved Limitations" (per REQ-03) with full technical detail, since the risk of publishing exploit-enabling specifics no longer applies after the fix is deployed.
 
-## 9. Traceability
+## 10. Traceability
 
 This spec depends on findings already recorded from prior sessions: the 25.07.2026 MCSB regulatory compliance review, the 25.07.2026 and 27.07.2026 RBAC over-privilege findings (manual review and independent CSPM confirmation), and the 27.07.2026 Critical Attack Path discovery. It cross-references `docs/compliance/azure-platform-certifications.md` (shared responsibility mapping) and anticipates the still-unwritten `docs/compliance/mcsb-cross-reference.md`. It is independent of the three other specs from this session (Evidence-Linked ATT&CK Mapping, Sentinel Rules Validation Trail, Evidence-Chain PlantUML Diagrams) — no shared data model — though all four specs draw on the same underlying set of real findings from this project's July 2026 sessions, and should be kept mutually consistent on dates and technical facts where they describe the same incidents.
 ## Revision Log

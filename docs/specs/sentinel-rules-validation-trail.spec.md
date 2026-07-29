@@ -73,7 +73,17 @@ docs/security/rule-validation/
 - **NFR-01:** This is a pure documentation task — no code changes, no Terraform changes, no new Azure resources, and critically, no dependency on Azure write access (can be completed entirely while the subscription billing issue is unresolved).
 - **NFR-02:** The 3 per-rule files plus the index shall use the C4-PlantUML documentation conventions already established in the project (ASCII-only, no em-dashes, for GitHub Actions rendering compatibility) where any diagrams are embedded — though diagrams are optional for this spec; the Evidence-Chain PlantUML Diagrams (separate backlog item) may later link to or embed within these same files rather than duplicating content.
 
-## 7. Acceptance Criteria (checklist)
+## 7. Task Breakdown
+
+**Why this section exists:** batching requirements avoids handing an AI coding agent a dozen-plus requirements in one shot, which risks context rot (see `docs/specs/TEMPLATE.md` section 7 for the full rationale). Each batch below is sized for a single fresh Claude Code session.
+
+| Batch | REQs covered | Description | Depends on | Azure write required? |
+|---|---|---|---|---|
+| 1 | REQ-01, REQ-02, REQ-03 | Author the 3 per-rule markdown records (all 8 sections each) + `README.md` index | - | No |
+| 2 | REQ-04, REQ-05 | Critical Attack Path coverage check (manual KQL/logic review per rule) + explicit gap statement in the index | Batch 1 | No (Open Question 2's optional historical-correlation follow-up needs stable Azure query access) |
+| 3 | REQ-06, REQ-07 | Cross-reference existing gaps (password spray, automated response) instead of restating them | Batch 1 | No |
+
+## 8. Acceptance Criteria (checklist)
 
 - [ ] `docs/security/rule-validation/README.md` exists with a summary table (rule name, severity, evidence count, unverified-conditions count, automated-response status) and links to all 3 per-rule files
 - [ ] `builtin-fusion.md`, `zero-trust-device-verification.md`, `defender-active-scanning-nmap.md` each contain all 8 required sections
@@ -81,12 +91,12 @@ docs/security/rule-validation/
 - [ ] The distributed password spray gap and automated response gap are referenced (not restated) per REQ-06/REQ-07
 - [ ] Incident dates/IDs match exactly between this validation trail and the `evidence` array in `attack_data.json` (per the Evidence-Linked ATT&CK Mapping spec) — no drift between the two documents' descriptions of the same incidents
 
-## 8. Open Questions
+## 9. Open Questions
 
 1. Whether `BuiltInFusion` (an ML-based, Microsoft-managed correlation rule rather than a custom KQL rule) can meaningfully have a "required telemetry" section in the same sense as the other two custom rules — Microsoft does not expose the exact internal logic of Fusion rules. Recommendation: document this limitation explicitly in `builtin-fusion.md` itself (i.e., the record's own "required telemetry" section should state that Fusion's internal correlation logic is not user-inspectable, and describe only the *inputs* — which data sources feed into Sentinel that Fusion could draw from — rather than claiming a false level of transparency into a Microsoft-managed rule.
 2. Whether the Critical Attack Path coverage check (REQ-04) should be performed by manually reading each rule's KQL query and reasoning about it, or whether there is a faster way to check historically (e.g., searching `SecurityAlert`/`SecurityIncident` for any alert correlated with the specific resources involved in the attack path around the time it was likely exploitable). Recommendation: start with manual KQL/logic review (no Azure write access needed, can be done now); the historical correlation search can be a follow-up once Azure write/query access is confirmed stable again.
 
-## 9. Traceability
+## 10. Traceability
 
 This spec operationalizes the "Sentinel Rules Validation Trail" backlog item (27.07.2026). It shares incident-evidence data with the Evidence-Linked ATT&CK Mapping spec (`docs/specs/evidence-linked-attack-mapping.spec.md`) — both must stay in sync on incident dates/IDs (see REQ-02 and the final acceptance criterion). It is independent of the IOC Reputation Lookup spec (`docs/specs/ioc-reputation-lookup.spec.md`), which touches a different code path with no overlap. This spec is also the natural precursor to the separately-tracked Evidence-Chain PlantUML Diagrams backlog item — once this validation trail exists in prose form, the PlantUML diagrams can visualize the same 8-section chain rather than being authored independently.
 ## Revision Log

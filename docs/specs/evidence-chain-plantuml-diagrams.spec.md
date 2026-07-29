@@ -74,7 +74,17 @@ docs/diagrams/
 - **NFR-02:** This is a pure documentation task with no dependency on Azure write access — all three diagrams can be authored and committed while the subscription billing issue is unresolved.
 - **NFR-03:** Scope is strictly limited to the 3 currently-known incidents; do not pre-build diagrams or placeholders for hypothetical future incidents.
 
-## 7. Acceptance Criteria (checklist)
+## 7. Task Breakdown
+
+**Why this section exists:** batching requirements avoids handing an AI coding agent a dozen-plus requirements in one shot, which risks context rot (see `docs/specs/TEMPLATE.md` section 7 for the full rationale). Each batch below is sized for a single fresh Claude Code session.
+
+| Batch | REQs covered | Description | Depends on | Azure write required? |
+|---|---|---|---|---|
+| 1 | REQ-01, REQ-02, REQ-03, REQ-04 | Author the 3 `.puml` files (NMap, Zero Trust devices, Critical Attack Path), sourcing only from Specs #1 and #2 | Specs #1 and #2 fully implemented first (per section 9 Traceability) | No |
+| 2 | REQ-05, REQ-06 | Cross-document consistency check (dates/IDs match exactly) + naming convention for future incidents | Batch 1 | No |
+| 3 | REQ-07 | Visual "incomplete / no automated response" marker on relevant Decision nodes | Batch 1 | No |
+
+## 8. Acceptance Criteria (checklist)
 
 - [ ] `evidence-chain-nmap-2026-06-26.puml` created, renders without errors, all 8 steps populated from documented facts
 - [ ] `evidence-chain-zerotrust-devices.puml` created, renders without errors, all 8 steps populated from documented facts
@@ -83,12 +93,12 @@ docs/diagrams/
 - [ ] Any diagram whose "Decision" step reflects the absence of an automated response renders that node with a visually distinct "incomplete" marker
 - [ ] All three files use ASCII-only characters and follow existing project PlantUML conventions
 
-## 8. Open Questions
+## 9. Open Questions
 
 1. Whether the Critical Attack Path diagram should render its 4 confirmed technique IDs (T1552, T1555.005, T1021, T1021.007) as one combined ATT&CK step or four separate parallel steps. Recommendation: one combined step listing all 4, since they represent a single continuous exploitation chain discovered as one Defender Attack Path finding, not four independent incidents — matching how `attack_data.json` already groups them under one `attack_path_id`.
 2. Whether rendered PNG/SVG output should be committed alongside the `.puml` source files, or whether only source is committed and rendering happens in CI (matching whatever convention the existing 5 diagrams already follow). Recommendation: inspect the existing `docs/diagrams/` directory structure before authoring these three, and match whatever convention is already in place rather than introducing a second convention.
 
-## 9. Traceability
+## 10. Traceability
 
 This spec depends on both the Evidence-Linked ATT&CK Mapping spec (`docs/specs/evidence-linked-attack-mapping.spec.md`) and the Sentinel Rules Validation Trail spec (`docs/specs/sentinel-rules-validation-trail.spec.md`) as its sole sources of truth (per REQ-02) — this spec should be implemented last among the three, after both source documents exist, to avoid diagrams drifting from not-yet-finalized evidence/validation content. If a future Security Dashboard Phase 2 (graph database) is pursued, the 8 step-types defined here become the starting schema for graph nodes/edges, per the original 27.07.2026 backlog item's stated upgrade path.
 ## Revision Log
