@@ -23,6 +23,8 @@
 | 6 | [`security-dashboard-baseline.spec.md`](./security-dashboard-baseline.spec.md) | `SEC-DASH-BASELINE-01` | **Implemented** (retroactive) | N/A — see Baseline Specs section below | docs-only | 2 |
 | 7 | [`ask-ai-alert-panel.spec.md`](./ask-ai-alert-panel.spec.md) | `SEC-DASH-ASKAI-01` | Draft | None (sole source of truth is `docs/threat-models/0001-ask-ai-alert-panel.md`, not another spec — see Traceability) | mixed (Key Vault secret for Claude API key is the only Azure touch) | 1 |
 | 8 | [`security-investment-cost-effectiveness-model.spec.md`](./security-investment-cost-effectiveness-model.spec.md) | `SEC-RND-COSTMODEL-01` | Draft | None — reads live FinOps + Secure Score data, no dependency on other specs (REQ-07 optionally references Spec #1's `evidence` array once it ships) | docs-only (read-only Azure API queries) | 1 |
+| 9 | [`sdd-methodology-baseline.spec.md`](./sdd-methodology-baseline.spec.md) | `SEC-RND-SDDMETHOD-01` | **Implemented** (retroactive) | None — meta-spec describing the project's own development process, not any single feature spec | docs-only | 1 |
+| 10 | [`sdd-case-study-article.spec.md`](./sdd-case-study-article.spec.md) | `SEC-RND-CASESTUDY-01` | Draft | Sources content from Specs #1-#9's Revision Logs + `docs/backlog-status.md` Metrics + `docs/research-notes.md` (factual sourcing only, not a code/data-model dependency) | docs-only | 1 |
 
 ## Implementation Order
 
@@ -46,8 +48,14 @@ Spec #5 references facts established in Group A (incident dates, technique IDs) 
 **Group C — R&D / Methodology (independent, exploratory, not a Security Dashboard feature):**
 ```
 8. Security Investment Cost-Effectiveness Model
+9. SDD Methodology Baseline (retroactive, internal process contract)
+10. SDD Case-Study Article (external-facing narrative, sources from #1-#9)
 ```
 Spec #8 is categorically different from Groups A and B: it does not describe a feature to build into the application — it describes a **research methodology** for correlating this project's FinOps cost data with Secure Score impact, producing a periodic analyst-run report rather than live dashboard code. It optionally references Spec #1's `evidence` array (REQ-07) once that ships, but has no hard dependency on it.
+
+Spec #9 is a second Tier 2 retroactive baseline (alongside Spec #6), but for the *development process itself* rather than an application subsystem — it documents the spec-authoring/verification/tracking discipline already in use as of 28.07.2026.
+
+Spec #10 is distinct from Spec #9: where #9 is an internal EARS process-contract, #10 specifies requirements for an *external-facing narrative article* about this project's SDD adoption experience (portfolio/career content). They share source material (the project's Revision Logs and Metrics) but serve different audiences and must not be merged into one document.
 
 ## Baseline Specs (Retroactive, Tier 2 Pilot)
 
@@ -67,6 +75,8 @@ Whether other subsystems (FinOps Dashboard, CI/CD pipeline, Terraform modules) g
 - **Spec #6** was revised once, correcting REQ-08's status-count claim (project-wide "6/8/1/5" was stale; the real file showed "6/5/1/8") after its own Verification Batch 4 was actually run — the strongest validation yet that the baseline-pilot concept works as intended.
 - **Spec #7** is unique among specs #1-#7: it is the only one sourced entirely from a **pre-existing artifact** (`docs/threat-models/0001-ask-ai-alert-panel.md`, dated 25.07.2026) rather than from this session's own analysis — discovered during the Security Dashboard baseline's verification pass, not planned in advance.
 - **Spec #8** is unique in a different way: it is the only spec explicitly built **around correcting a same-session error** — an unverified claim (that fixing `cryptography` would raise Secure Score from 36% to ~67%) was made, then found via direct API verification to likely be misattributed to a different project (`hornetdashboardprod`) sharing the same Azure subscription. REQ-01/REQ-02 exist specifically to prevent that class of mistake going forward.
+- **Spec #9** documents the methodology all 9 (now 10) specs in this index actually follow — it is `Implemented` from creation, like Spec #6, since it captures already-adopted practice rather than proposing new process. Its own Acceptance Criteria honestly notes that REQ-07 (post-implementation Traceability Verification) has never actually been exercised yet, since no forward-looking spec has been implemented as of this spec's authoring date.
+- **Spec #10** was authored after some back-and-forth about what "an R&D artifact for the SDD methodology" should actually mean — the session initially produced an internal process-spec (#9), then a freeform narrative article, then this formal EARS spec *about* that article, before settling on keeping all three as distinct, related artifacts rather than merging them. Recorded here as a real example of the kind of scope confusion this project's own documentation discipline is meant to catch and resolve, not hide.
 
 ## Related Documents (not specs, but closely tied to this index)
 
