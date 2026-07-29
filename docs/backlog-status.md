@@ -97,6 +97,14 @@
 |---|---|---|---|---|
 | Lenovo Threat Modeler interview preparation (English B2, STAR/SAR framework) | n/a (not a project spec — career/interview prep) | docs-only | Medium | Long-standing |
 
+## 10. R&D Directions (New Category, Identified 28.07.2026)
+
+Not part of the original 43-item backlog — these are new research/methodology directions identified during this session's reflection on project goals, distinct from feature work or infrastructure fixes.
+
+| Item | Spec | Blocker | Priority | Source |
+|---|---|---|---|---|
+| Security Investment Cost-Effectiveness Model (correlate FinOps cost data with Secure Score impact) | **has spec** (`security-investment-cost-effectiveness-model.spec.md`) | docs-only (read-only Azure API queries) | Medium | 28.07.2026, motivated by a same-session unverified-claim correction (cryptography/`hornetdashboardprod` misattribution) |
+
 ---
 
 ## Newly Discovered Pre-Existing Artifacts (Verification Pass, 28.07.2026)
@@ -117,6 +125,8 @@ While running the Security Dashboard baseline spec's Verification Batches, direc
 
 ---
 
+## Summary Counts
+
 | Category | Total items | Has spec | No spec | Blocked-on-azure | Docs-only | Mixed |
 |---|---|---|---|---|---|---|
 | Critical / Time-Sensitive | 5 | 0 | 5 | 5 | 0 | 0 |
@@ -128,10 +138,13 @@ While running the Security Dashboard baseline spec's Verification Batches, direc
 | Data / Operational | 4 | 0 | 4 | 4 | 0 | 0 |
 | Compliance | 5 | 1 | 4 | 0 | 2 | 2 |
 | Other | 1 | 0 | 1 | 0 | 1 | 0 |
-| **Total** | **43** | **6** | **37** | **22** | **9** | **11** |
+| R&D Directions | 1 | 1 | 0 | 0 | 1 | 0 |
+| **Total** | **44** | **7** | **37** | **22** | **10** | **11** |
 
-**Spec coverage: 6 of 43 items (~14%) have a formal spec.**
-**Immediately actionable without Azure (docs-only + design-portion of mixed items): roughly 20 of 43 items** — a substantial amount of work remains available while the Azure subscription billing issue is unresolved.
+**Spec coverage: 7 of 44 items (~16%) have a formal spec.**
+**Immediately actionable without Azure (docs-only + design-portion of mixed items): roughly 21 of 44 items** — a substantial amount of work remains available while the Azure subscription billing issue is unresolved.
+
+---
 
 ---
 
@@ -141,8 +154,8 @@ While running the Security Dashboard baseline spec's Verification Batches, direc
 
 | Metric | Count | Detail |
 |---|---|---|
-| Specs authored (`docs/specs/*.spec.md`) | 7 | 5 forward-looking Draft specs (evidence mapping, validation trail, PlantUML diagrams, IOC lookup, SECURITY.md limitations), 1 retroactive Implemented baseline (Security Dashboard), 1 Draft translated from a pre-existing threat model (Ask AI Alert Panel) |
-| Backlog items with a formal spec | 6 of 43 (~14%) | See Summary Counts table above |
+| Specs authored (`docs/specs/*.spec.md`) | 8 | 5 forward-looking Draft specs (evidence mapping, validation trail, PlantUML diagrams, IOC lookup, SECURITY.md limitations), 1 retroactive Implemented baseline (Security Dashboard), 1 Draft translated from a pre-existing threat model (Ask AI Alert Panel), 1 Draft R&D methodology spec (Security Investment Cost-Effectiveness Model) |
+| Backlog items with a formal spec | 7 of 44 (~16%) | See Summary Counts table above |
 | **Verify-before-lock corrections** (real errors in our own spec assumptions, caught before/during implementation) | **4** | (1) `ThreatIntelligenceIndicator` — queried the deprecated legacy table, missed that `ThreatIntelIndicators` was the real active one; (2) `attack_data.json` schema — assumed a flat `technique_id` structure, real file is nested `tactics[].techniques[].id`; (3) Same file's status counts — project claimed "6 mitigated/8 detected/1 monitored/5 gap" for months, real file shows "6/5/1/8"; (4) `docs/compliance/azure-platform-certifications.md` was silently at risk of corrupting the live `security_compliance` panel's control count via a malformed-frontmatter misparse |
 | **Pre-existing artifacts discovered** (avoided duplicating already-done work) | 7 items across 4 categories | STRIDE threat-model template + 1 completed threat model (Ask AI panel); incident-playbook template + 1 completed playbook (T1110 brute force); 2 ADRs (NSG flow logs, NAT Gateway); a full 34-file ISO 27001 compliance-mapping system with live rendering — see `docs/backlog-status.md`'s "Newly Discovered Pre-Existing Artifacts" section |
 | External articles/sources reviewed | 11 | See `docs/research-notes.md` for the full registry |

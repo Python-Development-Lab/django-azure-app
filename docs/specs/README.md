@@ -22,6 +22,7 @@
 | 5 | [`security-md-honest-limitations.spec.md`](./security-md-honest-limitations.spec.md) | `SEC-DOCS-HONEST-LIMITATIONS-01` | Draft | References facts from #1–#3 and `docs/compliance/azure-platform-certifications.md` (factual consistency only, not a data-model dependency) | docs-only | 1 |
 | 6 | [`security-dashboard-baseline.spec.md`](./security-dashboard-baseline.spec.md) | `SEC-DASH-BASELINE-01` | **Implemented** (retroactive) | N/A — see Baseline Specs section below | docs-only | 2 |
 | 7 | [`ask-ai-alert-panel.spec.md`](./ask-ai-alert-panel.spec.md) | `SEC-DASH-ASKAI-01` | Draft | None (sole source of truth is `docs/threat-models/0001-ask-ai-alert-panel.md`, not another spec — see Traceability) | mixed (Key Vault secret for Claude API key is the only Azure touch) | 1 |
+| 8 | [`security-investment-cost-effectiveness-model.spec.md`](./security-investment-cost-effectiveness-model.spec.md) | `SEC-RND-COSTMODEL-01` | Draft | None — reads live FinOps + Secure Score data, no dependency on other specs (REQ-07 optionally references Spec #1's `evidence` array once it ships) | docs-only (read-only Azure API queries) | 1 |
 
 ## Implementation Order
 
@@ -42,6 +43,12 @@ Spec #3 explicitly states it should be implemented last among this group — it 
 ```
 Spec #5 references facts established in Group A (incident dates, technique IDs) for consistency, but has no code-level or data-model dependency — it can be drafted and refined in parallel with Group A's implementation, as long as incident details are kept in sync. Spec #7 is similarly independent for implementation, but its *content* is entirely sourced from `docs/threat-models/0001-ask-ai-alert-panel.md` rather than from any other spec in this index — see Traceability in that file.
 
+**Group C — R&D / Methodology (independent, exploratory, not a Security Dashboard feature):**
+```
+8. Security Investment Cost-Effectiveness Model
+```
+Spec #8 is categorically different from Groups A and B: it does not describe a feature to build into the application — it describes a **research methodology** for correlating this project's FinOps cost data with Secure Score impact, producing a periodic analyst-run report rather than live dashboard code. It optionally references Spec #1's `evidence` array (REQ-07) once that ships, but has no hard dependency on it.
+
 ## Baseline Specs (Retroactive, Tier 2 Pilot)
 
 Spec #6 is fundamentally different from Specs #1–#5: it does not describe future work. It **retroactively documents already-built, already-working functionality** (the Security Dashboard, built pre-SDD in June–July 2026) as a formal EARS contract — the project's first pilot of Tier 2 (Spec-Anchored) discipline, where a spec is kept in sync with existing code rather than preceding new code.
@@ -58,7 +65,8 @@ Whether other subsystems (FinOps Dashboard, CI/CD pipeline, Terraform modules) g
 - **Spec #4** is independently the most-revised spec in this set (2 revisions after the initial draft) — its first revision incorrectly deprioritized the primary data source after querying a deprecated legacy Azure table; a follow-up check against the correct table reversed that decision. This is the clearest example in the project of the "verify-before-lock" cycle: draft → check assumption against real data → correct the spec accordingly.
 - **Specs #2, #3, #5** were each authored complete in a single pass, since the real findings they depend on (the Critical Attack Path, its 4 technique IDs) were already confirmed earlier in the same session — no post-hoc revision was needed.
 - **Spec #6** was revised once, correcting REQ-08's status-count claim (project-wide "6/8/1/5" was stale; the real file showed "6/5/1/8") after its own Verification Batch 4 was actually run — the strongest validation yet that the baseline-pilot concept works as intended.
-- **Spec #7** is unique among all 7 specs: it is the only one sourced entirely from a **pre-existing artifact** (`docs/threat-models/0001-ask-ai-alert-panel.md`, dated 25.07.2026) rather than from this session's own analysis — discovered during the Security Dashboard baseline's verification pass, not planned in advance.
+- **Spec #7** is unique among specs #1-#7: it is the only one sourced entirely from a **pre-existing artifact** (`docs/threat-models/0001-ask-ai-alert-panel.md`, dated 25.07.2026) rather than from this session's own analysis — discovered during the Security Dashboard baseline's verification pass, not planned in advance.
+- **Spec #8** is unique in a different way: it is the only spec explicitly built **around correcting a same-session error** — an unverified claim (that fixing `cryptography` would raise Secure Score from 36% to ~67%) was made, then found via direct API verification to likely be misattributed to a different project (`hornetdashboardprod`) sharing the same Azure subscription. REQ-01/REQ-02 exist specifically to prevent that class of mistake going forward.
 
 ## Related Documents (not specs, but closely tied to this index)
 
@@ -71,6 +79,7 @@ Whether other subsystems (FinOps Dashboard, CI/CD pipeline, Terraform modules) g
 | `security/mitre/attack_data.json` | The live file Spec #6 documents the current schema of — must be re-diffed against Spec #6 section 4 whenever this file's schema changes |
 | `docs/threat-models/0001-ask-ai-alert-panel.md` | Sole source of truth for Spec #7 — keep both in sync; do not let this pre-existing threat model and the derived EARS spec drift apart |
 | `docs/playbooks/T1110-http-brute-force.md` | Real, pre-existing incident-response playbook — candidate source for a future "Automated Response Gap" spec, not yet written |
+| `docs/research/security-cost-effectiveness-model.md` (to be created per Spec #8) | Output of implementing Spec #8 — the actual methodology report and ranked output, distinct from the spec itself |
 
 ## Maintenance Note
 
