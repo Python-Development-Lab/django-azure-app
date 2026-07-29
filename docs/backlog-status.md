@@ -50,7 +50,7 @@
 | Defender plans status badge on Security Dashboard | no spec | mixed | Medium | 27.07.2026, `Arm` plan gap identified |
 | Secure Score + Sentinel incidents/rules-health metrics panel | no spec | mixed | Medium | 27.07.2026 |
 | Security Dashboard Phase 2 (d3graph vs Neo4j Aura, betweenness centrality on gap techniques) | no spec | docs-only (design decision), blocked-on-azure (Neo4j Aura provisioning if chosen) | Medium | 24.07.2026 |
-| "Ask AI about this alert" panel (Claude API + citation/verification safeguards) | no spec (**full STRIDE threat model already exists**: `docs/threat-models/0001-ask-ai-alert-panel.md` + `.en.md`, dated 25.07.2026, discovered 28.07.2026) | mixed | Medium | 21.07.2026, refined 24.07.2026, threat-modeled 25.07.2026 |
+| "Ask AI about this alert" panel (Claude API + citation/verification safeguards) | **has spec** (`ask-ai-alert-panel.spec.md`, translated directly from the pre-existing STRIDE threat model) | mixed | Medium | 21.07.2026, refined 24.07.2026, threat-modeled 25.07.2026, formalized into EARS spec 28.07.2026 |
 | ADR panel on Security Dashboard UI | no spec (the ADR files themselves already exist and are committed: `docs/adr/0001-nsg-flow-logs-rejected.md`, `docs/adr/0002-nat-gateway-deferred.md` — only the dashboard *UI panel* for surfacing them is undecided) | docs-only | Low (deferred) | 24.07.2026 |
 | Static C4 infrastructure diagram on Security Dashboard | no spec | docs-only | Low | 28.07.2026 |
 | "Open Attack Path Analysis in Azure Portal" deep-link button | no spec | docs-only (config) | Low | 28.07.2026 |
@@ -122,15 +122,15 @@ While running the Security Dashboard baseline spec's Verification Batches, direc
 | Critical / Time-Sensitive | 5 | 0 | 5 | 5 | 0 | 0 |
 | RBAC / IAM | 6 | 0 | 6 | 5 | 0 | 1 |
 | CI/CD OIDC Migration | 4 | 0 | 4 | 1 | 0 | 3 (mixed: design now, implement later) |
-| Security Dashboard / Phase 2 | 11 | 4 | 7 | 0 | 6 | 5 |
+| Security Dashboard / Phase 2 | 11 | 5 | 6 | 0 | 6 | 5 |
 | Sentinel / Detection | 4 | 0 | 4 | 4 | 0 | 0 |
 | Networking / Infrastructure | 3 | 0 | 3 | 3 | 0 | 0 |
 | Data / Operational | 4 | 0 | 4 | 4 | 0 | 0 |
 | Compliance | 5 | 1 | 4 | 0 | 2 | 2 |
 | Other | 1 | 0 | 1 | 0 | 1 | 0 |
-| **Total** | **43** | **5** | **38** | **22** | **9** | **11** |
+| **Total** | **43** | **6** | **37** | **22** | **9** | **11** |
 
-**Spec coverage: 5 of 43 items (~12%) have a formal spec.**
+**Spec coverage: 6 of 43 items (~14%) have a formal spec.**
 **Immediately actionable without Azure (docs-only + design-portion of mixed items): roughly 20 of 43 items** — a substantial amount of work remains available while the Azure subscription billing issue is unresolved.
 
 ---
@@ -139,9 +139,10 @@ While running the Security Dashboard baseline spec's Verification Batches, direc
 
 1. **WAF/IP restrictions design decision** — the project's own stated *highest priority* item; even though implementation is blocked-on-azure, the Application Gateway v2 vs. Front Door decision (already made 24.07.2026) can be formalized into a spec now, ready to implement the moment Azure access returns.
 2. **PostgreSQL least-privilege role migration** — a real, confirmed finding (app running as `azuresu`) with a fully-formed remediation plan already drafted (24.07.2026 session) — ready to become a spec.
-3. **"Ask AI about this alert" panel — formalize existing threat model into an EARS spec** (re-prioritized 28.07.2026): the STRIDE analysis is already complete (`docs/threat-models/0001-ask-ai-alert-panel.md`); this is now the cheapest spec to write in the entire backlog, since it's a translation exercise (STRIDE findings → REQ/NFR) rather than new analysis.
+3. ~~"Ask AI about this alert" panel~~ **DONE (28.07.2026)** — `docs/specs/ask-ai-alert-panel.spec.md`.
 4. **`docs/compliance/mcsb-cross-reference.md`** — re-scoped 28.07.2026 to build directly on the discovered live compliance-parsing system rather than starting fresh; directly extends the just-completed Honest Limitations spec.
-5. **OIDC migration (with the 3 Pinterest-inspired sub-items)** — the design/architecture portions (workspace-to-role mapping, apply-authorization gating, backend validation) can be fully specified now even though rollout requires Azure.
+5. **Automated Response Gap spec** (new candidate, 28.07.2026) — a real, dated playbook already exists (`docs/playbooks/T1110-http-brute-force.md`) explicitly noting the `revokeSignInSessions` automation as "not yet implemented" — this is now a similarly cheap translation exercise to Spec #7, and should explicitly incorporate an idempotency requirement (per this session's Yazidi/Loop-Harness article discussions) that the source playbook does not yet mention.
+6. **OIDC migration (with the 3 Pinterest-inspired sub-items)** — the design/architecture portions (workspace-to-role mapping, apply-authorization gating, backend validation) can be fully specified now even though rollout requires Azure.
 
 ## Maintenance Note
 

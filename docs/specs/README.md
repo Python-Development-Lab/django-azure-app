@@ -15,12 +15,13 @@
 
 | # | Spec File | Feature ID | Status | Depends On | Azure Blocker | Revisions |
 |---|---|---|---|---|---|---|
-| 1 | [`evidence-linked-attack-mapping.spec.md`](./evidence-linked-attack-mapping.spec.md) | `SEC-DASH-EVIDENCE-01` | Draft | None | docs-only | 2 |
+| 1 | [`evidence-linked-attack-mapping.spec.md`](./evidence-linked-attack-mapping.spec.md) | `SEC-DASH-EVIDENCE-01` | Draft | None | docs-only | 3 |
 | 2 | [`sentinel-rules-validation-trail.spec.md`](./sentinel-rules-validation-trail.spec.md) | `SEC-DASH-VALIDATION-01` | Draft | None (shares incident data with #1, see below) | docs-only | 1 |
 | 3 | [`evidence-chain-plantuml-diagrams.spec.md`](./evidence-chain-plantuml-diagrams.spec.md) | `SEC-DASH-DIAGRAMS-01` | Draft | **#1 and #2** (must be implemented first — see Implementation Order) | docs-only | 1 |
 | 4 | [`ioc-reputation-lookup.spec.md`](./ioc-reputation-lookup.spec.md) | `SEC-DASH-IOC-01` | Draft | None | mixed (spec/code writable now; live test against `/security/alerts/` requires Azure) | 3 |
 | 5 | [`security-md-honest-limitations.spec.md`](./security-md-honest-limitations.spec.md) | `SEC-DOCS-HONEST-LIMITATIONS-01` | Draft | References facts from #1–#3 and `docs/compliance/azure-platform-certifications.md` (factual consistency only, not a data-model dependency) | docs-only | 1 |
-| 6 | [`security-dashboard-baseline.spec.md`](./security-dashboard-baseline.spec.md) | `SEC-DASH-BASELINE-01` | **Implemented** (retroactive) | N/A — see Baseline Specs section below | docs-only | 1 |
+| 6 | [`security-dashboard-baseline.spec.md`](./security-dashboard-baseline.spec.md) | `SEC-DASH-BASELINE-01` | **Implemented** (retroactive) | N/A — see Baseline Specs section below | docs-only | 2 |
+| 7 | [`ask-ai-alert-panel.spec.md`](./ask-ai-alert-panel.spec.md) | `SEC-DASH-ASKAI-01` | Draft | None (sole source of truth is `docs/threat-models/0001-ask-ai-alert-panel.md`, not another spec — see Traceability) | mixed (Key Vault secret for Claude API key is the only Azure touch) | 1 |
 
 ## Implementation Order
 
@@ -37,8 +38,9 @@ Spec #3 explicitly states it should be implemented last among this group — it 
 ```
 4. IOC Reputation Lookup
 5. SECURITY.md Honest Limitations
+7. Ask AI About This Alert Panel
 ```
-Spec #5 references facts established in Group A (incident dates, technique IDs) for consistency, but has no code-level or data-model dependency — it can be drafted and refined in parallel with Group A's implementation, as long as incident details are kept in sync.
+Spec #5 references facts established in Group A (incident dates, technique IDs) for consistency, but has no code-level or data-model dependency — it can be drafted and refined in parallel with Group A's implementation, as long as incident details are kept in sync. Spec #7 is similarly independent for implementation, but its *content* is entirely sourced from `docs/threat-models/0001-ask-ai-alert-panel.md` rather than from any other spec in this index — see Traceability in that file.
 
 ## Baseline Specs (Retroactive, Tier 2 Pilot)
 
@@ -52,9 +54,11 @@ Whether other subsystems (FinOps Dashboard, CI/CD pipeline, Terraform modules) g
 
 ## Revision Notes (see each file's own Revision Log for full detail)
 
-- **Spec #1** was revised once after direct portal inspection confirmed the exact MITRE ATT&CK technique IDs for the Critical Attack Path, replacing a placeholder.
-- **Spec #4** is the most-revised spec in this set (2 revisions after the initial draft) — its first revision incorrectly deprioritized the primary data source after querying a deprecated legacy Azure table; a follow-up check against the correct table reversed that decision. This is the clearest example in the project of the "verify-before-lock" cycle: draft → check assumption against real data → correct the spec accordingly.
+- **Spec #1** was revised twice: once after direct portal inspection confirmed the exact MITRE ATT&CK technique IDs for the Critical Attack Path (replacing a placeholder), and again — more significantly — after direct verification of the live `attack_data.json` file revealed its entire Data Model section had assumed the wrong schema (flat `technique_id` field vs. the real nested `tactics[].techniques[].id` structure), plus a real status conflict (`T1552`) and missing entries (`TA0008`, `T1021`, `T1021.007`, `T1555.005`) not discoverable without reading the live file.
+- **Spec #4** is independently the most-revised spec in this set (2 revisions after the initial draft) — its first revision incorrectly deprioritized the primary data source after querying a deprecated legacy Azure table; a follow-up check against the correct table reversed that decision. This is the clearest example in the project of the "verify-before-lock" cycle: draft → check assumption against real data → correct the spec accordingly.
 - **Specs #2, #3, #5** were each authored complete in a single pass, since the real findings they depend on (the Critical Attack Path, its 4 technique IDs) were already confirmed earlier in the same session — no post-hoc revision was needed.
+- **Spec #6** was revised once, correcting REQ-08's status-count claim (project-wide "6/8/1/5" was stale; the real file showed "6/5/1/8") after its own Verification Batch 4 was actually run — the strongest validation yet that the baseline-pilot concept works as intended.
+- **Spec #7** is unique among all 7 specs: it is the only one sourced entirely from a **pre-existing artifact** (`docs/threat-models/0001-ask-ai-alert-panel.md`, dated 25.07.2026) rather than from this session's own analysis — discovered during the Security Dashboard baseline's verification pass, not planned in advance.
 
 ## Related Documents (not specs, but closely tied to this index)
 
@@ -65,6 +69,8 @@ Whether other subsystems (FinOps Dashboard, CI/CD pipeline, Terraform modules) g
 | `docs/security/rule-validation/` (to be created per Spec #2) | Output of implementing Spec #2 |
 | `docs/diagrams/evidence-chain-*.puml` (to be created per Spec #3) | Output of implementing Spec #3 |
 | `security/mitre/attack_data.json` | The live file Spec #6 documents the current schema of — must be re-diffed against Spec #6 section 4 whenever this file's schema changes |
+| `docs/threat-models/0001-ask-ai-alert-panel.md` | Sole source of truth for Spec #7 — keep both in sync; do not let this pre-existing threat model and the derived EARS spec drift apart |
+| `docs/playbooks/T1110-http-brute-force.md` | Real, pre-existing incident-response playbook — candidate source for a future "Automated Response Gap" spec, not yet written |
 
 ## Maintenance Note
 
