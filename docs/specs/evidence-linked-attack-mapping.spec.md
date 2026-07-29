@@ -31,12 +31,40 @@ The current schema classifies each of the 20 techniques as `mitigated` / `detect
 
 ## 4. Data Model
 
-Each technique entry in `attack_data.json` gains an optional `evidence` array:
+`security/mitre/attack_data.json` — **confirmed via direct file read, 28.07.2026** (see Revision Log). Actual structure is a **nested** tactic→technique tree, not a flat list:
 
 ```json
 {
-  "technique_id": "T1595",
-  "status": "detected",
+  "project": "django-azure-security-template",
+  "tactics": [
+    {
+      "id": "TA0001",
+      "name": "Initial Access",
+      "techniques": [
+        {
+          "id": "T1078",
+          "name": "Valid Accounts",
+          "status": "mitigated",
+          "control": "Entra ID OAuth2 + MFA (Security Defaults)",
+          "detection": "Sentinel Sign-in risk analytics"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Corrected from the originally-drafted version of this spec, which incorrectly assumed a flat array with a `technique_id` field and a sibling `tactic` field.** The real field for technique ID is simply `id`, nested under the parent tactic's `techniques` array — the tactic is implied by nesting, not stated on the technique itself. See Revision Log for the correction history.
+
+**Design decision for the `evidence` array given the real (nested) schema:** the `evidence` array is added as a new sibling field on each technique object, alongside `id`, `name`, `status`, `control`, `detection` — not as a separate flat structure. Example:
+
+```json
+{
+  "id": "T1595",
+  "name": "Active Scanning",
+  "status": "gap",
+  "control": "No WAF or IP restriction rules configured",
+  "detection": "Defender for App Service detected NMap (T1595.001)",
   "evidence": [
     {
       "incident_date": "2026-06-26",
@@ -55,66 +83,66 @@ Field `attack_path_id` is used when evidence originates from a Defender for Clou
 
 ### 4.1 Confirmed evidence entries for the Critical Attack Path
 
-The App Service → Managed Identity → Key Vault path (`c81dcadc-7b9c-3066-79cc-74be12d8b64f`, Critical severity, root cause: outdated `cryptography` package) produces **four** evidence entries across two tactics, all sharing the same `attack_path_id`:
+**Important correction (28.07.2026):** the example below was originally written assuming a flat structure with a `technique_id` field. The real file uses `id`, nested under each tactic's `techniques` array (per section 4). Additionally, direct comparison against the live file surfaced two real conflicts, now tracked as Open Question 3 below — **do not populate these entries as-is without resolving that question first.**
+
+The App Service → Managed Identity → Key Vault path (`c81dcadc-7b9c-3066-79cc-74be12d8b64f`, Critical severity, root cause: outdated `cryptography` package) touches four techniques across two tactics:
+
+| Technique | `id` | Current status in live file | Action needed |
+|---|---|---|---|
+| Unsecured Credentials | `T1552` | **Already exists**, status `mitigated` (control: "Azure Key Vault + System-Assigned Managed Identity") | **Conflict** — see Open Question 3 |
+| Password Managers | `T1555.005` | **Does not exist** in `TA0006` (Credential Access) | New technique entry needed |
+| Remote Services | `T1021` | **Does not exist** — no `TA0008` (Lateral Movement) tactic exists in the file at all | New tactic (`TA0008`) + new technique entry needed |
+| Cloud Services | `T1021.007` | **Does not exist** — same `TA0008` gap as above | New technique entry needed, under the same new `TA0008` tactic |
+
+Example of a *new* technique entry (for `T1021`, illustrating the corrected nested schema and requiring a new `TA0008` tactic wrapper — not yet resolved, see Open Question 3):
 
 ```json
-[
-  {
-    "technique_id": "T1552",
-    "status": "gap",
-    "evidence": [
-      {
-        "incident_date": "2026-07-27",
-        "source": "defender-cspm-attack-path-analysis",
-        "detected_by": "Attack Path Analysis: Internet exposed Azure Web App with high severity vulnerabilities allows lateral movement to Critical Azure Key Vault",
-        "attack_path_id": "c81dcadc-7b9c-3066-79cc-74be12d8b64f",
-        "note": "Tactic: Credential Access. Root cause: outdated cryptography package on app-django-azure-staging enabling lateral movement to kv-django-azure-staging."
-      }
-    ]
-  },
-  {
-    "technique_id": "T1555.005",
-    "status": "gap",
-    "evidence": [
-      {
-        "incident_date": "2026-07-27",
-        "source": "defender-cspm-attack-path-analysis",
-        "detected_by": "Attack Path Analysis: Internet exposed Azure Web App with high severity vulnerabilities allows lateral movement to Critical Azure Key Vault",
-        "attack_path_id": "c81dcadc-7b9c-3066-79cc-74be12d8b64f",
-        "note": "Tactic: Credential Access. Microsoft's classification of Key Vault credential-theft step within this attack path -- not a literal password-manager application."
-      }
-    ]
-  },
-  {
-    "technique_id": "T1021",
-    "status": "gap",
-    "evidence": [
-      {
-        "incident_date": "2026-07-27",
-        "source": "defender-cspm-attack-path-analysis",
-        "detected_by": "Attack Path Analysis: Internet exposed Azure Web App with high severity vulnerabilities allows lateral movement to Critical Azure Key Vault",
-        "attack_path_id": "c81dcadc-7b9c-3066-79cc-74be12d8b64f",
-        "note": "Tactic: Lateral Movement. Attacker authenticates as the Managed Identity to reach Key Vault."
-      }
-    ]
-  },
-  {
-    "technique_id": "T1021.007",
-    "status": "gap",
-    "evidence": [
-      {
-        "incident_date": "2026-07-27",
-        "source": "defender-cspm-attack-path-analysis",
-        "detected_by": "Attack Path Analysis: Internet exposed Azure Web App with high severity vulnerabilities allows lateral movement to Critical Azure Key Vault",
-        "attack_path_id": "c81dcadc-7b9c-3066-79cc-74be12d8b64f",
-        "note": "Tactic: Lateral Movement (Cloud Services sub-technique). Cloud-native equivalent of T1021 specific to Managed Identity authentication."
-      }
-    ]
-  }
-]
+{
+  "id": "TA0008",
+  "name": "Lateral Movement",
+  "techniques": [
+    {
+      "id": "T1021",
+      "name": "Remote Services",
+      "status": "gap",
+      "control": "No detection or restriction on Managed Identity token use across services",
+      "detection": "No coverage yet",
+      "evidence": [
+        {
+          "incident_date": "2026-07-27",
+          "source": "defender-cspm-attack-path-analysis",
+          "detected_by": "Attack Path Analysis: Internet exposed Azure Web App with high severity vulnerabilities allows lateral movement to Critical Azure Key Vault",
+          "attack_path_id": "c81dcadc-7b9c-3066-79cc-74be12d8b64f",
+          "note": "Attacker authenticates as the Managed Identity to reach Key Vault."
+        }
+      ]
+    }
+  ]
+}
 ```
 
-All four entries are marked `status: "gap"` (not `mitigated`/`detected`) since the remediation (updating `cryptography`, tightening Managed Identity permissions, hardening internet exposure per Defender's "Additional recommendations") has not yet been applied as of this spec's authoring date. Once remediated, these statuses should be revisited and the evidence entries kept as historical record (do not delete evidence when a gap is closed -- append a `remediated_date` field instead, see REQ-12 below).
+Example of adding evidence to the *existing* `T1552` entry (illustrative only — status value shown as `TBD` pending Open Question 3's resolution):
+
+```json
+{
+  "id": "T1552",
+  "name": "Unsecured Credentials",
+  "status": "TBD — see Open Question 3",
+  "control": "Azure Key Vault + System-Assigned Managed Identity",
+  "detection": "Key Vault audit logs",
+  "evidence": [
+    {
+      "incident_date": "2026-07-27",
+      "source": "defender-cspm-attack-path-analysis",
+      "detected_by": "Attack Path Analysis: Internet exposed Azure Web App with high severity vulnerabilities allows lateral movement to Critical Azure Key Vault",
+      "attack_path_id": "c81dcadc-7b9c-3066-79cc-74be12d8b64f",
+      "note": "Root cause: outdated cryptography package on app-django-azure-staging currently allows the general Key Vault mitigation to be bypassed via App Service compromise."
+    }
+  ]
+}
+```
+
+All new/modified entries reference the same `attack_path_id` (`c81dcadc-7b9c-3066-79cc-74be12d8b64f`). Once the `cryptography` package is patched and the path is closed, evidence entries are retained (per REQ-12's `remediated_date` field), not deleted.
 
 ## 5. Requirements (EARS notation)
 
@@ -122,7 +150,7 @@ All four entries are marked `status: "gap"` (not `mitigated`/`detected`) since t
 
 - **REQ-01 (Ubiquitous):** The system shall support zero or more evidence entries per technique in `attack_data.json`.
 - **REQ-02 (Ubiquitous):** The system shall treat a technique with an empty `evidence` array as "theoretically mapped, not yet verified."
-- **REQ-03 (Unwanted behavior):** If an evidence entry references a `technique_id` that does not exist in the technique list, then the build/validation step shall fail with a clear error identifying the invalid entry.
+- **REQ-03 (Unwanted behavior):** If an evidence entry references a technique `id` that does not exist anywhere in the `tactics[].techniques[]` tree, then the build/validation step shall fail with a clear error identifying the invalid entry.
 - **REQ-04 (Unwanted behavior):** If an evidence entry is missing `incident_date` or `detected_by`, then validation shall fail — every evidence entry must be independently traceable.
 - **REQ-12 (Event-driven):** When a gap identified by an evidence entry is remediated, the system shall retain the original evidence entry and add a `remediated_date` field rather than deleting the entry — evidence is a historical record, not a live-status field.
 
@@ -150,11 +178,11 @@ All four entries are marked `status: "gap"` (not `mitigated`/`detected`) since t
 
 ## 7. Task Breakdown
 
-**Why this section exists:** batching requirements avoids handing an AI coding agent a dozen-plus requirements in one shot, which risks context rot (see `docs/specs/TEMPLATE.md` section 7 for the full rationale). Each batch below is sized for a single fresh Claude Code session.
+**Why this section exists:** batching requirements avoids handing an AI coding agent a dozen-plus requirements in one shot, which risks context rot (see `docs/specs/TEMPLATE.md` section 7 for the full rationale). Each batch below is sized for a single fresh Claude Code session. **Note (28.07.2026):** Batch 1 now also includes creating the new `TA0008` tactic entry and resolving the `T1552` status conflict per Open Question 3 — this makes Batch 1 slightly larger in practice than originally scoped, but still a single coherent unit of work (all schema-level changes).
 
 | Batch | REQs covered | Description | Depends on | Azure write required? |
 |---|---|---|---|---|
-| 1 | REQ-01, REQ-02, REQ-03, REQ-04, REQ-12 | Data schema (`evidence` array) + validation (unknown `technique_id`, missing required fields) + remediation tracking (`remediated_date`) | - | No |
+| 1 | REQ-01, REQ-02, REQ-03, REQ-04, REQ-12 | Data schema (`evidence` array) + validation (unknown technique `id`, missing required fields) + remediation tracking (`remediated_date`) + create `TA0008` tactic + resolve `T1552` status conflict (Open Question 3) | - | No |
 | 2 | REQ-05, REQ-06, REQ-07 | D3.js graph visual marker for evidence-backed nodes + hover tooltip/panel | Batch 1 | No |
 | 3 | REQ-08, REQ-09 | Coverage matrix table: sortable "Evidence count" column | Batch 1 | No |
 | 4 | REQ-10, REQ-11 | Link evidence entries to Sentinel incident refs / Attack Path IDs in the tooltip | Batch 1 | No |
@@ -162,7 +190,7 @@ All four entries are marked `status: "gap"` (not `mitigated`/`detected`) since t
 ## 8. Acceptance Criteria (checklist)
 
 - [ ] `attack_data.json` schema documented with the `evidence` field (optional, array, can be empty)
-- [ ] Evidence populated for: NMap scan (T1595, T1046), Zero Trust device alerts (T1078, T1036), and the Critical Attack Path finding — **confirmed** four entries: T1552 (Unsecured Credentials), T1555.005 (Password Managers), T1021 (Remote Services), T1021.007 (Cloud Services) — see section 4.1
+- [ ] Evidence populated for: NMap scan (T1595, T1046), Zero Trust device alerts (T1078, T1036) — straightforward, no conflicts. Critical Attack Path finding: T1552 (Unsecured Credentials, **status conflict to resolve — Open Question 3**), T1555.005 (Password Managers, **new entry**), T1021 (Remote Services, **new entry, new `TA0008` tactic**), T1021.007 (Cloud Services, **new entry**) — see section 4.1
 - [ ] D3.js graph visually distinguishes evidence-backed nodes from theoretical-only nodes
 - [ ] Coverage matrix table has a sortable "Evidence count" column
 - [ ] CI fails the build if an evidence entry is malformed or references an unknown technique
@@ -183,6 +211,17 @@ All four entries are marked `status: "gap"` (not `mitigated`/`detected`) since t
 
 2. Whether `attack_path_id` should eventually support a live deep-link to the Azure Portal Attack Path view (would require storing the full portal URL pattern, which is version-dependent — see prior discussion on portal deep-link fragility). Decision: keep as plain-text ID for now; revisit only if the deep-link pattern proves stable across portal sessions.
 
+3. **NEW, CRITICAL (28.07.2026):** Direct comparison of section 4.1 against the real, live `attack_data.json` file surfaced two real conflicts that must be resolved before implementation:
+   - **T1552 status conflict:** the live file already classifies `T1552` (Unsecured Credentials) as `mitigated` (control: "Azure Key Vault + System-Assigned Managed Identity"). The Critical Attack Path evidence shows this mitigation is currently *bypassable* via the outdated `cryptography` vulnerability. **Needs a decision, not a silent fix:** (a) keep status `mitigated` and let the evidence array alone convey "the general control exists but has a currently-open bypass," or (b) change status to `gap` while the bypass remains unpatched, reverting to `mitigated` once `cryptography` is updated (per REQ-12's `remediated_date` pattern). **Recommendation:** option (b) — a technique whose control is actively bypassable in production is more honestly represented as `gap` than `mitigated`; this is consistent with the project's broader "Honest Limitations" principle (see `security-md-honest-limitations.spec.md`) of not overstating current protection.
+   - **Missing tactic and technique entries:** `T1021`, `T1021.007` (Lateral Movement) and `T1555.005` (Password Managers, under Credential Access) do not exist anywhere in the current file. Unlike the original assumption ("add evidence to existing entries"), implementing this spec now also requires **creating a brand-new `TA0008` (Lateral Movement) tactic entry** — a larger, more structural change than originally scoped. This should be called out explicitly to whoever implements this spec (do not let it be discovered mid-implementation as a surprise).
+
+## Additional Findings (discovered during verification, outside this spec's own scope)
+
+Two additional findings surfaced while reading the live file, unrelated to this spec's own requirements but worth recording so they aren't lost:
+
+- **Project-wide status counts are stale.** Every prior reference in this project (backlog notes, the Security Dashboard baseline spec) states coverage as "6 mitigated / 8 detected / 1 monitored / 5 gap." The actual live file shows **6 mitigated / 5 detected / 1 monitored / 8 gap** — a materially different split, with 3 more gap techniques than previously documented (`T1068`, `T1110.004`, `T1528` — all tied to the already-known KBSSE/RiskScoringMiddleware-not-implemented finding from 25.07.2026). `security-dashboard-baseline.spec.md`'s REQ-08 has been corrected accordingly (see that file's own Revision Log).
+- **Possible additional misclassification:** `T1567` (Exfiltration Over Web Service) is marked `detected`, with its `detection` field crediting "RiskScoringMiddleware volume/pattern analysis" — but `RiskScoringMiddleware` is confirmed (25.07.2026 session) to not exist as real code. This technique may be misclassified as `detected` when it should be `gap`, consistent with the other three KBSSE-dependent techniques. Not fixed here — flagged for a separate, dedicated review of the file's `detected` classifications against actually-implemented code, since that review is broader than this spec's scope.
+
 ## 10. Traceability
 
 This spec directly implements the "Evidence-Linked ATT&CK Mapping" half of the 27.07.2026 backlog item. The IOC Reputation Lookup half of that backlog item is a separate, independent spec (not covered here) since it touches a different code path (`_get_defender_alerts()`) with no data-model overlap.
@@ -192,4 +231,5 @@ This spec directly implements the "Evidence-Linked ATT&CK Mapping" half of the 2
 | Date | Change | Reason |
 |---|---|---|
 | 27.07.2026 | Initial draft created | Formalizes the "Evidence-Linked ATT&CK Mapping" half of the AdversaryGraph-comparison backlog item |
-| 28.07.2026 | Open Question 1 resolved; section 4.1 added with 4 confirmed evidence entries (T1552, T1555.005, T1021, T1021.007); REQ-12 added (remediation tracking, `remediated_date`); acceptance criteria checklist updated | Direct portal inspection of the Critical Attack Path's MITRE ATT&CK tactics panel confirmed the exact technique IDs, replacing the placeholder "likely T1021, to be confirmed" |
+| 28.07.2026 (a) | Open Question 1 resolved; section 4.1 added with 4 confirmed evidence entries (T1552, T1555.005, T1021, T1021.007); REQ-12 added (remediation tracking, `remediated_date`); acceptance criteria checklist updated | Direct portal inspection of the Critical Attack Path's MITRE ATT&CK tactics panel confirmed the exact technique IDs, replacing the placeholder "likely T1021, to be confirmed" |
+| 28.07.2026 (b) | Major correction: Data Model (section 4) rewritten from a flat `technique_id`-based schema to the real nested `tactics[].techniques[].id` schema, confirmed via direct read of the live `attack_data.json` file (Security Dashboard baseline spec's Verification Batch 4). Section 4.1's JSON examples rebuilt to match. REQ-03 field-name reference corrected. New Open Question 3 added (T1552 status conflict + missing `TA0008`/`T1021`/`T1021.007`/`T1555.005` entries). Added missing Task Breakdown section (7) to match the version already present in the actual repository — this local copy had fallen out of sync with the retroactive Task Breakdown insertion applied earlier. Added "Additional Findings" section documenting the project-wide stale status-count discovery (6/8/1/5 claimed vs. 6/5/1/8 actual) and a possible `T1567` misclassification, both out of this spec's scope but logged for follow-up. Acceptance criteria updated to reflect conflicts rather than false confirmation. | This is the most significant "verify-before-lock" catch of the session — the spec's central data-model assumption (flat schema, `technique_id` field) was wrong, and two of its four "confirmed" evidence entries actually require new tactic/technique creation or a real status conflict resolution rather than a simple evidence-array addition |
