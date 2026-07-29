@@ -1,0 +1,33 @@
+# Research Notes
+
+**Purpose:** A dated, reusable registry of every external article/source reviewed during this project's Spec-Driven Development adoption, so future sessions don't need to re-search the same ground. This is this project's lightweight equivalent of the "research-cache.md" file found in several memory-bank-style SDD frameworks (AI-RPI, Memory Bank pattern) — deliberately kept as a flat markdown log, not a database, consistent with this project's scale.
+
+**Last updated:** 28.07.2026
+
+**How to use this file:** before researching a topic already listed here, check this table first. When you do research something new, add a row — date, source, one-line takeaway, and what it produced (a spec, a backlog item, a template change, or "narrative/context only, no artifact").
+
+---
+
+## Index
+
+| Date reviewed | Source | Core takeaway | Produced |
+|---|---|---|---|
+| 27.07.2026 | AdversaryGraph v6.0.0 (Andrey Pautov, Medium, 23.07.2026) | CTI-to-detection product; "Evidence-to-Detection Graph" concept (evidence→claims→ATT&CK→telemetry→rules→validation→SIEM→decision) | Backlog items: Evidence-Linked ATT&CK Mapping, IOC Reputation Lookup, Sentinel Rules Validation Trail, Evidence-Chain PlantUML Diagrams (all later became specs #1, #4, #2, #3) |
+| 27.07.2026 | AdversaryGraph v5.0 (same author, June 2026) | Predecessor release; "Attack Simulation" feature, same Evidence-to-Detection Graph concept in earlier form | Reinforced the same 4 backlog items above; no new content |
+| 27.07.2026 | ThreatMapper Web (1200km.com/threat-matrix, same author) | Public, feature-limited companion tool to AdversaryGraph | No spec produced; noted a naming collision with the unrelated, better-known Deepfence ThreatMapper project, and a commercial-use licensing restriction on the author's tools |
+| — (general search, not one article) | Spec-Driven Development overview (IBM, AWS Kiro docs, dev.to field guide, arXiv Piskala paper) | EARS notation, 3-tier maturity model (Spec-First/Spec-Anchored/Spec-as-Source), general SDD rationale | Directly led to adopting SDD methodology for this project (`docs/specs/TEMPLATE.md`, EARS notation choice) |
+| 28.07.2026 | "Spec-Driven Development for Product Managers" (Product Managers Club, Medium, 01.06.2026) | "The bottleneck didn't move, it shapeshifted" — from code-writing speed to spec quality | Narrative/communication framing only — no spec or backlog change; useful for explaining the SDD shift to non-technical audiences |
+| 28.07.2026 | "My Workflow with Claude: SDD with AgentSpec" (Lorenzo Uriel, Medium, 17.06.2026) | AgentSpec's 5-phase workflow (Brainstorm→Define→Design→Build→Ship→Iterate) with numeric quality gates; KB-first cognitive framework | Directly motivated adding the **Revision Log** section to the spec template (mirrors AgentSpec's `/iterate` cascade-tracking) |
+| 28.07.2026 | "The Evolution of Spec-Driven Development" (Enrico Papalini, Medium, 16.05.2026) | Context rot (performance degrades well below context-window limits); "Lost in the Middle" positional bias; 3-tier maturity model in depth; 6 foundational spec elements; Adversarial Agent Pattern (Coordinator/Implementor/Verifier); survey of 11 frameworks | Directly motivated adding the **Task Breakdown** section to the spec template (context-rot mitigation via batching) |
+| 28.07.2026 | "Next Trends in the Evolution of Spec-Driven Development" (Enrico Papalini, Medium, 07.06.2026) | 5 macro-trends: Structured-Data-as-Source-of-Truth, Pre-Spec Intake/Intent Kernel, Mission Control/Subagent Delegation, Sealed File-Contracts (frontend-specific, not relevant here), Package/Dependency Hygiene | Reinforced the Task Breakdown design; flagged the still-unresolved Dependabot warning as directly relevant to Trend 5 |
+| 28.07.2026 | "Loop Engineering vs. Harness Engineering" (Divy Yadav, Towards AI, 05.07.2026) | Harness engineering (guardrails/permissions/verification) vs. loop engineering (scheduling/stopping/state) as two distinct disciplines; confusing them causes specific, diagnosable failure modes | Categorized `.claude/agents/security-reviewer.md` as a harness artifact; informed REQ-09/REQ-10 framing (permanent guardrails, not one-time checks) in `ask-ai-alert-panel.spec.md` |
+| 28.07.2026 | "From Prompt to Production" (Mouez Yazidi, Towards AI, 14.07.2026) | Full 8-stage workflow: Explore→Specify→Clarify→Plan→Tasks→Implement→Verify→Independent Review; concrete example of a spec.md/plan.md/tasks.md structure; independent-review subagent pattern with restricted tools | Directly motivated: **Requirement Traceability Verification** section in the spec template; `.claude/agents/security-reviewer.md`; the still-informal recommendation to run an "Explore" step before implementing any spec (identified as this methodology's biggest remaining gap) |
+| 28.07.2026 | "Security Engineering is Dead. It's Time to Adopt Platform Security" (Andrew Blooman, Medium, 11.08.2024) | Proposes splitting "Security Engineer" into Security Operations / DevSecOps / Platform Security roles | Career-framing insight only — no spec; useful for interview/portfolio self-positioning, not project architecture |
+
+## Cross-cutting observation
+
+Independent convergence: this project's own `docs/backlog-status.md` + `docs/specs/README.md` + per-file Revision Log pattern was built organically, before any of the above articles were reviewed for this specific purpose — and turned out to closely match the "Memory Bank" pattern documented across at least 4 independent sources found during this research (AI-RPI's `decisions.md`/`lessons.md`/`session-state.md`, the general "Memory Bank" pattern via `CLAUDE.md`/`design.md`, Beads' living-memory JSONL+SQLite store, and Augment Code's `AGENTS.md`). This convergence is treated as a positive signal, not a coincidence — per Papalini's own observation that independently-arrived-at shared design choices are usually correct ones.
+
+## Maintenance Note
+
+Add a new row whenever a new external article/source is reviewed for this project, whether or not it produces a spec or backlog change — a "no artifact produced" entry is still useful to prevent re-researching the same source later.

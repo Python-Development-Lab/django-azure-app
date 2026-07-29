@@ -135,6 +135,28 @@ While running the Security Dashboard baseline spec's Verification Batches, direc
 
 ---
 
+## Metrics (SDD Adoption, tracked since 28.07.2026)
+
+**Purpose:** a lightweight, quantified counter for whether the Spec-Driven Development adoption is actually producing value, not just process for its own sake — this project's equivalent of the "metrics-log.md" file found in memory-bank-style SDD frameworks (see `docs/research-notes.md`'s cross-cutting observation).
+
+| Metric | Count | Detail |
+|---|---|---|
+| Specs authored (`docs/specs/*.spec.md`) | 7 | 5 forward-looking Draft specs (evidence mapping, validation trail, PlantUML diagrams, IOC lookup, SECURITY.md limitations), 1 retroactive Implemented baseline (Security Dashboard), 1 Draft translated from a pre-existing threat model (Ask AI Alert Panel) |
+| Backlog items with a formal spec | 6 of 43 (~14%) | See Summary Counts table above |
+| **Verify-before-lock corrections** (real errors in our own spec assumptions, caught before/during implementation) | **4** | (1) `ThreatIntelligenceIndicator` — queried the deprecated legacy table, missed that `ThreatIntelIndicators` was the real active one; (2) `attack_data.json` schema — assumed a flat `technique_id` structure, real file is nested `tactics[].techniques[].id`; (3) Same file's status counts — project claimed "6 mitigated/8 detected/1 monitored/5 gap" for months, real file shows "6/5/1/8"; (4) `docs/compliance/azure-platform-certifications.md` was silently at risk of corrupting the live `security_compliance` panel's control count via a malformed-frontmatter misparse |
+| **Pre-existing artifacts discovered** (avoided duplicating already-done work) | 7 items across 4 categories | STRIDE threat-model template + 1 completed threat model (Ask AI panel); incident-playbook template + 1 completed playbook (T1110 brute force); 2 ADRs (NSG flow logs, NAT Gateway); a full 34-file ISO 27001 compliance-mapping system with live rendering — see `docs/backlog-status.md`'s "Newly Discovered Pre-Existing Artifacts" section |
+| External articles/sources reviewed | 11 | See `docs/research-notes.md` for the full registry |
+| Terminal heredoc failures (`cat > ... << 'EOF'` breaking on long pastes) | 3 | Resolved by switching to VS Code Explorer paste or base64-encoded single-line `bash` commands for files beyond ~100 lines |
+| Sessions to reach first Tier 2 (Spec-Anchored) pilot | 1 | Security Dashboard baseline spec, same session as SDD adoption itself |
+
+**Interpretation:** the 4 verify-before-lock catches and 7 pre-existing-artifact discoveries are the strongest evidence that the methodology is earning its overhead — each one would very likely have caused wasted implementation time or duplicated work if undiscovered. The 3 heredoc failures are a minor but real operational cost of the chosen file-delivery method; documented here so the lesson (prefer VS Code paste or base64 for large files) isn't relearned from scratch next time.
+
+## Maintenance Note
+
+Update this Metrics section whenever a new spec is authored, a new verify-before-lock catch occurs, or a new pre-existing artifact is discovered — this table should always reflect the true, current count without needing to re-derive it from scanning the rest of this document.
+
+---
+
 ## Recommended Next Specs (docs-only, highest priority first)
 
 1. **WAF/IP restrictions design decision** — the project's own stated *highest priority* item; even though implementation is blocked-on-azure, the Application Gateway v2 vs. Front Door decision (already made 24.07.2026) can be formalized into a spec now, ready to implement the moment Azure access returns.
