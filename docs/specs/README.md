@@ -82,14 +82,16 @@ Whether other subsystems (FinOps Dashboard, CI/CD pipeline, Terraform modules) g
 
 | Document | Relationship |
 |---|---|
-| `docs/backlog-status.md` | Broader backlog view (43 items total); tracks which items have a spec here versus which are still unspecified |
-| `docs/compliance/azure-platform-certifications.md` | Shared-responsibility reference cited by Spec #5 |
+| `docs/backlog-status.md` | Broader backlog view (46 items total); tracks which items have a spec here versus which are still unspecified |
+| `docs/compliance/reference/azure-platform-certifications.md` | Shared-responsibility reference cited by Spec #5 — **note:** moved from `docs/compliance/` to `docs/compliance/reference/` on 28.07.2026 after it was found to risk corrupting the live `security_compliance` panel's control count; this table previously cited the stale pre-move path |
 | `docs/security/rule-validation/` (to be created per Spec #2) | Output of implementing Spec #2 |
 | `docs/diagrams/evidence-chain-*.puml` (to be created per Spec #3) | Output of implementing Spec #3 |
 | `security/mitre/attack_data.json` | The live file Spec #6 documents the current schema of — must be re-diffed against Spec #6 section 4 whenever this file's schema changes |
 | `docs/threat-models/0001-ask-ai-alert-panel.md` | Sole source of truth for Spec #7 — keep both in sync; do not let this pre-existing threat model and the derived EARS spec drift apart |
 | `docs/playbooks/T1110-http-brute-force.md` | Real, pre-existing incident-response playbook — candidate source for a future "Automated Response Gap" spec, not yet written |
 | `docs/research/security-cost-effectiveness-model.md` (to be created per Spec #8) | Output of implementing Spec #8 — the actual methodology report and ranked output, distinct from the spec itself |
+| `docs/writing/sdd-security-compliance-case-study.md` | Output of Spec #10 — the actual case-study article, already drafted and self-verified (see Spec #10's Revision Log) |
+| `docs/specs/CONSTITUTION.md` | Persistent, non-negotiable project rules (Azure identity/secrets, Terraform, security-claims integrity, compliance format, SDD process, scope discipline) — inspired by GitHub Spec Kit's `constitution.md` concept (see `docs/research-notes.md`), adopted standalone rather than the full toolchain. Every spec should be checked against this file, not the other way around. |
 
 ## Maintenance Note
 
