@@ -54,6 +54,7 @@
 | ADR panel on Security Dashboard UI | no spec (the ADR files themselves already exist and are committed: `docs/adr/0001-nsg-flow-logs-rejected.md`, `docs/adr/0002-nat-gateway-deferred.md` — only the dashboard *UI panel* for surfacing them is undecided) | docs-only | Low (deferred) | 24.07.2026 |
 | Static C4 infrastructure diagram on Security Dashboard | no spec | docs-only | Low | 28.07.2026 |
 | "Open Attack Path Analysis in Azure Portal" deep-link button | no spec | docs-only (config) | Low | 28.07.2026 |
+| Continuous Risk-Scoring MVP (weighted aggregation of 3 existing signals, closes false-assurance gap on `RiskScoringMiddleware`) | **has spec** (`continuous-risk-scoring-mvp.spec.md`) | docs-only (reuses existing signals/roles, no new Azure resources) | Medium | 28.07.2026, motivated by this session's confirmed finding that `RiskScoringMiddleware` is referenced in `attack_data.json` but does not exist as real code |
 
 ## 5. Sentinel / Detection
 
@@ -134,17 +135,17 @@ While running the Security Dashboard baseline spec's Verification Batches, direc
 | Critical / Time-Sensitive | 5 | 0 | 5 | 5 | 0 | 0 |
 | RBAC / IAM | 6 | 0 | 6 | 5 | 0 | 1 |
 | CI/CD OIDC Migration | 4 | 0 | 4 | 1 | 0 | 3 (mixed: design now, implement later) |
-| Security Dashboard / Phase 2 | 11 | 5 | 6 | 0 | 6 | 5 |
+| Security Dashboard / Phase 2 | 12 | 6 | 6 | 0 | 7 | 5 |
 | Sentinel / Detection | 4 | 1 | 3 | 4 | 0 | 0 |
 | Networking / Infrastructure | 3 | 0 | 3 | 3 | 0 | 0 |
 | Data / Operational | 4 | 0 | 4 | 4 | 0 | 0 |
 | Compliance | 5 | 1 | 4 | 0 | 2 | 2 |
 | Other | 1 | 0 | 1 | 0 | 1 | 0 |
 | R&D Directions | 3 | 3 | 0 | 0 | 3 | 0 |
-| **Total** | **46** | **10** | **36** | **22** | **12** | **11** |
+| **Total** | **47** | **11** | **36** | **22** | **13** | **11** |
 
-**Spec coverage: 10 of 46 items (~22%) have a formal spec.**
-**Immediately actionable without Azure (docs-only + design-portion of mixed items): roughly 23 of 46 items** — a substantial amount of work remains available while the Azure subscription billing issue is unresolved.
+**Spec coverage: 11 of 47 items (~23%) have a formal spec.**
+**Immediately actionable without Azure (docs-only + design-portion of mixed items): roughly 24 of 47 items** — a substantial amount of work remains available while the Azure subscription billing issue is unresolved.
 
 ---
 
@@ -156,8 +157,8 @@ While running the Security Dashboard baseline spec's Verification Batches, direc
 
 | Metric | Count | Detail |
 |---|---|---|
-| Specs authored (`docs/specs/*.spec.md`) | 11 | 5 forward-looking Draft specs (evidence mapping, validation trail, PlantUML diagrams, IOC lookup, SECURITY.md limitations), 2 retroactive Implemented baselines (Security Dashboard, SDD Methodology itself), 2 Draft specs translated from pre-existing artifacts (Ask AI Alert Panel from a threat model, Automated Response from a playbook), 2 Draft R&D specs (Cost-Effectiveness Model, Case-Study Article) |
-| Backlog items with a formal spec | 10 of 46 (~22%) | See Summary Counts table above |
+| Specs authored (`docs/specs/*.spec.md`) | 12 | 5 forward-looking Draft specs (evidence mapping, validation trail, PlantUML diagrams, IOC lookup, SECURITY.md limitations), 2 retroactive Implemented baselines (Security Dashboard, SDD Methodology itself), 2 Draft specs translated from pre-existing artifacts (Ask AI Alert Panel from a threat model, Automated Response from a playbook), 2 Draft R&D specs (Cost-Effectiveness Model, Case-Study Article), 1 deliberately-minimal Draft MVP spec (Continuous Risk-Scoring) |
+| Backlog items with a formal spec | 11 of 47 (~23%) | See Summary Counts table above |
 | **Verify-before-lock corrections** (real errors in our own spec assumptions, caught before/during implementation) | **5** | (1) `ThreatIntelligenceIndicator` — queried the deprecated legacy table, missed that `ThreatIntelIndicators` was the real active one; (2) `attack_data.json` schema — assumed a flat `technique_id` structure, real file is nested `tactics[].techniques[].id`; (3) Same file's status counts — project claimed "6 mitigated/8 detected/1 monitored/5 gap" for months, real file shows "6/5/1/8"; (4) `docs/compliance/azure-platform-certifications.md` was silently at risk of corrupting the live `security_compliance` panel's control count via a malformed-frontmatter misparse; (5) Secure Score "Remediate vulnerabilities" (0/6) misattributed to this project's own `cryptography` CVE — direct API verification showed all 8 unhealthy assessments actually belong to `hornetdashboardprod`, a different project sharing the subscription |
 | **Pre-existing artifacts discovered** (avoided duplicating already-done work) | 7 items across 4 categories | STRIDE threat-model template + 1 completed threat model (Ask AI panel); incident-playbook template + 1 completed playbook (T1110 brute force); 2 ADRs (NSG flow logs, NAT Gateway); a full 34-file ISO 27001 compliance-mapping system with live rendering — see `docs/backlog-status.md`'s "Newly Discovered Pre-Existing Artifacts" section |
 | External articles/sources reviewed | 11 | See `docs/research-notes.md` for the full registry |

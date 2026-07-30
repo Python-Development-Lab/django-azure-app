@@ -26,6 +26,7 @@
 | 9 | [`sdd-methodology-baseline.spec.md`](./sdd-methodology-baseline.spec.md) | `SEC-RND-SDDMETHOD-01` | **Implemented** (retroactive) | None — meta-spec describing the project's own development process, not any single feature spec | docs-only | 1 |
 | 10 | [`sdd-case-study-article.spec.md`](./sdd-case-study-article.spec.md) | `SEC-RND-CASESTUDY-01` | Draft | Sources content from Specs #1-#9's Revision Logs + `docs/backlog-status.md` Metrics + `docs/research-notes.md` (factual sourcing only, not a code/data-model dependency) | docs-only | 1 |
 | 11 | [`automated-response-http-brute-force.spec.md`](./automated-response-http-brute-force.spec.md) | `SEC-SENTINEL-AUTORESPONSE-01` | Draft | Sole source of truth is `docs/playbooks/T1110-http-brute-force.md` (pre-existing playbook), not another spec — see Traceability | blocked-on-azure (new Logic App + Graph permission grant) | 1 |
+| 12 | [`continuous-risk-scoring-mvp.spec.md`](./continuous-risk-scoring-mvp.spec.md) | `SEC-ZEROTRUST-RISKSCORE-01` | Draft | Reuses code from existing `security_alerts` view path and `DeviceVerificationMiddleware` — no shared spec dependency | docs-only (reuses existing signals/roles, no new Azure resources) | 1 |
 
 ## Implementation Order
 
@@ -44,6 +45,7 @@ Spec #3 explicitly states it should be implemented last among this group — it 
 5. SECURITY.md Honest Limitations
 7. Ask AI About This Alert Panel
 11. Automated Response — HTTP Brute Force Session Revocation
+12. Continuous Risk-Scoring MVP
 ```
 Spec #5 references facts established in Group A (incident dates, technique IDs) for consistency, but has no code-level or data-model dependency — it can be drafted and refined in parallel with Group A's implementation, as long as incident details are kept in sync. Spec #7 is similarly independent for implementation, but its *content* is entirely sourced from `docs/threat-models/0001-ask-ai-alert-panel.md` rather than from any other spec in this index — see Traceability in that file.
 
@@ -80,6 +82,7 @@ Whether other subsystems (FinOps Dashboard, CI/CD pipeline, Terraform modules) g
 - **Spec #9** documents the methodology all 9 (now 10) specs in this index actually follow — it is `Implemented` from creation, like Spec #6, since it captures already-adopted practice rather than proposing new process. Its own Acceptance Criteria honestly notes that REQ-07 (post-implementation Traceability Verification) has never actually been exercised yet, since no forward-looking spec has been implemented as of this spec's authoring date.
 - **Spec #10** was authored after some back-and-forth about what "an R&D artifact for the SDD methodology" should actually mean — the session initially produced an internal process-spec (#9), then a freeform narrative article, then this formal EARS spec *about* that article, before settling on keeping all three as distinct, related artifacts rather than merging them. Recorded here as a real example of the kind of scope confusion this project's own documentation discipline is meant to catch and resolve, not hide.
 - **Spec #11** follows the same pattern as Spec #7: entirely sourced from a pre-existing artifact (`docs/playbooks/T1110-http-brute-force.md`, a real incident-response playbook drafted 25.07.2026) rather than new analysis. Its one genuinely new contribution beyond the source playbook is the idempotency requirement set (REQ-03/04/05) — directly motivated by this session's review of the Yazidi "From Prompt to Production" article, since the source playbook itself never considered what happens if the automation fires twice for the same incident.
+- **Spec #12** exists specifically to close a false-assurance gap this project's own methodology found in itself: `attack_data.json` references `RiskScoringMiddleware` in 4 technique entries, but that component has been confirmed (25.07.2026, re-confirmed 28.07.2026) to not exist as real code. Rather than only relabeling those entries `gap` (the honest-but-passive fix), this spec deliberately scopes a small, real, shippable MVP — explicitly excluding the full aspirational concept (ML, fuzzy topology, automated action) per `CONSTITUTION.md`'s Scope Discipline rule. REQ-06/REQ-07 exist specifically so this MVP itself never becomes a second instance of the same false-assurance pattern it was built to fix.
 
 ## Related Documents (not specs, but closely tied to this index)
 
