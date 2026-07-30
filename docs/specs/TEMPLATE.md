@@ -1,3 +1,23 @@
+## Triage: Do You Need a Spec For This? (read this BEFORE creating a new spec file)
+
+**Source of this section:** comparison with the GitHub Spec Kit "router" pattern (FWDays video review, 28.07.2026) surfaced a real gap in this project's methodology — we had written a full spec for nearly everything, without first asking whether a full spec was warranted. Not every task needs one.
+
+**Three tiers — pick one before doing anything else:**
+
+1. **Trivial fix — just do it, no spec.** Examples: a typo, a one-line config change, a broken doc link, renaming a variable. If you're not sure whether something is "trivial," ask the next question instead of defaulting to trivial.
+2. **Medium feature — write a full spec using this template.** This is the default for anything real.
+3. **Large/ambiguous feature — Brainstorm first, spec second.** Don't jump straight to a formal spec if requirements are still unclear or there are multiple viable approaches to weigh. Discuss it first (informally, in conversation, or as a short written brainstorm note), settle on a direction, *then* write the spec. Writing a spec for an undecided direction just produces a spec that gets rewritten immediately.
+
+**Decision questions — any "yes" below means at least tier 2, no exceptions:**
+- Does this touch more than one file, or introduce a new Azure resource/dependency?
+- Does this have security, compliance, or data-integrity implications, even indirectly?
+- Could getting this wrong quietly produce a false assurance claim (a wrong count, a wrong status, a wrong coverage claim) rather than an obvious, loud failure? — this project's specific lesson (see `docs/writing/sdd-security-compliance-case-study.md`) is that this failure mode is easy to miss in a security/compliance context specifically.
+- Will an AI coding agent implement this across more than one session? (If yes, it needs a Task Breakdown, which needs a spec.)
+
+**If none of the above apply and it's genuinely small — don't write a spec. Don't retroactively baseline-spec trivial past work either** (see `docs/specs/README.md`'s Baseline Specs section) — the retroactive-baseline pattern is for subsystems worth documenting, not every small thing that was ever built.
+
+---
+
 # Spec: [Feature Name]
 
 **Status:** Draft
