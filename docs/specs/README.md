@@ -25,6 +25,7 @@
 | 8 | [`security-investment-cost-effectiveness-model.spec.md`](./security-investment-cost-effectiveness-model.spec.md) | `SEC-RND-COSTMODEL-01` | Draft | None — reads live FinOps + Secure Score data, no dependency on other specs (REQ-07 optionally references Spec #1's `evidence` array once it ships) | docs-only (read-only Azure API queries) | 1 |
 | 9 | [`sdd-methodology-baseline.spec.md`](./sdd-methodology-baseline.spec.md) | `SEC-RND-SDDMETHOD-01` | **Implemented** (retroactive) | None — meta-spec describing the project's own development process, not any single feature spec | docs-only | 1 |
 | 10 | [`sdd-case-study-article.spec.md`](./sdd-case-study-article.spec.md) | `SEC-RND-CASESTUDY-01` | Draft | Sources content from Specs #1-#9's Revision Logs + `docs/backlog-status.md` Metrics + `docs/research-notes.md` (factual sourcing only, not a code/data-model dependency) | docs-only | 1 |
+| 11 | [`automated-response-http-brute-force.spec.md`](./automated-response-http-brute-force.spec.md) | `SEC-SENTINEL-AUTORESPONSE-01` | Draft | Sole source of truth is `docs/playbooks/T1110-http-brute-force.md` (pre-existing playbook), not another spec — see Traceability | blocked-on-azure (new Logic App + Graph permission grant) | 1 |
 
 ## Implementation Order
 
@@ -42,6 +43,7 @@ Spec #3 explicitly states it should be implemented last among this group — it 
 4. IOC Reputation Lookup
 5. SECURITY.md Honest Limitations
 7. Ask AI About This Alert Panel
+11. Automated Response — HTTP Brute Force Session Revocation
 ```
 Spec #5 references facts established in Group A (incident dates, technique IDs) for consistency, but has no code-level or data-model dependency — it can be drafted and refined in parallel with Group A's implementation, as long as incident details are kept in sync. Spec #7 is similarly independent for implementation, but its *content* is entirely sourced from `docs/threat-models/0001-ask-ai-alert-panel.md` rather than from any other spec in this index — see Traceability in that file.
 
@@ -77,6 +79,7 @@ Whether other subsystems (FinOps Dashboard, CI/CD pipeline, Terraform modules) g
 - **Spec #8** is unique in a different way: it is the only spec explicitly built **around correcting a same-session error** — an unverified claim (that fixing `cryptography` would raise Secure Score from 36% to ~67%) was made, then found via direct API verification to likely be misattributed to a different project (`hornetdashboardprod`) sharing the same Azure subscription. REQ-01/REQ-02 exist specifically to prevent that class of mistake going forward.
 - **Spec #9** documents the methodology all 9 (now 10) specs in this index actually follow — it is `Implemented` from creation, like Spec #6, since it captures already-adopted practice rather than proposing new process. Its own Acceptance Criteria honestly notes that REQ-07 (post-implementation Traceability Verification) has never actually been exercised yet, since no forward-looking spec has been implemented as of this spec's authoring date.
 - **Spec #10** was authored after some back-and-forth about what "an R&D artifact for the SDD methodology" should actually mean — the session initially produced an internal process-spec (#9), then a freeform narrative article, then this formal EARS spec *about* that article, before settling on keeping all three as distinct, related artifacts rather than merging them. Recorded here as a real example of the kind of scope confusion this project's own documentation discipline is meant to catch and resolve, not hide.
+- **Spec #11** follows the same pattern as Spec #7: entirely sourced from a pre-existing artifact (`docs/playbooks/T1110-http-brute-force.md`, a real incident-response playbook drafted 25.07.2026) rather than new analysis. Its one genuinely new contribution beyond the source playbook is the idempotency requirement set (REQ-03/04/05) — directly motivated by this session's review of the Yazidi "From Prompt to Production" article, since the source playbook itself never considered what happens if the automation fires twice for the same incident.
 
 ## Related Documents (not specs, but closely tied to this index)
 
@@ -88,7 +91,7 @@ Whether other subsystems (FinOps Dashboard, CI/CD pipeline, Terraform modules) g
 | `docs/diagrams/evidence-chain-*.puml` (to be created per Spec #3) | Output of implementing Spec #3 |
 | `security/mitre/attack_data.json` | The live file Spec #6 documents the current schema of — must be re-diffed against Spec #6 section 4 whenever this file's schema changes |
 | `docs/threat-models/0001-ask-ai-alert-panel.md` | Sole source of truth for Spec #7 — keep both in sync; do not let this pre-existing threat model and the derived EARS spec drift apart |
-| `docs/playbooks/T1110-http-brute-force.md` | Real, pre-existing incident-response playbook — candidate source for a future "Automated Response Gap" spec, not yet written |
+| `docs/playbooks/T1110-http-brute-force.md` | Sole source of truth for Spec #11 — keep both in sync; update the playbook's Eradication section per Spec #11's REQ-09 once implemented |
 | `docs/research/security-cost-effectiveness-model.md` (to be created per Spec #8) | Output of implementing Spec #8 — the actual methodology report and ranked output, distinct from the spec itself |
 | `docs/writing/sdd-security-compliance-case-study.md` | Output of Spec #10 — the actual case-study article, already drafted and self-verified (see Spec #10's Revision Log) |
 | `docs/specs/CONSTITUTION.md` | Persistent, non-negotiable project rules (Azure identity/secrets, Terraform, security-claims integrity, compliance format, SDD process, scope discipline) — inspired by GitHub Spec Kit's `constitution.md` concept (see `docs/research-notes.md`), adopted standalone rather than the full toolchain. Every spec should be checked against this file, not the other way around. |

@@ -60,7 +60,7 @@
 | Item | Spec | Blocker | Priority | Source |
 |---|---|---|---|---|
 | Distributed password-spray detection rule (`FailCount>30 AND UniqueIPs>5` over 15m) | no spec | blocked-on-azure | High | 24.07.2026, CyberDefenders AzureSpray comparison |
-| Automated response playbook (Logic App → `revokeSignInSessions`) | no spec (**real playbook already drafted**: `docs/playbooks/T1110-http-brute-force.md`, dated 25.07.2026, discovered 28.07.2026 — its own Eradication section explicitly notes `revokeSignInSessions` automation "not yet implemented, see backlog", confirming this item is still genuinely open) | blocked-on-azure | Medium | 24.07.2026, playbook drafted 25.07.2026 |
+| Automated response playbook (Logic App → `revokeSignInSessions`) | **has spec** (`automated-response-http-brute-force.spec.md`, translated directly from `docs/playbooks/T1110-http-brute-force.md`, plus a new idempotency requirement set per the Yazidi article lesson) | blocked-on-azure | Medium | 24.07.2026, playbook drafted 25.07.2026, formalized into EARS spec 28.07.2026 |
 | Reuse CIAM SigninLogs KQL patterns (ResultType 50126/50053/0) | no spec | blocked-on-azure (pending Event Hub + Function App bridge) | Low (dependency not ready) | 24.07.2026 |
 | Custom banned-password policy for CIAM (reference: NIST guidance, 1000-term cap) | no spec | blocked-on-azure | Low | 24.07.2026 |
 
@@ -135,15 +135,15 @@ While running the Security Dashboard baseline spec's Verification Batches, direc
 | RBAC / IAM | 6 | 0 | 6 | 5 | 0 | 1 |
 | CI/CD OIDC Migration | 4 | 0 | 4 | 1 | 0 | 3 (mixed: design now, implement later) |
 | Security Dashboard / Phase 2 | 11 | 5 | 6 | 0 | 6 | 5 |
-| Sentinel / Detection | 4 | 0 | 4 | 4 | 0 | 0 |
+| Sentinel / Detection | 4 | 1 | 3 | 4 | 0 | 0 |
 | Networking / Infrastructure | 3 | 0 | 3 | 3 | 0 | 0 |
 | Data / Operational | 4 | 0 | 4 | 4 | 0 | 0 |
 | Compliance | 5 | 1 | 4 | 0 | 2 | 2 |
 | Other | 1 | 0 | 1 | 0 | 1 | 0 |
 | R&D Directions | 3 | 3 | 0 | 0 | 3 | 0 |
-| **Total** | **46** | **9** | **37** | **22** | **12** | **11** |
+| **Total** | **46** | **10** | **36** | **22** | **12** | **11** |
 
-**Spec coverage: 9 of 46 items (~20%) have a formal spec.**
+**Spec coverage: 10 of 46 items (~22%) have a formal spec.**
 **Immediately actionable without Azure (docs-only + design-portion of mixed items): roughly 23 of 46 items** — a substantial amount of work remains available while the Azure subscription billing issue is unresolved.
 
 ---
@@ -156,14 +156,14 @@ While running the Security Dashboard baseline spec's Verification Batches, direc
 
 | Metric | Count | Detail |
 |---|---|---|
-| Specs authored (`docs/specs/*.spec.md`) | 10 | 5 forward-looking Draft specs (evidence mapping, validation trail, PlantUML diagrams, IOC lookup, SECURITY.md limitations), 2 retroactive Implemented baselines (Security Dashboard, SDD Methodology itself), 1 Draft translated from a pre-existing threat model (Ask AI Alert Panel), 2 Draft R&D specs (Cost-Effectiveness Model, Case-Study Article) |
-| Backlog items with a formal spec | 9 of 46 (~20%) | See Summary Counts table above |
-| **Verify-before-lock corrections** (real errors in our own spec assumptions, caught before/during implementation) | **4** | (1) `ThreatIntelligenceIndicator` — queried the deprecated legacy table, missed that `ThreatIntelIndicators` was the real active one; (2) `attack_data.json` schema — assumed a flat `technique_id` structure, real file is nested `tactics[].techniques[].id`; (3) Same file's status counts — project claimed "6 mitigated/8 detected/1 monitored/5 gap" for months, real file shows "6/5/1/8"; (4) `docs/compliance/azure-platform-certifications.md` was silently at risk of corrupting the live `security_compliance` panel's control count via a malformed-frontmatter misparse |
+| Specs authored (`docs/specs/*.spec.md`) | 11 | 5 forward-looking Draft specs (evidence mapping, validation trail, PlantUML diagrams, IOC lookup, SECURITY.md limitations), 2 retroactive Implemented baselines (Security Dashboard, SDD Methodology itself), 2 Draft specs translated from pre-existing artifacts (Ask AI Alert Panel from a threat model, Automated Response from a playbook), 2 Draft R&D specs (Cost-Effectiveness Model, Case-Study Article) |
+| Backlog items with a formal spec | 10 of 46 (~22%) | See Summary Counts table above |
+| **Verify-before-lock corrections** (real errors in our own spec assumptions, caught before/during implementation) | **5** | (1) `ThreatIntelligenceIndicator` — queried the deprecated legacy table, missed that `ThreatIntelIndicators` was the real active one; (2) `attack_data.json` schema — assumed a flat `technique_id` structure, real file is nested `tactics[].techniques[].id`; (3) Same file's status counts — project claimed "6 mitigated/8 detected/1 monitored/5 gap" for months, real file shows "6/5/1/8"; (4) `docs/compliance/azure-platform-certifications.md` was silently at risk of corrupting the live `security_compliance` panel's control count via a malformed-frontmatter misparse; (5) Secure Score "Remediate vulnerabilities" (0/6) misattributed to this project's own `cryptography` CVE — direct API verification showed all 8 unhealthy assessments actually belong to `hornetdashboardprod`, a different project sharing the subscription |
 | **Pre-existing artifacts discovered** (avoided duplicating already-done work) | 7 items across 4 categories | STRIDE threat-model template + 1 completed threat model (Ask AI panel); incident-playbook template + 1 completed playbook (T1110 brute force); 2 ADRs (NSG flow logs, NAT Gateway); a full 34-file ISO 27001 compliance-mapping system with live rendering — see `docs/backlog-status.md`'s "Newly Discovered Pre-Existing Artifacts" section |
 | External articles/sources reviewed | 11 | See `docs/research-notes.md` for the full registry |
 | Terminal heredoc failures (`cat > ... << 'EOF'` breaking on long pastes) | 3 | Resolved by switching to VS Code Explorer paste or base64-encoded single-line `bash` commands for files beyond ~100 lines |
 | Sessions to reach first Tier 2 (Spec-Anchored) pilot | 1 | Security Dashboard baseline spec, same session as SDD adoption itself |
-| **Secure Score breakdown confirmed (28.07.2026)** | 6.8/19 = 36% | Verified via `az rest` against `secureScoreControls` API — matches portal exactly. Single highest-leverage fix identified: "Remediate vulnerabilities" is 0/6 (100% lost, the single largest weighted category) — almost certainly the `cryptography` CVEs already tracked as CRITICAL. Fixing it alone projects to ~67% Secure Score (12.8/19), nearly doubling the current score from one already-planned action. |
+| **Secure Score breakdown — corrected (28.07.2026)** | 6.8/19 = 36% | Verified via `az rest` against `secureScoreControls` API — matches portal exactly. Initial hypothesis: "Remediate vulnerabilities" (0/6, the single largest weighted category) was assumed to be this project's own `cryptography` CVEs, projecting a rise to ~67% if fixed. **Corrected same day:** direct query of the actual unhealthy assessments showed all 8 belong to `hornetdashboardprod`, a different project in the same subscription — the 36%→67% projection is very likely wrong. This is counted as verify-before-lock catch #5 above, not a separate finding. |
 
 **Interpretation:** the 4 verify-before-lock catches and 7 pre-existing-artifact discoveries are the strongest evidence that the methodology is earning its overhead — each one would very likely have caused wasted implementation time or duplicated work if undiscovered. The 3 heredoc failures are a minor but real operational cost of the chosen file-delivery method; documented here so the lesson (prefer VS Code paste or base64 for large files) isn't relearned from scratch next time.
 
