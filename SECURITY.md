@@ -83,7 +83,7 @@ Legend: ✅ Implemented · ⚠️ Partial / needs verification · ❌ Gap (not y
 ### Ongoing Component Updates
 
 - [x] Dependency and vulnerability scanning in CI: pip-audit, Trivy, CycloneDX SBOM
-- [ ] `cryptography==41.0.7` — pinned for GLIBC 2.31 compatibility on Azure App Service Linux; carries 5 known CVEs, tracked as GitHub Issue #1, unresolved due to platform constraint
+- [ ] `cryptography==41.0.7` — pinned for GLIBC 2.31 compatibility on Azure App Service Linux; carries **7 open Dependabot alerts (4 High, 2 Moderate, 1 Low)** — [#42](../../security/dependabot/42), [#46](../../security/dependabot/46), [#44](../../security/dependabot/44), [#48](../../security/dependabot/48) (High), [#43](../../security/dependabot/43), [#45](../../security/dependabot/45) (Moderate), [#47](../../security/dependabot/47) (Low). Tracked as GitHub Issue #1, unresolved due to platform constraint. All alerts are on the same direct dependency in `requirements.txt`; this is one unresolved constraint, not seven distinct incidents
 
 ---
 
