@@ -54,7 +54,12 @@ Legend: ✅ Implemented · ⚠️ Partial / needs verification · ❌ Gap (not y
 - [ ] MFA enforcement verified for the CIAM tenant
 - [ ] Legacy Authentication confirmed blocked for the CIAM tenant (Microsoft attributes ~99% of real-world password-spray success to legacy auth protocols)
 - [ ] Just-in-time (JIT) access via Entra PIM — **not implemented**. Human administrative account (`147bf926-...`) holds permanent Owner at subscription scope rather than PIM-eligible, time-bound access
+- [ ] Self-Service Password Reset (SSPR) — **not configured** on the Entra External ID CIAM tenant
+- [ ] Passwordless authentication — **not implemented**
+- [ ] Periodic Access Reviews — **not configured**
 - [ ] CI/CD service principal scoped to least privilege — **confirmed gap**: `django-azure-sp` holds Contributor **and** User Access Administrator at subscription scope (should be resource-group scoped). Independently confirmed by manual RBAC review (25.07.2026) and Azure CSPM automated assessment (27.07.2026), both High severity
+
+> **Literature backing.** An applied case study of Zero Trust Architecture on Azure — *"Analysis of Azure Zero Trust Architecture Implementation"* (Preprints.org, 2024, [doi:10.20944/preprints202407.1454.v1](https://doi.org/10.20944/preprints202407.1454.v1)) — lists JIT access, SSPR, passwordless authentication, and periodic Access Reviews alongside MFA as the standard practical components of Zero Trust identity on Azure. This project currently implements MFA and SSO but not the other four, independent of and consistent with the Azure CSPM findings below.
 
 ### Key Management
 
@@ -186,7 +191,7 @@ Pulling together the per-phase limitations above, the following are the most sig
 
 - **No WAF / IP restrictions** — highest-priority open item (ATT&CK T1595); exploitability already confirmed via an observed NMap scan against `/auth/login/`. Implementation path decided (Application Gateway v2 + WAF), not yet built.
 - **CI/CD identity is over-privileged** — the CI service principal holds Contributor and User Access Administrator at subscription scope rather than resource-group scope. Confirmed independently by manual review and Azure CSPM (High severity).
-- **No PIM / just-in-time access** for the human administrative account, which currently holds permanent Owner at subscription scope.
+- **No PIM / just-in-time access, SSPR, passwordless authentication, or periodic Access Reviews** — the human administrative account currently holds permanent Owner at subscription scope. Confirmed independently by Azure CSPM ("Privileged roles should not have permanent access", High severity) and by the applied-Zero-Trust literature ([Analysis of Azure Zero Trust Architecture Implementation](https://doi.org/10.20944/preprints202407.1454.v1), Preprints.org 2024), which lists these four alongside MFA as standard Azure Zero Trust identity practice — this project implements MFA/SSO but not the other four.
 - **No load testing** has been performed; behavior under real traffic is unverified.
 - **Incident response plan is in draft** and not yet connected to any automated trigger (no Sentinel rule has an attached playbook).
 - **No manual penetration test or fuzz testing** has been performed; automated DAST (ZAP) is not a substitute for either.
