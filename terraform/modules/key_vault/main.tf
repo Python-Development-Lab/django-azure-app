@@ -80,3 +80,4 @@ resource "azurerm_role_assignment" "human_admin" {
   role_definition_name = "Key Vault Administrator"
   principal_id         = var.human_admin_object_id
 }
+# test comment for AI review
