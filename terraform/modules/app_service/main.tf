@@ -13,6 +13,7 @@ resource "azurerm_linux_web_app" "main" {
   resource_group_name = var.resource_group_name
   service_plan_id     = azurerm_service_plan.main.id
   tags                = var.tags
+  https_only          = true
 
   site_config {
     always_on              = var.environment == "production"
@@ -53,6 +54,7 @@ resource "azurerm_linux_web_app" "main" {
 resource "azurerm_linux_web_app_slot" "staging" {
   count          = var.environment == "production" ? 1 : 0
   name           = "staging"
+  https_only     = true
   app_service_id = azurerm_linux_web_app.main.id
 
   site_config {
