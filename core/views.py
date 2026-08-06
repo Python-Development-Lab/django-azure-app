@@ -188,12 +188,16 @@ def _monthly_trend(months=12):
 
 
 def _parse_month_param(request):
-    """Parse ?month=YYYY-MM from the request. Returns (year, month) or (None, None)."""
+    """Parse ?month=YYYY-MM from the request. Returns (year, month) or (None, None).
+    Falls back to (None, None) -- meaning current month -- on any invalid input,
+    including out-of-range months (e.g. ?month=2099-13)."""
     raw = request.GET.get("month")
     if raw:
         try:
             y_str, m_str = raw.split("-")
-            return int(y_str), int(m_str)
+            year, month = int(y_str), int(m_str)
+            if 1 <= month <= 12 and 2000 <= year <= 2100:
+                return year, month
         except (ValueError, AttributeError):
             pass
     return None, None
