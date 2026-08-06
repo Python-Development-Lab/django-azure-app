@@ -178,7 +178,10 @@ def _monthly_trend(months=12):
         }
     })
     trend = []
-    for r in data.get("properties", {}).get("rows", []):
+    rows = data.get("properties", {}).get("rows", [])
+    if rows:
+        logger.info("finops: _monthly_trend raw row sample: %s" % (rows[0],))
+    for r in rows:
         ds = str(r[1])
         y2, m2 = int(ds[0:4]), int(ds[4:6])
         trend.append({
