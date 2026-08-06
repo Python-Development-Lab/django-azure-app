@@ -21,7 +21,15 @@
   </div>
 </div>
 <div style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:1.25rem;margin-bottom:2rem;">
-  <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">Daily Spend Trend — {{ period_month }}</h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
+    <h2 style="font-size:1rem;font-weight:600;">Daily Spend Trend — {{ period_month }}</h2>
+    <select id="daily-rg-select" style="padding:.35rem .55rem;border:1px solid #e0e0e0;border-radius:6px;font-size:.82rem;color:#333;background:#fff;">
+      <option value="__all__">All resource groups (combined)</option>
+      {% for item in costs %}
+      <option value="{{ item.resource_group }}">{{ item.resource_group }}</option>
+      {% endfor %}
+    </select>
+  </div>
   <div style="position:relative;height:200px;"><canvas id="dailyChart"></canvas></div>
 </div>
 <div style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:1.25rem;margin-bottom:2rem;">
@@ -105,6 +113,37 @@
     </tfoot>
   </table>
 </div>
+<div style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:1.25rem;margin-top:2rem;">
+  <h2 style="font-size:1rem;font-weight:600;margin-bottom:.25rem;">Cost by Resource -- All Resource Groups</h2>
+  <p style="font-size:.8rem;color:#666;margin-bottom:1rem;">Every individual resource with non-zero spend this month -- Total: ${{ resource_total }}</p>
+  <div style="position:relative;height:280px;margin-bottom:1.5rem;"><canvas id="resourceCostsChart"></canvas></div>
+  <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+    <thead>
+      <tr style="background:#f5f5f5;">
+        <th style="padding:8px 12px;text-align:left;border-bottom:2px solid #ddd;">Resource</th>
+        <th style="padding:8px 12px;text-align:left;border-bottom:2px solid #ddd;">Resource Group</th>
+        <th style="padding:8px 12px;text-align:right;border-bottom:2px solid #ddd;">Cost (USD)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in resource_costs %}
+      <tr style="border-bottom:1px solid #eee;">
+        <td style="padding:8px 12px;font-family:monospace;font-size:.8rem;">{{ item.resource }}</td>
+        <td style="padding:8px 12px;color:#666;font-size:.8rem;">{{ item.resource_group }}</td>
+        <td style="padding:8px 12px;text-align:right;font-weight:600;">${{ item.cost }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" style="padding:2rem;text-align:center;color:#999;">No per-resource cost data</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr style="background:#f5f5f5;font-weight:600;">
+        <td colspan="2" style="padding:8px 12px;">Total</td>
+        <td style="padding:8px 12px;text-align:right;">${{ resource_total }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
 <script>
 (function() {
   var costs = {{ costs_json|safe }};
@@ -112,14 +151,28 @@
   var rgBreakdown = {{ rg_breakdown_json|safe }};
   var monthlyTrend = {{ monthly_trend_json|safe }};
   var selectedMonthValue = "{{ selected_month_value }}";
+  var resourceTop = {{ resource_top_json|safe }};
+  var dailyByRg = {{ daily_by_rg_json|safe }};
   var labels = costs.map(function(c) { return c.resource_group.length > 20 ? c.resource_group.substring(0,20)+'...' : c.resource_group; });
   var values = costs.map(function(c) { return c.cost; });
   var colors = ['#0078d4','#2e7d32','#e65100','#6a1b9a','#00838f'];
+  var dailyChartInstance = null;
   if (daily.length > 0) {
-    new Chart(document.getElementById('dailyChart'), {
+    dailyChartInstance = new Chart(document.getElementById('dailyChart'), {
       type: 'line',
       data: { labels: daily.map(function(d){return d.date;}), datasets: [{ data: daily.map(function(d){return d.cost;}), borderColor:'#0078d4', backgroundColor:'rgba(0,120,212,0.08)', borderWidth:2, pointRadius:4, pointBackgroundColor:'#0078d4', fill:true, tension:0.3 }] },
       options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:'#666',font:{size:11}},grid:{display:false}}, y:{ticks:{color:'#666',callback:function(v){return '$'+v.toFixed(2);}},grid:{color:'#f0f0f0'},beginAtZero:true} } }
+    });
+  }
+  var rgSelect = document.getElementById('daily-rg-select');
+  if (rgSelect && dailyChartInstance) {
+    rgSelect.addEventListener('change', function() {
+      var chosen = this.value;
+      var series = (chosen === '__all__')
+        ? daily.map(function(d){return d.cost;})
+        : (dailyByRg[chosen] || daily.map(function(){return 0;}));
+      dailyChartInstance.data.datasets[0].data = series;
+      dailyChartInstance.update();
     });
   }
   if (costs.length > 0) {
@@ -153,6 +206,20 @@
       type: 'bar',
       data: { labels: rgBreakdown.map(function(d){return d.meter.length>25?d.meter.substring(0,25)+'...':d.meter;}), datasets: [{ data: rgBreakdown.map(function(d){return d.cost;}), backgroundColor:['#e24b4a','#2a78d6','#eda100','#1baf7a','#888780'], borderRadius:4, borderSkipped:'bottom' }] },
       options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:'#666',font:{size:10}},grid:{display:false}}, y:{ticks:{color:'#666',callback:function(v){return '$'+v.toFixed(2);}},grid:{color:'#f0f0f0'},beginAtZero:true} } }
+    });
+  }
+  if (resourceTop.length > 0) {
+    new Chart(document.getElementById('resourceCostsChart'), {
+      type: 'bar',
+      data: {
+        labels: resourceTop.map(function(d){return d.resource.length>22?d.resource.substring(0,22)+'...':d.resource;}),
+        datasets: [{
+          data: resourceTop.map(function(d){return d.cost;}),
+          backgroundColor: '#6a1b9a',
+          borderRadius: 4
+        }]
+      },
+      options: { indexAxis: 'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:'#666',callback:function(v){return '$'+v.toFixed(2);}},grid:{color:'#f0f0f0'},beginAtZero:true}, y:{ticks:{color:'#666',font:{size:10}},grid:{display:false}} } }
     });
   }
 })();

@@ -88,18 +88,64 @@ def _all_cost_data(year=None, month=None):
     costs.sort(key=lambda x: x["cost"], reverse=True)
     total = round(sum(c["cost"] for c in costs), 2)
 
-    # 2. Daily trend
-    daily_data = _cost_query(token, {
+    # 2. Daily trend, grouped by ResourceGroupName -- one query serves both the
+    #    combined "All" series and the per-RG series for the dropdown selector,
+    #    instead of two separate Cost Management calls.
+    daily_rg_data = _cost_query(token, {
         "type": "ActualCost", "timeframe": "Custom", "timePeriod": time_period,
         "dataset": {
             "granularity": "Daily",
-            "aggregation": {"totalCost": {"name": "PreTaxCost", "function": "Sum"}}
+            "aggregation": {"totalCost": {"name": "PreTaxCost", "function": "Sum"}},
+            "grouping": [{"type": "Dimension", "name": "ResourceGroupName"}]
         }
     })
+    daily_cols = [c.get("name") for c in daily_rg_data.get("properties", {}).get("columns", [])]
+
+    def _col_idx(cols, *names):
+        for n in names:
+            if n in cols:
+                return cols.index(n)
+        return None
+
+    idx_cost = _col_idx(daily_cols, "PreTaxCost", "Cost")
+    idx_date = _col_idx(daily_cols, "UsageDate")
+    idx_rg = _col_idx(daily_cols, "ResourceGroupName")
+
     daily = []
-    for r in daily_data.get("properties", {}).get("rows", []):
-        ds = str(r[1])
-        daily.append({"date": f"{ds[6:8]}.{ds[4:6]}", "cost": round(r[0], 2)})
+    daily_by_rg = {}
+    if idx_cost is not None and idx_date is not None and idx_rg is not None:
+        totals, per_rg, raw_dates = {}, {}, set()
+        for r in daily_rg_data.get("properties", {}).get("rows", []):
+            cost = r[idx_cost]
+            ds = str(r[idx_date])
+            rg = r[idx_rg]
+            lbl = f"{ds[6:8]}.{ds[4:6]}"
+            raw_dates.add(ds)
+            totals[lbl] = totals.get(lbl, 0) + cost
+            per_rg.setdefault(rg, {})
+            per_rg[rg][lbl] = per_rg[rg].get(lbl, 0) + cost
+        sorted_dates = sorted(raw_dates)
+        daily_labels = [f"{d[6:8]}.{d[4:6]}" for d in sorted_dates]
+        daily = [{"date": lbl, "cost": round(totals.get(lbl, 0), 2)} for lbl in daily_labels]
+        daily_by_rg = {
+            rg: [round(per_rg.get(rg, {}).get(lbl, 0), 2) for lbl in daily_labels]
+            for rg in per_rg
+        }
+    else:
+        logger.warning(
+            "finops: unexpected columns in daily-by-RG response (%s), "
+            "falling back to ungrouped daily query" % (daily_cols,)
+        )
+        daily_data = _cost_query(token, {
+            "type": "ActualCost", "timeframe": "Custom", "timePeriod": time_period,
+            "dataset": {
+                "granularity": "Daily",
+                "aggregation": {"totalCost": {"name": "PreTaxCost", "function": "Sum"}}
+            }
+        })
+        for r in daily_data.get("properties", {}).get("rows", []):
+            ds = str(r[1])
+            daily.append({"date": f"{ds[6:8]}.{ds[4:6]}", "cost": round(r[0], 2)})
 
     # 3. RG breakdown
     bd_data = _cost_query(token, {
@@ -128,7 +174,7 @@ def _all_cost_data(year=None, month=None):
 
     bundle = {
         "costs": costs, "total": total,
-        "daily": daily, "breakdown": breakdown,
+        "daily": daily, "daily_by_rg": daily_by_rg, "breakdown": breakdown,
     }
     cache.set(bundle_key, bundle, 600)
     return bundle
@@ -192,6 +238,52 @@ def _monthly_trend(months=12):
     trend.sort(key=lambda x: x["month"])
     cache.set(cache_key, trend, 3600)
     return trend
+
+
+def _resource_costs(year=None, month=None, top_n=15):
+    """Cost per individual resource across all resource groups (all-time-in-month)."""
+    year, month, first, last = _month_bounds(year, month)
+    cache_key = f"finops_resources:{year:04d}-{month:02d}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+    token = _get_token()
+    data = _cost_query(token, {
+        "type": "ActualCost", "timeframe": "Custom",
+        "timePeriod": {
+            "from": first.strftime("%Y-%m-%d"),
+            "to": last.strftime("%Y-%m-%d"),
+        },
+        "dataset": {
+            "granularity": "None",
+            "aggregation": {"totalCost": {"name": "PreTaxCost", "function": "Sum"}},
+            "grouping": [{"type": "Dimension", "name": "ResourceId"}]
+        }
+    })
+    resources = []
+    for r in data.get("properties", {}).get("rows", []):
+        cost = r[0]
+        resource_id = str(r[1] or "")
+        if cost <= 0 or not resource_id:
+            continue
+        parts = resource_id.split("/")
+        name = parts[-1] if parts else resource_id
+        rg = ""
+        lower_parts = [p.lower() for p in parts]
+        if "resourcegroups" in lower_parts:
+            idx = lower_parts.index("resourcegroups")
+            if idx + 1 < len(parts):
+                rg = parts[idx + 1]
+        resources.append({
+            "resource": name,
+            "resource_group": rg,
+            "cost": round(cost, 3),
+        })
+    resources.sort(key=lambda x: x["cost"], reverse=True)
+    total = round(sum(r["cost"] for r in resources), 2)
+    result = {"resources": resources, "top": resources[:top_n], "total": total}
+    cache.set(cache_key, result, 600)
+    return result
 
 
 def _parse_month_param(request):
@@ -568,12 +660,13 @@ def finops_summary(request):
     """Single HTMX endpoint — returns all FinOps content at once (avoids 429)"""
     year, month = _parse_month_param(request)
     error = None
-    costs, total, daily, breakdown, monthly_trend = [], 0.0, [], [], []
+    costs, total, daily, daily_by_rg, breakdown, monthly_trend = [], 0.0, [], {}, [], []
     try:
         b = _all_cost_data(year, month)
         costs = b["costs"]
         total = b["total"]
         daily = b["daily"]
+        daily_by_rg = b.get("daily_by_rg", {})
         breakdown = b["breakdown"]
     except Exception as e:
         error = str(e)
@@ -585,6 +678,11 @@ def finops_summary(request):
     except Exception:
         logger.exception("finops: _monthly_trend(12) failed")
         monthly_trend = []
+    resource_costs = {"resources": [], "top": [], "total": 0.0}
+    try:
+        resource_costs = _resource_costs(year, month)
+    except Exception:
+        logger.exception("finops: _resource_costs failed")
     ctx = _period_ctx(year, month)
     ctx.update({
         "costs": costs,
@@ -598,6 +696,11 @@ def finops_summary(request):
         "rg_total": round(sum(r["cost"] for r in breakdown), 3),
         "monthly_trend": monthly_trend,
         "monthly_trend_json": _json.dumps(monthly_trend),
+        "daily_by_rg_json": _json.dumps(daily_by_rg),
+        "resource_costs": resource_costs["resources"],
+        "resource_costs_json": _json.dumps(resource_costs["resources"]),
+        "resource_top_json": _json.dumps(resource_costs["top"]),
+        "resource_total": resource_costs["total"],
     })
     return render(request, 'core/partials/finops_all.html', ctx)
 
