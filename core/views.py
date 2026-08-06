@@ -568,9 +568,15 @@ def finops_summary(request):
         total = b["total"]
         daily = b["daily"]
         breakdown = b["breakdown"]
-        monthly_trend = _monthly_trend(12)
     except Exception as e:
         error = str(e)
+    # Isolated from the main bundle on purpose: a 429/failure here (e.g. cold
+    # cache firing two Cost Management calls back-to-back) should not blank
+    # out the rest of the dashboard, which already has its own data by now.
+    try:
+        monthly_trend = _monthly_trend(12)
+    except Exception:
+        monthly_trend = []
     ctx = _period_ctx(year, month)
     ctx.update({
         "costs": costs,
