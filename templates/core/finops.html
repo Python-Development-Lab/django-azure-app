@@ -6,12 +6,28 @@
   <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.25rem;">
     FinOps Dashboard
   </h1>
-  <p style="color: #666; margin-bottom: 2rem; font-size: 0.9rem;">
+  <p style="color: #666; margin-bottom: 1rem; font-size: 0.9rem;">
     Azure Cost Management · {{ period_from }} — {{ period_to }} · Subscription: django-azure-security-template
   </p>
-
+  <div style="display:flex; align-items:center; gap:.6rem; margin-bottom:1.5rem;">
+    <a href="?month={{ prev_month_value }}"
+       style="text-decoration:none; color:#0078d4; font-size:1.15rem; padding:.2rem .55rem;
+              border:1px solid #e0e0e0; border-radius:6px; line-height:1;">&#9664;</a>
+    <select id="finops-month-select"
+            onchange="location.href='?month='+this.value"
+            style="padding:.45rem .6rem; border:1px solid #e0e0e0; border-radius:6px;
+                   font-size:.85rem; color:#333; background:#fff;">
+      {% for opt in month_options %}
+      <option value="{{ opt.value }}" {% if opt.value == selected_month_value %}selected{% endif %}>{{ opt.label }}</option>
+      {% endfor %}
+    </select>
+    <a href="{% if not is_current_month %}?month={{ next_month_value }}{% endif %}"
+       style="text-decoration:none; font-size:1.15rem; padding:.2rem .55rem;
+              border:1px solid #e0e0e0; border-radius:6px; line-height:1;
+              {% if is_current_month %}color:#ccc; pointer-events:none;{% else %}color:#0078d4;{% endif %}">&#9654;</a>
+  </div>
   <div id="finops-content"
-       hx-get="{% url 'core:finops_summary' %}"
+       hx-get="{% url 'core:finops_summary' %}?month={{ selected_month_value }}"
        hx-trigger="load"
        hx-swap="innerHTML"
        hx-indicator="#finops-spinner">

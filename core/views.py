@@ -1,7 +1,7 @@
 import json as _json
 import urllib.request
 import urllib.error
-from datetime import date
+from datetime import date, timedelta
 from datetime import datetime as _datetime_cls
 from pathlib import Path
 
@@ -40,16 +40,37 @@ def _cost_query(token, body, cache_key=None, ttl=600):
     return result
 
 
-def _all_cost_data():
+def _month_bounds(year=None, month=None):
+    """Return (year, month, first_date, last_date) for the given or current month."""
+    today = date.today()
+    if year and month:
+        first = date(year, month, 1)
+    else:
+        first = today.replace(day=1)
+        year, month = first.year, first.month
+    if year == today.year and month == today.month:
+        last = today
+    else:
+        if month == 12:
+            last = date(year, 12, 31)
+        else:
+            last = date(year, month + 1, 1) - timedelta(days=1)
+    return year, month, first, last
+
+
+def _all_cost_data(year=None, month=None):
     """Fetch all cost data in one cached bundle — avoids 429 from parallel HTMX"""
-    bundle = cache.get("finops_bundle")
+    year, month, first, last = _month_bounds(year, month)
+    bundle_key = f"finops_bundle:{year:04d}-{month:02d}"
+    bundle = cache.get(bundle_key)
     if bundle is not None:
         return bundle
     token = _get_token()
+    time_period = {"from": first.strftime("%Y-%m-%d"), "to": last.strftime("%Y-%m-%d")}
 
     # 1. Cost by RG
     rg_data = _cost_query(token, {
-        "type": "ActualCost", "timeframe": "MonthToDate",
+        "type": "ActualCost", "timeframe": "Custom", "timePeriod": time_period,
         "dataset": {
             "granularity": "None",
             "aggregation": {"totalCost": {"name": "PreTaxCost", "function": "Sum"}},
@@ -65,7 +86,7 @@ def _all_cost_data():
 
     # 2. Daily trend
     daily_data = _cost_query(token, {
-        "type": "ActualCost", "timeframe": "MonthToDate",
+        "type": "ActualCost", "timeframe": "Custom", "timePeriod": time_period,
         "dataset": {
             "granularity": "Daily",
             "aggregation": {"totalCost": {"name": "PreTaxCost", "function": "Sum"}}
@@ -78,7 +99,7 @@ def _all_cost_data():
 
     # 3. RG breakdown
     bd_data = _cost_query(token, {
-        "type": "ActualCost", "timeframe": "MonthToDate",
+        "type": "ActualCost", "timeframe": "Custom", "timePeriod": time_period,
         "dataset": {
             "granularity": "None",
             "aggregation": {"totalCost": {"name": "PreTaxCost", "function": "Sum"}},
@@ -105,8 +126,81 @@ def _all_cost_data():
         "costs": costs, "total": total,
         "daily": daily, "breakdown": breakdown,
     }
-    cache.set("finops_bundle", bundle, 600)
+    cache.set(bundle_key, bundle, 600)
     return bundle
+
+
+def _month_options(count=12):
+    """Last `count` months (most recent first) as {value, label} for a dropdown."""
+    today = date.today()
+    options = []
+    y, m = today.year, today.month
+    for _ in range(count):
+        options.append({
+            "value": f"{y:04d}-{m:02d}",
+            "label": date(y, m, 1).strftime("%B %Y"),
+        })
+        m -= 1
+        if m == 0:
+            m = 12
+            y -= 1
+    return options
+
+
+def _monthly_trend(months=12):
+    """Total cost per month for the last `months` months (oldest first)."""
+    cache_key = f"finops_monthly_trend_{months}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+    today = date.today()
+    y, m = today.year, today.month
+    for _ in range(months - 1):
+        m -= 1
+        if m == 0:
+            m = 12
+            y -= 1
+    start = date(y, m, 1)
+    token = _get_token()
+    data = _cost_query(token, {
+        "type": "ActualCost", "timeframe": "Custom",
+        "timePeriod": {
+            "from": start.strftime("%Y-%m-%d"),
+            "to": today.strftime("%Y-%m-%d"),
+        },
+        "dataset": {
+            "granularity": "Monthly",
+            "aggregation": {"totalCost": {"name": "PreTaxCost", "function": "Sum"}}
+        }
+    })
+    trend = []
+    for r in data.get("properties", {}).get("rows", []):
+        ds = str(r[1])
+        y2, m2 = int(ds[0:4]), int(ds[4:6])
+        trend.append({
+            "month": f"{y2:04d}-{m2:02d}",
+            "label": date(y2, m2, 1).strftime("%b %Y"),
+            "cost": round(r[0], 2),
+        })
+    trend.sort(key=lambda x: x["month"])
+    cache.set(cache_key, trend, 3600)
+    return trend
+
+
+def _parse_month_param(request):
+    """Parse ?month=YYYY-MM from the request. Returns (year, month) or (None, None).
+    Falls back to (None, None) -- meaning current month -- on any invalid input,
+    including out-of-range months (e.g. ?month=2099-13)."""
+    raw = request.GET.get("month")
+    if raw:
+        try:
+            y_str, m_str = raw.split("-")
+            year, month = int(y_str), int(m_str)
+            if 1 <= month <= 12 and 2000 <= year <= 2100:
+                return year, month
+        except (ValueError, AttributeError):
+            pass
+    return None, None
 
 
 def _get_defender_alerts():
@@ -280,12 +374,21 @@ AppServiceHTTPLogs
     return points
 
 
-def _period_ctx():
+def _period_ctx(year=None, month=None):
     today = date.today()
+    year, month, first, last = _month_bounds(year, month)
+    prev_ref = first - timedelta(days=1)
+    next_ref = (date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1))
+    is_current_month = (year == today.year and month == today.month)
     return {
-        "period_from": today.replace(day=1).strftime("%d %b %Y"),
-        "period_to": today.strftime("%d %b %Y"),
-        "period_month": today.strftime("%B %Y"),
+        "period_from": first.strftime("%d %b %Y"),
+        "period_to": last.strftime("%d %b %Y"),
+        "period_month": first.strftime("%B %Y"),
+        "selected_month_value": f"{year:04d}-{month:02d}",
+        "prev_month_value": f"{prev_ref.year:04d}-{prev_ref.month:02d}",
+        "next_month_value": f"{next_ref.year:04d}-{next_ref.month:02d}",
+        "is_current_month": is_current_month,
+        "month_options": _month_options(12),
     }
 
 
@@ -449,23 +552,26 @@ def security_compliance(request):
 
 @login_required(login_url='/auth/login/')
 def finops_dashboard(request):
-    return render(request, 'core/finops.html', _period_ctx())
+    year, month = _parse_month_param(request)
+    return render(request, 'core/finops.html', _period_ctx(year, month))
 
 
 @login_required(login_url='/auth/login/')
 def finops_summary(request):
     """Single HTMX endpoint — returns all FinOps content at once (avoids 429)"""
+    year, month = _parse_month_param(request)
     error = None
-    costs, total, daily, breakdown = [], 0.0, [], []
+    costs, total, daily, breakdown, monthly_trend = [], 0.0, [], [], []
     try:
-        b = _all_cost_data()
+        b = _all_cost_data(year, month)
         costs = b["costs"]
         total = b["total"]
         daily = b["daily"]
         breakdown = b["breakdown"]
+        monthly_trend = _monthly_trend(12)
     except Exception as e:
         error = str(e)
-    ctx = _period_ctx()
+    ctx = _period_ctx(year, month)
     ctx.update({
         "costs": costs,
         "costs_json": _json.dumps(costs),
@@ -476,6 +582,8 @@ def finops_summary(request):
         "rg_breakdown": breakdown,
         "rg_breakdown_json": _json.dumps(breakdown),
         "rg_total": round(sum(r["cost"] for r in breakdown), 3),
+        "monthly_trend": monthly_trend,
+        "monthly_trend_json": _json.dumps(monthly_trend),
     })
     return render(request, 'core/partials/finops_all.html', ctx)
 
