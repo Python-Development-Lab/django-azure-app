@@ -1,4 +1,5 @@
 import json as _json
+import logging
 import urllib.request
 import urllib.error
 from datetime import date, timedelta
@@ -9,6 +10,9 @@ from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
+
+
+logger = logging.getLogger(__name__)
 
 
 def _get_token():
@@ -576,6 +580,7 @@ def finops_summary(request):
     try:
         monthly_trend = _monthly_trend(12)
     except Exception:
+        logger.exception("finops: _monthly_trend(12) failed")
         monthly_trend = []
     ctx = _period_ctx(year, month)
     ctx.update({
