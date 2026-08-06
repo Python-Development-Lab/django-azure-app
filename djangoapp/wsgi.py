@@ -9,6 +9,16 @@ logger = logging.getLogger(__name__)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "djangoapp.settings")
 
+# Load Key Vault secrets (incl. APPINSIGHTS_CONNECTION_STRING) before the
+# check below. settings.py also calls this, but only when django.core.wsgi
+# is imported further down, which is too late for this check.
+if os.environ.get("WEBSITE_SITE_NAME") and os.environ.get("BUILDING", "false").lower() != "true":
+    try:
+        from djangoapp.key_vault import load_secrets_to_env
+        load_secrets_to_env()
+    except Exception as _kv_exc:
+        logger.warning("Key Vault: early load failed: %s" % (_kv_exc,))
+
 try:
     _conn = (
         os.environ.get("APPINSIGHTS_CONNECTION_STRING") or
