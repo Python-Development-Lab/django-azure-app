@@ -171,12 +171,23 @@ def _all_cost_data(year=None, month=None):
         for r in bd_data.get("properties", {}).get("rows", []) if r[0] > 0.001
     ]
     breakdown.sort(key=lambda x: x["cost"], reverse=True)
-
+    monthly_trend = []
+    try:
+        monthly_trend = _monthly_trend(12, token=token)
+    except Exception:
+        logger.exception("finops: _monthly_trend(12) failed")
+    time.sleep(1)
+    resource_costs = {"resources": [], "top": [], "total": 0.0}
+    try:
+        resource_costs = _resource_costs(year, month, token=token)
+    except Exception:
+        logger.exception("finops: _resource_costs failed")
     bundle = {
         "costs": costs, "total": total,
         "daily": daily, "daily_by_rg": daily_by_rg, "breakdown": breakdown,
+        "monthly_trend": monthly_trend, "resource_costs": resource_costs,
     }
-    cache.set(bundle_key, bundle, 600)
+    cache.set(bundle_key, bundle, 1800)
     return bundle
 
 
@@ -660,7 +671,9 @@ def finops_summary(request):
     """Single HTMX endpoint — returns all FinOps content at once (avoids 429)"""
     year, month = _parse_month_param(request)
     error = None
-    costs, total, daily, daily_by_rg, breakdown, monthly_trend = [], 0.0, [], {}, [], []
+    costs, total, daily, daily_by_rg, breakdown = [], 0.0, [], {}, []
+    monthly_trend = []
+    resource_costs = {"resources": [], "top": [], "total": 0.0}
     try:
         b = _all_cost_data(year, month)
         costs = b["costs"]
@@ -668,21 +681,10 @@ def finops_summary(request):
         daily = b["daily"]
         daily_by_rg = b.get("daily_by_rg", {})
         breakdown = b["breakdown"]
+        monthly_trend = b.get("monthly_trend", [])
+        resource_costs = b.get("resource_costs", resource_costs)
     except Exception as e:
         error = str(e)
-    # Isolated from the main bundle on purpose: a 429/failure here (e.g. cold
-    # cache firing two Cost Management calls back-to-back) should not blank
-    # out the rest of the dashboard, which already has its own data by now.
-    try:
-        monthly_trend = _monthly_trend(12)
-    except Exception:
-        logger.exception("finops: _monthly_trend(12) failed")
-        monthly_trend = []
-    resource_costs = {"resources": [], "top": [], "total": 0.0}
-    try:
-        resource_costs = _resource_costs(year, month)
-    except Exception:
-        logger.exception("finops: _resource_costs failed")
     ctx = _period_ctx(year, month)
     ctx.update({
         "costs": costs,
