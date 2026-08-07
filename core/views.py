@@ -282,7 +282,7 @@ def _resource_costs(year=None, month=None, top_n=15):
     resources.sort(key=lambda x: x["cost"], reverse=True)
     total = round(sum(r["cost"] for r in resources), 2)
     result = {"resources": resources, "top": resources[:top_n], "total": total}
-    cache.set(cache_key, result, 600)
+    cache.set(cache_key, result, 3600)
     return result
 
 
