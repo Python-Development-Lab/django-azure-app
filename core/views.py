@@ -176,7 +176,6 @@ def _all_cost_data(year=None, month=None):
         monthly_trend = _monthly_trend(12, token=token)
     except Exception:
         logger.exception("finops: _monthly_trend(12) failed")
-    time.sleep(1)
     resource_costs = {"resources": [], "top": [], "total": 0.0}
     try:
         resource_costs = _resource_costs(year, month, token=token)
@@ -187,7 +186,7 @@ def _all_cost_data(year=None, month=None):
         "daily": daily, "daily_by_rg": daily_by_rg, "breakdown": breakdown,
         "monthly_trend": monthly_trend, "resource_costs": resource_costs,
     }
-    cache.set(bundle_key, bundle, 1800)
+    cache.set(bundle_key, bundle, 900)
     return bundle
 
 
