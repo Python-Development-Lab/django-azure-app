@@ -183,6 +183,13 @@ def _all_cost_data(year=None, month=None):
 _COST_MGMT_MAX_RETRIES = 2
 _COST_MGMT_DEFAULT_RETRY_S = 20
 _COST_MGMT_MAX_RETRY_S = 30
+# NOTE: this sleep runs on the actual synchronous Django request thread
+# (no background/async execution in this file) -- it is bounded (max
+# _COST_MGMT_MAX_RETRIES retries, capped at _COST_MGMT_MAX_RETRY_S each)
+# and only fires on a real 429 during a cold-cache-population event, not
+# on every request. If this code is ever moved behind an async view or a
+# background task, this comment -- and the trade-off it documents -- can
+# be revisited.
 
 
 def _retry_on_429(fn):
@@ -211,7 +218,14 @@ def _retry_on_429(fn):
             try:
                 wait_s = min(float(retry_after), _COST_MGMT_MAX_RETRY_S)
             except (TypeError, ValueError):
+                # Cost Management documents delta-seconds for this header,
+                # not an HTTP-date string, but fall back safely either way
+                # and log which path was used for observability.
                 wait_s = _COST_MGMT_DEFAULT_RETRY_S
+                logger.warning(
+                    "finops: Retry-After header missing or unparseable (%r), using default %ds"
+                    % (retry_after, _COST_MGMT_DEFAULT_RETRY_S)
+                )
             logger.warning(
                 "finops: 429 from Cost Management, retrying in %.0fs (attempt %d/%d)"
                 % (wait_s, attempt + 1, _COST_MGMT_MAX_RETRIES)
