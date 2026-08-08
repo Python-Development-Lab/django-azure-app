@@ -171,6 +171,25 @@ def _all_cost_data(year=None, month=None):
         for r in bd_data.get("properties", {}).get("rows", []) if r[0] > 0.001
     ]
     breakdown.sort(key=lambda x: x["cost"], reverse=True)
+    bundle = {
+        "costs": costs, "total": total,
+        "daily": daily, "daily_by_rg": daily_by_rg, "breakdown": breakdown,
+    }
+    cache.set(bundle_key, bundle, 600)
+    return bundle
+
+
+def _monthly_and_resource_data(year=None, month=None):
+    """Monthly trend + per-resource breakdown, computed together under ONE
+    shared cache entry -- fixes the original cross-worker 429 race without
+    adding load to the three legacy endpoints that only need items 1-3.
+    """
+    year, month, _first, _last = _month_bounds(year, month)
+    cache_key = f"finops_extra:{year:04d}-{month:02d}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+    token = _get_token()
     monthly_trend = []
     try:
         monthly_trend = _monthly_trend(12, token=token)
@@ -181,13 +200,9 @@ def _all_cost_data(year=None, month=None):
         resource_costs = _resource_costs(year, month, token=token)
     except Exception:
         logger.exception("finops: _resource_costs failed")
-    bundle = {
-        "costs": costs, "total": total,
-        "daily": daily, "daily_by_rg": daily_by_rg, "breakdown": breakdown,
-        "monthly_trend": monthly_trend, "resource_costs": resource_costs,
-    }
-    cache.set(bundle_key, bundle, 900)
-    return bundle
+    result = {"monthly_trend": monthly_trend, "resource_costs": resource_costs}
+    cache.set(cache_key, result, 900)
+    return result
 
 
 def _month_options(count=12):
@@ -680,10 +695,18 @@ def finops_summary(request):
         daily = b["daily"]
         daily_by_rg = b.get("daily_by_rg", {})
         breakdown = b["breakdown"]
-        monthly_trend = b.get("monthly_trend", [])
-        resource_costs = b.get("resource_costs", resource_costs)
     except Exception as e:
         error = str(e)
+    # Isolated from the main bundle on purpose: a failure here should not
+    # blank out the rest of the dashboard, which already has its own data
+    # by now. See _monthly_and_resource_data() for why this is a separate
+    # cache entry rather than folded into _all_cost_data().
+    try:
+        extra = _monthly_and_resource_data(year, month)
+        monthly_trend = extra["monthly_trend"]
+        resource_costs = extra["resource_costs"]
+    except Exception:
+        logger.exception("finops: _monthly_and_resource_data failed")
     ctx = _period_ctx(year, month)
     ctx.update({
         "costs": costs,
