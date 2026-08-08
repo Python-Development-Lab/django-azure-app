@@ -180,6 +180,46 @@ def _all_cost_data(year=None, month=None):
     return bundle
 
 
+_COST_MGMT_MAX_RETRIES = 2
+_COST_MGMT_DEFAULT_RETRY_S = 20
+_COST_MGMT_MAX_RETRY_S = 30
+
+
+def _retry_on_429(fn):
+    """Call fn(); on HTTP 429 from Cost Management, sleep for the duration
+    the server itself reports (Retry-After header, per the documented QPU
+    throttling contract in Microsoft Learn "Manage Azure costs with
+    automation": x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after)
+    and retry, instead of a fixed pre-emptive delay. No delay at all when
+    the rate-limit window has already cleared; a bounded, server-directed
+    wait when it has not. Only retries actual 429s -- any other error
+    propagates immediately.
+    """
+    last_exc = None
+    for attempt in range(_COST_MGMT_MAX_RETRIES + 1):
+        try:
+            return fn()
+        except urllib.error.HTTPError as e:
+            last_exc = e
+            if e.code != 429:
+                raise
+            if attempt == _COST_MGMT_MAX_RETRIES:
+                break
+            retry_after = e.headers.get("Retry-After") or e.headers.get(
+                "x-ms-ratelimit-microsoft.costmanagement-qpu-retry-after"
+            )
+            try:
+                wait_s = min(float(retry_after), _COST_MGMT_MAX_RETRY_S)
+            except (TypeError, ValueError):
+                wait_s = _COST_MGMT_DEFAULT_RETRY_S
+            logger.warning(
+                "finops: 429 from Cost Management, retrying in %.0fs (attempt %d/%d)"
+                % (wait_s, attempt + 1, _COST_MGMT_MAX_RETRIES)
+            )
+            time.sleep(wait_s)
+    raise last_exc
+
+
 def _monthly_and_resource_data(year=None, month=None):
     """Monthly trend + per-resource breakdown, computed together under ONE
     shared cache entry -- fixes the original cross-worker 429 race without
@@ -193,22 +233,12 @@ def _monthly_and_resource_data(year=None, month=None):
     token = _get_token()
     monthly_trend = []
     try:
-        monthly_trend = _monthly_trend(12, token=token)
+        monthly_trend = _retry_on_429(lambda: _monthly_trend(12, token=token))
     except Exception:
         logger.exception("finops: _monthly_trend(12) failed")
-    # Microsoft's own Cost Management guidance (Q&A thread, moderator
-    # response, Oct 2024) states the Microsoft.CostManagement/Query
-    # endpoint tolerates roughly 3 calls per minute per subscription --
-    # i.e. ~20s spacing -- before returning 429. This bundle already
-    # made 3 calls via _all_cost_data() moments earlier in the same
-    # request; without a pause here, this 4th call reliably hits the
-    # still-active rate-limit window. Accepted trade-off: a one-time
-    # ~20s delay on a cold cache-population event (cached for 900s
-    # afterward, so this cost is paid rarely, not per-request).
-    time.sleep(20)
     resource_costs = {"resources": [], "top": [], "total": 0.0}
     try:
-        resource_costs = _resource_costs(year, month, token=token)
+        resource_costs = _retry_on_429(lambda: _resource_costs(year, month, token=token))
     except Exception:
         logger.exception("finops: _resource_costs failed")
     result = {"monthly_trend": monthly_trend, "resource_costs": resource_costs}
