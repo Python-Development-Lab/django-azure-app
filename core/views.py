@@ -1,5 +1,6 @@
 import json as _json
 import logging
+import time
 import urllib.request
 import urllib.error
 from datetime import date, timedelta
@@ -195,6 +196,16 @@ def _monthly_and_resource_data(year=None, month=None):
         monthly_trend = _monthly_trend(12, token=token)
     except Exception:
         logger.exception("finops: _monthly_trend(12) failed")
+    # Microsoft's own Cost Management guidance (Q&A thread, moderator
+    # response, Oct 2024) states the Microsoft.CostManagement/Query
+    # endpoint tolerates roughly 3 calls per minute per subscription --
+    # i.e. ~20s spacing -- before returning 429. This bundle already
+    # made 3 calls via _all_cost_data() moments earlier in the same
+    # request; without a pause here, this 4th call reliably hits the
+    # still-active rate-limit window. Accepted trade-off: a one-time
+    # ~20s delay on a cold cache-population event (cached for 900s
+    # afterward, so this cost is paid rarely, not per-request).
+    time.sleep(20)
     resource_costs = {"resources": [], "top": [], "total": 0.0}
     try:
         resource_costs = _resource_costs(year, month, token=token)
