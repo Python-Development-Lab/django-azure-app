@@ -222,7 +222,7 @@ def _month_options(count=12):
     return options
 
 
-def _monthly_trend(months=12):
+def _monthly_trend(months=12, token=None):
     """Total cost per month for the last `months` months (oldest first)."""
     cache_key = f"finops_monthly_trend_{months}"
     cached = cache.get(cache_key)
@@ -236,7 +236,7 @@ def _monthly_trend(months=12):
             m = 12
             y -= 1
     start = date(y, m, 1)
-    token = _get_token()
+    token = token or _get_token()
     data = _cost_query(token, {
         "type": "ActualCost", "timeframe": "Custom",
         "timePeriod": {
@@ -265,14 +265,14 @@ def _monthly_trend(months=12):
     return trend
 
 
-def _resource_costs(year=None, month=None, top_n=15):
+def _resource_costs(year=None, month=None, top_n=15, token=None):
     """Cost per individual resource across all resource groups (all-time-in-month)."""
     year, month, first, last = _month_bounds(year, month)
     cache_key = f"finops_resources:{year:04d}-{month:02d}"
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
-    token = _get_token()
+    token = token or _get_token()
     data = _cost_query(token, {
         "type": "ActualCost", "timeframe": "Custom",
         "timePeriod": {
