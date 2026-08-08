@@ -34,3 +34,24 @@ Independent convergence: this project's own `docs/backlog-status.md` + `docs/spe
 ## Maintenance Note
 
 Add a new row whenever a new external article/source is reviewed for this project, whether or not it produces a spec or backlog change — a "no artifact produced" entry is still useful to prevent re-researching the same source later.
+## Post-Quantum Cryptography Readiness — Known Future Consideration (08.08.2026)
+
+**Source:** Yogeshkrishnanseeniraj, "Post-Quantum Readiness in Django: Preparing Your Encryption for the 2026 Security Standards," Medium, 03.03.2026.
+
+**Status:** Not actionable now — logged as future consideration only.
+
+**Key points:**
+- NIST finalized FIPS 203 (ML-KEM/Kyber), FIPS 204 (ML-DSA/Dilithium), FIPS 205 (SLH-DSA/SPHINCS+) in August 2024.
+- Threat model is asymmetric: "harvest now, decrypt later" (HNDL) makes confidentiality risk immediate even though quantum computers capable of breaking current crypto don't exist yet; signature-forgery risk is future/theoretical.
+- Rational migration order per the article: fix key exchange first (cheap, immediate HNDL protection), defer signature migration (more expensive, more time available).
+- Measured overhead (article's benchmarks): ML-KEM-768 vs classical X25519 ~3x on keygen/encapsulation; field encryption overhead ~2.2x on a full Django request (6.9ms vs 3.2ms) -- author notes DB queries, not crypto, remain the actual latency bottleneck for most Django apps.
+- JWT token size tradeoff: ES256 ~180 bytes vs ML-DSA-65 ~4,400 bytes -- real cost if ever adopting PQC-signed JWTs.
+- "Regulatory baseline" in the article applies to US federal contractors handling federal data by mid-2026 -- not applicable to this project.
+
+**Why not actionable now:**
+- This project has no federal/regulated data, and auth goes through MSAL/Entra CIAM, not self-issued JWTs.
+- No compliance mandate currently requires PQC readiness at this project's scale.
+
+**Where this becomes relevant:** if/when the project forks into CompliGuard (NIS2 compliance SaaS for DACH SMBs), EU regulatory direction on PQC-readiness for critical infrastructure may make this a real requirement, not just a research note.
+
+**Cheap idea if ever revisited:** an `audit_crypto`-style management command (in the spirit of the article's own tool) to inventory where RSA/ECDH is actually used across TLS/JWT/field-encryption before any migration decision -- same "verify current exposure before deciding" principle already applied to the RBAC over-privilege audits (25-27.07.2026 sessions).
