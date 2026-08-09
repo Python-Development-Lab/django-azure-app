@@ -46,6 +46,12 @@ resource "azurerm_storage_account" "cost_export" {
   tags                     = var.tags
 }
 
+# resource_manager_id (used below by both role assignments) requires
+# azurerm >= 3.x. The root main.tf pins azurerm = "~> 3.110" via
+# required_providers, which this module inherits automatically (Terraform
+# child modules use the parent configuration's provider unless they
+# declare their own required_providers block) -- confirmed working via
+# terraform validate against this repo's actual pinned version.
 resource "azurerm_storage_container" "cost_export" {
   name                  = "cost-exports"
   storage_account_name  = azurerm_storage_account.cost_export.name

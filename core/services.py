@@ -12,6 +12,7 @@ import io as _io
 import logging
 import os
 from datetime import date
+from decimal import Decimal, InvalidOperation
 
 from django.core.cache import cache
 from django.db.models import Sum as _Sum
@@ -46,8 +47,12 @@ def _parse_cost_export_row(row, fieldnames):
     if not resource_id:
         return None
     try:
-        cost = float(row.get(col_cost) or 0)
-    except ValueError:
+        # Decimal built directly from the raw string, never through float --
+        # the model's cost field is a DecimalField, and float() as an
+        # intermediary risks binary floating-point drift before Django/the
+        # DB driver ever sees the value. Per AI PR Review feedback.
+        cost = Decimal(str(row.get(col_cost) or "0"))
+    except (InvalidOperation, ValueError, TypeError):
         return None
     if cost <= 0:
         return None
