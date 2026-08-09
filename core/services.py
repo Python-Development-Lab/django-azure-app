@@ -148,13 +148,19 @@ def _sync_cost_export_if_stale(year, month, max_age_hours=20):
     just look at whether any row exists for the current UTC date. Runs at
     most once per cold cache-population event, not on every request.
 
-    Guarded by a short-lived cache lock (cache.add is atomic) so that
-    concurrent cold-cache requests -- e.g. right after a cache flush, with
-    2 gunicorn workers both hitting a miss at once -- don't each launch
-    their own blocking Blob Storage download in parallel. A request that
-    loses the race simply skips the sync this time; the next request
-    (this one's own retry, or another user's) will see fresh data once
-    whichever request won the lock finishes.
+    Guarded by a short-lived cache lock (cache.add is atomic within a
+    single process). This project uses Django's LocMemCache (see project
+    gotcha: LocMemCache is not shared between gunicorn workers), so the
+    lock only prevents duplicate downloads WITHIN one worker, not across
+    the 2 configured workers -- two requests landing on different workers
+    at the same cold-cache moment can still both sync in parallel. This
+    is an accepted, non-corrupting trade-off: sync_cost_export_csv() is
+    idempotent (update_or_create on the date+resource_id unique
+    constraint), so the worst case is redundant network/CPU work, never
+    duplicate or inconsistent rows. A true cross-worker lock would need
+    a database-backed mechanism (e.g. select_for_update on a lock row)
+    since Postgres, not the cache, is the only resource actually shared
+    across workers in this deployment.
     """
     today = date.today()
     if not (year == today.year and month == today.month):
