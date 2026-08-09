@@ -72,6 +72,14 @@ resource "azurerm_role_assignment" "export_writer" {
   # to any container added here in the future. Falls back to account-level
   # scope (see git history) if this repo's pinned azurerm provider version
   # doesn't expose resource_manager_id on azurerm_storage_container.
+  #
+  # Role choice: Storage Blob Data Contributor (not just Reader/Writer)
+  # includes delete permission on blobs in this container. No narrower
+  # built-in Azure role exists for "write and overwrite, but never
+  # delete" blob access. Accepted deliberately: this identity is used
+  # exclusively by the Cost Management export job, which overwrites the
+  # same MonthToDate CSV path on each daily run -- delete capability is
+  # inherent to that overwrite semantics, not incidental over-grant.
   scope                = azurerm_storage_container.cost_export.resource_manager_id
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = var.cost_export_identity_principal_id

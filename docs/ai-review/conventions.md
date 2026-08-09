@@ -8,7 +8,7 @@ This file is intentionally short. Update it only when an architectural invariant
 - BUILDING=true pattern: Key Vault is unreachable during the Oryx build phase.
 - Multi-tenancy is out of scope: this repo is single-tenant. Do not introduce Tenant models or tenant middleware here.
 - RBAC scope: prefer resource-group scope over subscription scope for new role assignments.
-- Terraform module boundaries: stay within the existing 6-module structure (network, key_vault, database, app_service, monitoring, sarif_archive).
+- Terraform module boundaries: currently 7 modules (network, key_vault, database, app_service, monitoring, sarif_archive, cost_export -- see docs/adr/0003-seventh-terraform-module.md). New modules for genuinely separate concerns are acceptable; avoid a module per single resource.
 - HTMX endpoints: bundle rate-limited API calls into a single endpoint.
 
 ## Known accepted risks

@@ -12,8 +12,6 @@ from django.core.cache import cache
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from .services import (
-    sync_cost_export_csv,
-    _fetch_latest_export_csv,
     _sync_cost_export_if_stale,
     _resource_costs_from_db,
     _monthly_trend_from_db,

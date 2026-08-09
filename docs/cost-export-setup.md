@@ -1,5 +1,15 @@
 # Cost Export Setup — Manual CLI Step
 
+> **Status as of 09.08.2026: NOT YET EXECUTED.** The Terraform module
+> (storage account + container + RBAC) is deployed once this PR merges,
+> but steps 2-4 below (create the export, wire its identity, set the
+> App Setting) have not been run yet. Until step 4 runs,
+> `COST_EXPORT_STORAGE_ACCOUNT` is unset and `_fetch_latest_export_csv()`
+> always returns `None` -- the dashboard silently stays on the live
+> API + `_retry_on_429()` fallback path. This is safe (no broken
+> behavior) but means the new infrastructure delivers no benefit until
+> someone runs steps 2-4.
+
 Following the repo's own established pattern (manual `az rest` artifact,
 formalized in Terraform later — see `kv-to-sentinel`/`pg-to-sentinel`
 precedent in backlog history), the Cost Management Export resource itself
