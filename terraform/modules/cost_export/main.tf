@@ -75,9 +75,14 @@ resource "azurerm_role_assignment" "export_writer" {
   # Scoped to the container, not the whole storage account: least-privilege
   # per AI PR Review feedback -- there is currently only one container in
   # this account, but scoping to the account would implicitly grant access
-  # to any container added here in the future. Falls back to account-level
-  # scope (see git history) if this repo's pinned azurerm provider version
-  # doesn't expose resource_manager_id on azurerm_storage_container.
+  # to any container added here in the future. resource_manager_id requires
+  # azurerm >= 3.x; the root main.tf pins azurerm = "~> 3.110" via
+  # required_providers (inherited by this child module), confirmed working
+  # via terraform validate. If a future provider upgrade ever removed this
+  # attribute, terraform plan/apply would fail explicitly at that point --
+  # there is no silent runtime fallback to account-level scope, nor should
+  # there be one; a loud failure here is preferable to a silent privilege
+  # change.
   #
   # Role choice: Storage Blob Data Contributor (not just Reader/Writer)
   # includes delete permission on blobs in this container. No narrower

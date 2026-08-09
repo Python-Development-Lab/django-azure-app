@@ -249,6 +249,13 @@ def _monthly_and_resource_data(year=None, month=None):
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
+    # Runs synchronously in this request's path (no Celery/background task
+    # infra in this project). Cold-path cost: on the first uncached request
+    # per worker per day, this blocks briefly on a Blob Storage download +
+    # CSV parse before continuing. Every other request today hits the
+    # in-memory cache above and never reaches this line. Per AI PR Review
+    # feedback -- noted here explicitly rather than only in services.py,
+    # since this is the actual call site on the request path.
     try:
         _sync_cost_export_if_stale(year, month)
     except Exception:
