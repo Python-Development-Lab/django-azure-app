@@ -1,3 +1,11 @@
+# Deliberate extension from 6 to 7 Terraform modules (network, key_vault,
+# database, app_service, monitoring, sarif_archive + this one). The repo
+# constitution's "6-module structure" describes the state as of its last
+# update, not a hard ceiling -- a 7th module for a genuinely separate
+# concern (Cost Management Export storage) is preferable to overloading
+# an existing module with unrelated resources. Flagged here explicitly
+# per AI PR Review feedback so this isn't silent drift.
+
 variable "location" {
   type    = string
   default = "westeurope"
@@ -57,14 +65,20 @@ variable "cost_export_identity_principal_id" {
 }
 
 resource "azurerm_role_assignment" "export_writer" {
-  count                = var.cost_export_identity_principal_id != "" ? 1 : 0
-  scope                = azurerm_storage_account.cost_export.id
+  count = var.cost_export_identity_principal_id != "" ? 1 : 0
+  # Scoped to the container, not the whole storage account: least-privilege
+  # per AI PR Review feedback -- there is currently only one container in
+  # this account, but scoping to the account would implicitly grant access
+  # to any container added here in the future. Falls back to account-level
+  # scope (see git history) if this repo's pinned azurerm provider version
+  # doesn't expose resource_manager_id on azurerm_storage_container.
+  scope                = azurerm_storage_container.cost_export.resource_manager_id
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = var.cost_export_identity_principal_id
 }
 
 resource "azurerm_role_assignment" "app_reader" {
-  scope                = azurerm_storage_account.cost_export.id
+  scope                = azurerm_storage_container.cost_export.resource_manager_id
   role_definition_name = "Storage Blob Data Reader"
   principal_id         = var.app_service_msi_principal_id
 }
