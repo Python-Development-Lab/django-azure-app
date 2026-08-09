@@ -11,6 +11,11 @@ from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
+from .services import (
+    _sync_cost_export_if_stale,
+    _resource_costs_from_db,
+    _monthly_trend_from_db,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -244,17 +249,43 @@ def _monthly_and_resource_data(year=None, month=None):
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
+    # Runs synchronously in this request's path (no Celery/background task
+    # infra in this project). Cold-path cost: on the first uncached request
+    # per worker per day, this blocks briefly on a Blob Storage download +
+    # CSV parse before continuing. Every other request today hits the
+    # in-memory cache above and never reaches this line. Per AI PR Review
+    # feedback -- noted here explicitly rather than only in services.py,
+    # since this is the actual call site on the request path.
+    try:
+        _sync_cost_export_if_stale(year, month)
+    except Exception:
+        logger.exception("finops: _sync_cost_export_if_stale failed")
+
     token = _get_token()
-    monthly_trend = []
+
+    monthly_trend = None
     try:
-        monthly_trend = _retry_on_429(lambda: _monthly_trend(12, token=token))
+        monthly_trend = _monthly_trend_from_db(12)
     except Exception:
-        logger.exception("finops: _monthly_trend(12) failed")
-    resource_costs = {"resources": [], "top": [], "total": 0.0}
+        logger.exception("finops: _monthly_trend_from_db failed")
+    if monthly_trend is None:
+        monthly_trend = []
+        try:
+            monthly_trend = _retry_on_429(lambda: _monthly_trend(12, token=token))
+        except Exception:
+            logger.exception("finops: _monthly_trend(12) failed")
+
+    resource_costs = None
     try:
-        resource_costs = _retry_on_429(lambda: _resource_costs(year, month, token=token))
+        resource_costs = _resource_costs_from_db(year, month)
     except Exception:
-        logger.exception("finops: _resource_costs failed")
+        logger.exception("finops: _resource_costs_from_db failed")
+    if resource_costs is None:
+        resource_costs = {"resources": [], "top": [], "total": 0.0}
+        try:
+            resource_costs = _retry_on_429(lambda: _resource_costs(year, month, token=token))
+        except Exception:
+            logger.exception("finops: _resource_costs failed")
     result = {"monthly_trend": monthly_trend, "resource_costs": resource_costs}
     cache.set(cache_key, result, 900)
     return result

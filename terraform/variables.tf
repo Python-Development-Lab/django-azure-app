@@ -65,6 +65,12 @@ variable "terraform_object_id" {
   description = "Object ID of the user/SP running Terraform (Key Vault access)"
 }
 
+variable "cost_export_identity_principal_id" {
+  type        = string
+  default     = ""
+  description = "Principal ID of the Cost Management Export System-Assigned Identity. Empty until the export is created via docs/cost-export-setup.md, then set and re-apply."
+}
+
 variable "human_admin_object_id" {
   type        = string
   description = "Optional: Object ID of a human operator who should retain independent Key Vault Administrator access (e.g. project owner). Leave empty (default) to skip."
