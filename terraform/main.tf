@@ -118,4 +118,13 @@ module "sarif_archive" {
   cicd_principal_id   = var.terraform_object_id
 }
 
+module "cost_export" {
+  source                            = "./modules/cost_export"
+  resource_group_name               = azurerm_resource_group.main.name
+  location                          = var.location
+  tags                              = local.tags
+  app_service_msi_principal_id      = module.app_service.app_service_principal_id
+  cost_export_identity_principal_id = var.cost_export_identity_principal_id
+}
+
 data "azurerm_client_config" "current" {}
