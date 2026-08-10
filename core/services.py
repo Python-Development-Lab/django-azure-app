@@ -158,7 +158,14 @@ def _fetch_latest_export_csv():
             logger.warning("finops: no CSV blob found in cost export container")
             return None
         blob_client = container_client.get_blob_client(csv_blob.name)
-        return blob_client.download_blob().readall().decode("utf-8")
+        # utf-8-sig (not utf-8): Azure's export CSV is written with a
+        # UTF-8 BOM. Plain utf-8 decoding leaves that BOM attached to the
+        # first column name (observed 10.08.2026: fieldnames[0] came back
+        # as '\ufeffdate', not 'date'), so _find_col("Date") never matched
+        # and every row was silently skipped even with the other two
+        # parsing fixes already in place. utf-8-sig strips the BOM if
+        # present and is a no-op if absent -- safe either way.
+        return blob_client.download_blob().readall().decode("utf-8-sig")
     except Exception:
         logger.exception("finops: failed to read cost export from blob storage")
         return None
