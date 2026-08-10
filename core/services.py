@@ -29,9 +29,17 @@ def _parse_cost_export_row(row, fieldnames):
     or None if the row is unusable (missing columns, malformed cost,
     unparseable date, or a credit/negative-cost row)."""
     def _find_col(*candidates):
+        # Azure's actual Cost Management export column casing has varied
+        # across API versions/timeframes (observed 10.08.2026: lowercase
+        # "date"/"costInBillingCurrency"/"resourceGroupName"/"billingCurrency"
+        # rather than the PascalCase names in Microsoft's documented schema).
+        # Match case-insensitively so this doesn't silently skip every row
+        # again the next time Azure's casing shifts.
+        lower_map = {fn.lower(): fn for fn in fieldnames}
         for c in candidates:
-            if c in fieldnames:
-                return c
+            actual = lower_map.get(c.lower())
+            if actual is not None:
+                return actual
         return None
 
     col_date = _find_col("Date")
