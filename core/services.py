@@ -69,6 +69,15 @@ def _parse_cost_export_row(row, fieldnames):
     try:
         if len(raw_date) == 8 and raw_date.isdigit():
             d = date(int(raw_date[0:4]), int(raw_date[4:6]), int(raw_date[6:8]))
+        elif "/" in raw_date:
+            # Observed 10.08.2026: Azure's actual export uses MM/DD/YYYY
+            # with slashes (e.g. "08/07/2026"), not the ISO "YYYY-MM-DD"
+            # format Microsoft's documented schema implies. Every row
+            # silently failed date parsing (int("08/07/2026") -> ValueError)
+            # until this branch was added -- synced=0 skipped=223 despite
+            # the case-insensitive column fix already working correctly.
+            mm, dd, yyyy = raw_date.split("/")[:3]
+            d = date(int(yyyy), int(mm), int(dd))
         else:
             parts = raw_date[:10].split("-")
             d = date(int(parts[0]), int(parts[1]), int(parts[2]))
