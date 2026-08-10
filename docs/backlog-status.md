@@ -14,6 +14,8 @@
 | Item | Spec | Blocker | Priority | Source |
 |---|---|---|---|---|
 | Rotate 3 exposed secrets (`DB_PASSWORD`, `SECRET_KEY`, `EXTERNAL_ID_CLIENT_SECRET`) | no spec | blocked-on-azure | CRITICAL | Long-standing; reinforced by 27.07.2026 Attack Path finding |
+| Rotate `DJANGO-SECRET-KEY` and `AZURE-CLIENT-SECRET` (exposed in plaintext to AI assistant during 10.08.2026 RBAC-fix session while debugging `local.auto.tfvars`) | no spec | blocked-on-azure | CRITICAL | 10.08.2026 — same exposure pattern as original incident; roll into the rotation above |
+| Verify `AZURE_CLIENT_SECRET` GitHub Secret still matches Key Vault (secret got a new version during 10.08.2026 apply — value unchanged but version rotated) | no spec | blocked-on-azure | Medium | 10.08.2026 — precaution against AADSTS7000215 recurrence on next CI run |
 | Update GitHub Secret `AZURE_CLIENT_SECRET` to match rotated Entra app secret | no spec | blocked-on-azure | CRITICAL | Long-standing (AADSTS7000215 recurrence risk) |
 | Update outdated `cryptography` package (closes Critical Attack Path entry point) | no spec | blocked-on-azure | CRITICAL | 27.07.2026 — confirmed root cause of Critical Defender Attack Path `c81dcadc-7b9c-3066-79cc-74be12d8b64f` |
 | Fix Terraform state lock / `Terraform Apply` CI failure | no spec | blocked-on-azure | CRITICAL | 28.07.2026 — pipeline failing, likely tied to billing read-only period |
@@ -24,6 +26,7 @@
 | Item | Spec | Blocker | Priority | Source |
 |---|---|---|---|---|
 | Wire `human_admin_object_id` into pipeline (GitHub Secrets: `TERRAFORM_OBJECT_ID`, `HUMAN_ADMIN_OBJECT_ID`) | no spec | blocked-on-azure | High | 20.07.2026 code committed, not yet wired |
+| ~~Wire `human_admin_object_id` into pipeline (GitHub Secrets: `TERRAFORM_OBJECT_ID`, `HUMAN_ADMIN_OBJECT_ID`)~~ | no spec | **DONE** | High | 20.07.2026 code committed; 10.08.2026 `TERRAFORM_OBJECT_ID` rotated to CI SP, `HUMAN_ADMIN_OBJECT_ID` added, workflow wired (commit `dc06756`), applied to staging, `human_admin` role assignment confirmed live, `terraform plan` clean ("No changes") |
 | Scope down `django-azure-sp` role assignments (subscription → resource-group scope) | no spec | blocked-on-azure | High | 25.07.2026 finding, corroborated 27.07.2026 by CSPM export |
 | Evaluate ABAC conditions narrowing `User Access Administrator` grants | no spec | blocked-on-azure | Medium | 25.07.2026 |
 | Managed Identity as Federated Identity Credential (cross-tenant Graph API access) | no spec | blocked-on-azure | Low (not yet needed) | 24.07.2026, extends OIDC migration scope |
