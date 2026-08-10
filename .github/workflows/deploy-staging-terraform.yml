@@ -314,6 +314,7 @@ jobs:
             -var="azure_client_secret=${{ secrets.AZURE_CLIENT_SECRET }}" \
             -var="azure_redirect_uri=https://${{ env.APP_NAME }}.azurewebsites.net/auth/callback/" \
             -var="terraform_object_id=${{ secrets.TERRAFORM_OBJECT_ID }}" \
+            -var="human_admin_object_id=${{ secrets.HUMAN_ADMIN_OBJECT_ID }}" \
             -var="owner_email=${{ secrets.OWNER_EMAIL }}" \
             -out=tfplan
 
