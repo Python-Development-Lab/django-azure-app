@@ -55,3 +55,27 @@ Add a new row whenever a new external article/source is reviewed for this projec
 **Where this becomes relevant:** if/when the project forks into CompliGuard (NIS2 compliance SaaS for DACH SMBs), EU regulatory direction on PQC-readiness for critical infrastructure may make this a real requirement, not just a research note.
 
 **Cheap idea if ever revisited:** an `audit_crypto`-style management command (in the spirit of the article's own tool) to inventory where RSA/ECDH is actually used across TLS/JWT/field-encryption before any migration decision -- same "verify current exposure before deciding" principle already applied to the RBAC over-privilege audits (25-27.07.2026 sessions).
+
+## ATT&CK Intelligence View for Detection Engineering (10.08.2026)
+
+**Source:** Shahrukh Khan, "ATT&CK Intelligence View for Detection Engineering," Medium, 26.06.2026. Tool: mitre.heyshahrukh.me (community project, not an official MITRE product).
+
+**Core takeaway:** Formalizes the chain `Technique -> Detection Strategy -> Analytic -> Mutable Elements -> Telemetry -> SIEM Rule`, with two ideas directly applicable here:
+- **Data Source vs Data Component** distinction -- "where the log comes from" vs "which event type/fields inside it" -- and the resulting **telemetry gap vs detection gap** framing (missing log feed vs missing rule logic).
+- **Mutable Elements** -- explicitly documented, named tuning parameters per analytic (e.g. `CommandLinePattern`, `TimeWindow`, `UserContext`), so the reasoning behind a detection's tuning survives past the engineer who wrote it.
+
+**Comparison against this project's Security Dashboard (`security/mitre/attack_data.json`):**
+
+| Criterion | ATT&CK Intelligence View | This project |
+|---|---|---|
+| ATT&CK data | Live Enterprise v19.1 | Static, hand-curated (20 techniques, 9 tactics) |
+| Technique structure | Full 6-stage chain | Flat status field (mitigated/detected/monitored/gap) |
+| Data Source / Data Component | Explicit, linked filters | Absent before this session |
+| Mutable Elements | Documented table per analytic | Absent before this session |
+| Threat Actor mapping | Built-in filter | Absent |
+| Live alerts | None (reference tool only) | Present -- /security/alerts/ pulls live Defender for Cloud alerts via MSI |
+| Verified-state discipline | N/A | Project's own strength -- e.g. already-flagged T1567 misclassification (RiskScoringMiddleware doesn't exist as real code) |
+
+**Produced:** Added an optional `detection_engineering` block (`sentinel_rule`, `data_sources`, `data_components`, `mutable_elements`) to `security/mitre/attack_data.json`, populated for exactly the 4 techniques (T1078, T1036, T1595, T1046) backed by the project's two real, deployed Sentinel rules (`zero-trust-device-verification`, `defender-active-scanning-nmap`) -- deliberately not extended to any gap/planned technique, consistent with the honest-documentation principle. A `_schema_note` field documents this scope decision in the JSON file itself.
+
+**Not done, flagged only:** T1595's `status: "gap"` sits alongside a real, working detection (Defender kernel-level + the Sentinel rule) -- the article's telemetry-gap/detection-gap distinction shows this is correctly "gap" at the *control* (prevention) level, not the detection level; a `status_note` field was added to that entry to make this explicit rather than changing the status. Separately (pre-existing, not from this article): T1567's `status: "detected"` still cites `RiskScoringMiddleware`, which per earlier sessions does not exist as real code -- left untouched pending a deliberate decision on that misclassification, not silently corrected here.

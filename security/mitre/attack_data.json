@@ -1,5 +1,6 @@
 {
   "project": "django-azure-security-template",
+  "_schema_note": "The optional 'detection_engineering' block (added 10.08.2026, inspired by evaluating the 'ATT&CK Intelligence View' article/tool -- see docs/research-notes.md) is deliberately populated for only 4 of 20 techniques: T1078, T1036, T1595, T1046 -- the ones backed by the two real, deployed Sentinel analytics rules (zero-trust-device-verification, defender-active-scanning-nmap). This is intentional partial coverage, not an oversight: per this project's honest-documentation principle, the block is added only where a real analytic exists to describe, not speculatively for gap/planned techniques. Do not add detection_engineering to a technique's entry until an actual Sentinel rule backs it.",
   "tactics": [
     {
       "id": "TA0001",
@@ -10,7 +11,16 @@
           "name": "Valid Accounts",
           "status": "mitigated",
           "control": "Entra ID OAuth2 + MFA (Security Defaults)",
-          "detection": "Sentinel Sign-in risk analytics"
+          "detection": "Sentinel Sign-in risk analytics",
+          "detection_engineering": {
+            "sentinel_rule": "zero-trust-device-verification",
+            "data_sources": ["Azure AD Sign-in Logs", "Application Insights (AppTraces)"],
+            "data_components": ["Authentication Event (sign-in)", "Device Fingerprint Event"],
+            "mutable_elements": [
+              {"name": "TimeWindow", "value": "PT5M", "note": "Sentinel analytics rule query frequency; correlation window for device-fingerprint mismatch events."},
+              {"name": "UserContext", "value": "all authenticated users", "note": "Not currently scoped to a privileged subset -- candidate tuning point if false-positive rate becomes an issue for high-volume automation accounts."}
+            ]
+          }
         },
         {
           "id": "T1110",
@@ -31,7 +41,17 @@
           "name": "Active Scanning",
           "status": "gap",
           "control": "No WAF or IP restriction rules configured",
-          "detection": "Defender for App Service detected NMap (T1595.001)"
+          "detection": "Defender for App Service detected NMap (T1595.001)",
+          "detection_engineering": {
+            "sentinel_rule": "defender-active-scanning-nmap",
+            "data_sources": ["Microsoft Defender for App Service (AzureSecurityCenter data connector)"],
+            "data_components": ["SecurityAlert (Defender for Cloud alert)"],
+            "mutable_elements": [
+              {"name": "TimeWindow", "value": "PT1H", "note": "Sentinel analytics rule query frequency."},
+              {"name": "SourceIPScope", "value": "none (no allowlist)", "note": "Known-benign scanners (e.g. internal vuln-scan tooling, if ever added) would need an exclusion filter here to avoid false positives."}
+            ],
+            "status_note": "Deliberately kept as 'gap' at the control level -- detection exists (Defender kernel-level + this Sentinel rule) but there is no preventive control (WAF/IP restriction). This is the article's 'detection gap vs telemetry gap' distinction made explicit: telemetry and detection are present; the missing piece is prevention, tracked separately as the T1595 WAF/IP-restriction backlog item."
+          }
         }
       ]
     },
@@ -84,7 +104,15 @@
           "name": "Masquerading",
           "status": "detected",
           "control": "Device fingerprint middleware",
-          "detection": "auth_app.device_middleware \u2192 Sentinel"
+          "detection": "auth_app.device_middleware \u2192 Sentinel",
+          "detection_engineering": {
+            "sentinel_rule": "zero-trust-device-verification",
+            "data_sources": ["Application Insights (AppTraces)"],
+            "data_components": ["Device Fingerprint Event"],
+            "mutable_elements": [
+              {"name": "TimeWindow", "value": "PT5M", "note": "Same rule and window as T1078 -- this rule covers both techniques from one analytic."}
+            ]
+          }
         },
         {
           "id": "T1027",
@@ -138,7 +166,15 @@
           "name": "Network Service Discovery",
           "status": "detected",
           "control": "NSG deny-all (ports only), Private Endpoints",
-          "detection": "Defender for App Service \u2014 NMap scan detected 2026-06-26"
+          "detection": "Defender for App Service \u2014 NMap scan detected 2026-06-26",
+          "detection_engineering": {
+            "sentinel_rule": "defender-active-scanning-nmap",
+            "data_sources": ["Microsoft Defender for App Service (AzureSecurityCenter data connector)"],
+            "data_components": ["SecurityAlert (Defender for Cloud alert)"],
+            "mutable_elements": [
+              {"name": "TimeWindow", "value": "PT1H", "note": "Same rule as T1595 -- one analytic covers both techniques."}
+            ]
+          }
         }
       ]
     },
