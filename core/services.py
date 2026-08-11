@@ -103,16 +103,43 @@ def sync_cost_export_csv(csv_text):
     CostRecord. Idempotent: MonthToDate exports re-deliver the whole month
     on every run, so unchanged days are simply overwritten with the same
     value, not duplicated (unique constraint on date+resource_id).
-    Returns (rows_synced, rows_skipped)."""
+
+    IMPORTANT (fixed 11.08.2026): a single resource can have MULTIPLE cost
+    rows for the same day in the export (e.g. separate meter/service line
+    items -- storage capacity vs storage transactions, compute vs
+    bandwidth -- all under the same ResourceId). The exported columns
+    (Date, ResourceId, ResourceGroup, CostInBillingCurrency,
+    BillingCurrencyCode) don't include a meter/service dimension to key
+    on, and update_or_create()'s unique constraint is (date, resource_id)
+    -- so without pre-aggregating, each subsequent same-day row for that
+    resource silently OVERWROTE the previous one instead of accumulating.
+    Discovered via a live-API-vs-DB total mismatch ($67.0 vs $51.13 for
+    the same month) -- the DB total was always <= the true total,
+    understating cost by however many extra same-day line items existed
+    per resource. Every row is still parsed and counted in `synced`;
+    they're summed in memory before the single upsert per (date,
+    resource_id) key, so the returned synced/skipped counts are unchanged
+    even though fewer database writes now occur.
+    Returns (rows_synced, rows_skipped).
+    """
     reader = _csv.DictReader(_io.StringIO(csv_text))
     fieldnames = reader.fieldnames or []
     synced, skipped = 0, 0
+    aggregated = {}  # (date, resource_id) -> [cost_sum, name, rg, currency]
     for row in reader:
         parsed = _parse_cost_export_row(row, fieldnames)
         if parsed is None:
             skipped += 1
             continue
         d, resource_id, name, rg, cost, currency = parsed
+        key = (d, resource_id)
+        if key in aggregated:
+            aggregated[key][0] += cost
+        else:
+            aggregated[key] = [cost, name, rg, currency]
+        synced += 1
+
+    for (d, resource_id), (cost, name, rg, currency) in aggregated.items():
         CostRecord.objects.update_or_create(
             date=d, resource_id=resource_id,
             defaults={
@@ -120,7 +147,6 @@ def sync_cost_export_csv(csv_text):
                 "cost": cost, "currency": currency,
             },
         )
-        synced += 1
     return synced, skipped
 
 
