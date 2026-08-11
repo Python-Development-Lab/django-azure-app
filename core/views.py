@@ -166,6 +166,16 @@ def _all_cost_data(year=None, month=None):
         daily_by_rg = db_result["daily_by_rg"]
     else:
         costs, total, daily, daily_by_rg = _live_costs_and_daily(token, time_period)
+    # 3. RG breakdown -- ALWAYS live API, no DB fallback (CostRecord doesn't
+    # store MeterCategory/MeterSubCategory, only ResourceId/RG/date/cost).
+    # Per AI PR Review on PR #46 (11.08.2026): this means the 429 banner
+    # can still appear for the breakdown section even on months where
+    # Total/Daily Spend Trend are already correctly DB-backed and 429-free
+    # -- the DB-first fix only covers costs/total/daily/daily_by_rg, not
+    # this section. Known, accepted interim state; a full fix would mean
+    # extending the Cost Management export's column configuration to
+    # include MeterCategory/MeterSubCategory and re-syncing CostRecord,
+    # tracked as a separate backlog item rather than folded into this fix.
     # 3. RG breakdown
     bd_data = _cost_query(token, {
         "type": "ActualCost", "timeframe": "Custom", "timePeriod": time_period,
