@@ -15,6 +15,7 @@ from .services import (
     _sync_cost_export_if_stale,
     _resource_costs_from_db,
     _monthly_trend_from_db,
+    _daily_and_rg_costs_from_db,
 )
 
 
@@ -68,16 +69,7 @@ def _month_bounds(year=None, month=None):
     return year, month, first, last
 
 
-def _all_cost_data(year=None, month=None):
-    """Fetch all cost data in one cached bundle — avoids 429 from parallel HTMX"""
-    year, month, first, last = _month_bounds(year, month)
-    bundle_key = f"finops_bundle:{year:04d}-{month:02d}"
-    bundle = cache.get(bundle_key)
-    if bundle is not None:
-        return bundle
-    token = _get_token()
-    time_period = {"from": first.strftime("%Y-%m-%d"), "to": last.strftime("%Y-%m-%d")}
-
+def _live_costs_and_daily(token, time_period):
     # 1. Cost by RG
     rg_data = _cost_query(token, {
         "type": "ActualCost", "timeframe": "Custom", "timePeriod": time_period,
@@ -153,6 +145,27 @@ def _all_cost_data(year=None, month=None):
             ds = str(r[1])
             daily.append({"date": f"{ds[6:8]}.{ds[4:6]}", "cost": round(r[0], 2)})
 
+    return costs, total, daily, daily_by_rg
+
+
+def _all_cost_data(year=None, month=None):
+    """Fetch all cost data in one cached bundle — avoids 429 from parallel HTMX"""
+    year, month, first, last = _month_bounds(year, month)
+    bundle_key = f"finops_bundle:{year:04d}-{month:02d}"
+    bundle = cache.get(bundle_key)
+    if bundle is not None:
+        return bundle
+    db_result = _daily_and_rg_costs_from_db(year, month)
+    token = _get_token()
+    time_period = {"from": first.strftime("%Y-%m-%d"), "to": last.strftime("%Y-%m-%d")}
+
+    if db_result is not None:
+        costs = db_result["costs"]
+        total = db_result["total"]
+        daily = db_result["daily"]
+        daily_by_rg = db_result["daily_by_rg"]
+    else:
+        costs, total, daily, daily_by_rg = _live_costs_and_daily(token, time_period)
     # 3. RG breakdown
     bd_data = _cost_query(token, {
         "type": "ActualCost", "timeframe": "Custom", "timePeriod": time_period,
