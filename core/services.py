@@ -301,3 +301,74 @@ def _monthly_trend_from_db(months=12):
     ]
     trend.sort(key=lambda x: x["month"])
     return trend
+
+
+def _daily_and_rg_costs_from_db(year, month):
+    """DB-backed equivalent of the "costs" (by resource group), "total",
+    "daily", and "daily_by_rg" parts of core/views.py's _all_cost_data()
+    bundle. Returns None (signal: fall back to live API) if there is no
+    CostRecord data for this month at all -- same "genuinely zero" vs
+    "never synced" distinction as _resource_costs_from_db().
+
+    Deliberately does NOT cover _all_cost_data()'s "breakdown" (service
+    breakdown by MeterCategory/MeterSubCategory) -- CostRecord doesn't
+    store those columns (the Cost Management export this project uses
+    only pulls Date/ResourceId/ResourceGroup/Cost/Currency), so that part
+    stays live-API-only. Adding it would mean extending the export's
+    column configuration and re-syncing, a separate decision.
+
+    Added 11.08.2026 specifically to stop Daily Spend Trend and Total
+    from hitting the live Cost Management API on every dashboard load
+    for months CostRecord already has verified data for (the aggregation
+    fix earlier this session confirmed DB totals now match the live API
+    to the cent) -- this is what was causing the dashboard's persistent
+    'HTTP 429: Too Many Requests' banner even for already-synced months.
+    """
+    month_start = date(year, month, 1)
+    month_end = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
+    qs = CostRecord.objects.filter(date__gte=month_start, date__lt=month_end)
+    if not qs.exists():
+        return None
+
+    by_rg = (
+        qs.values("resource_group")
+        .annotate(total_cost=_Sum("cost"))
+        .order_by("-total_cost")
+    )
+    costs = [
+        {
+            "resource_group": r["resource_group"] or "(none)",
+            "cost": round(float(r["total_cost"]), 2),
+            "currency": "USD",
+        }
+        for r in by_rg if r["total_cost"] and r["total_cost"] > 0
+    ]
+    total = round(sum(c["cost"] for c in costs), 2)
+
+    by_day = (
+        qs.values("date")
+        .annotate(total_cost=_Sum("cost"))
+        .order_by("date")
+    )
+    daily = [
+        {"date": r["date"].strftime("%d.%m"), "cost": round(float(r["total_cost"]), 2)}
+        for r in by_day
+    ]
+
+    by_day_rg = (
+        qs.values("date", "resource_group")
+        .annotate(total_cost=_Sum("cost"))
+        .order_by("date")
+    )
+    daily_labels = [d["date"] for d in daily]
+    per_rg = {}
+    for r in by_day_rg:
+        rg = r["resource_group"] or "(none)"
+        lbl = r["date"].strftime("%d.%m")
+        per_rg.setdefault(rg, {})[lbl] = per_rg.get(rg, {}).get(lbl, 0) + float(r["total_cost"])
+    daily_by_rg = {
+        rg: [round(per_rg.get(rg, {}).get(lbl, 0), 2) for lbl in daily_labels]
+        for rg in per_rg
+    }
+
+    return {"costs": costs, "total": total, "daily": daily, "daily_by_rg": daily_by_rg}
