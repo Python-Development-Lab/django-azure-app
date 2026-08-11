@@ -135,6 +135,21 @@ def sync_cost_export_csv(csv_text):
         key = (d, resource_id)
         if key in aggregated:
             aggregated[key][0] += cost
+            if aggregated[key][3] != currency:
+                # Per AI PR Review (11.08.2026): if the export ever emits
+                # mixed currencies for the same (date, resource_id) --
+                # plausible in multi-currency EA enrollments, though not
+                # expected for this project's Pay-As-You-Go subscription
+                # -- summing costs under a single currency code would be
+                # silently wrong. Log loudly rather than guess; the first
+                # currency seen is kept (matches the pre-fix behavior's
+                # "last/first row wins" semantics for non-cost fields),
+                # but this is now visible instead of silent.
+                logger.warning(
+                    "finops: mixed currencies for resource_id=%s date=%s "
+                    "(%s vs %s) -- summing under %s, verify manually",
+                    resource_id, d, aggregated[key][3], currency, aggregated[key][3],
+                )
         else:
             aggregated[key] = [cost, name, rg, currency]
         synced += 1
