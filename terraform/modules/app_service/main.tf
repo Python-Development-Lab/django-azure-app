@@ -42,6 +42,13 @@ resource "azurerm_linux_web_app" "main" {
     "AZURE_TENANT_ID"                = var.azure_tenant_id
     "SECRET_KEY"                     = var.django_secret_key
     "AZURE_REDIRECT_URI"             = var.azure_redirect_uri
+    "COST_EXPORT_STORAGE_ACCOUNT"    = var.cost_export_storage_account_name
+    "COST_EXPORT_CONTAINER"          = var.cost_export_container_name
+    "EXTERNAL_ID_CLIENT_ID"          = var.external_id_client_id
+    "EXTERNAL_ID_CLIENT_SECRET"      = var.external_id_client_secret
+    "EXTERNAL_ID_TENANT_ID"          = var.external_id_tenant_id
+    "EXTERNAL_ID_USER_FLOW"          = var.external_id_user_flow
+    "EXTERNAL_ID_REDIRECT_URI"       = var.external_id_redirect_uri
   }
 
   identity {
