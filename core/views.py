@@ -176,30 +176,42 @@ def _all_cost_data(year=None, month=None):
     # extending the Cost Management export's column configuration to
     # include MeterCategory/MeterSubCategory and re-syncing CostRecord,
     # tracked as a separate backlog item rather than folded into this fix.
-    # 3. RG breakdown
-    bd_data = _cost_query(token, {
-        "type": "ActualCost", "timeframe": "Custom", "timePeriod": time_period,
-        "dataset": {
-            "granularity": "None",
-            "aggregation": {"totalCost": {"name": "PreTaxCost", "function": "Sum"}},
-            "grouping": [
-                {"type": "Dimension", "name": "MeterCategory"},
-                {"type": "Dimension", "name": "MeterSubCategory"}
-            ],
-            "filter": {
-                "dimensions": {
-                    "name": "ResourceGroupName",
-                    "operator": "In",
-                    "values": ["rg-django-azure-staging"]
+    # -- ALWAYS live API, wrapped in its own try/except so a failure (e.g. 429)
+    # does not
+    # discard the costs/total/daily values already computed above --
+    # those may have come from the DB-first path and be perfectly valid.
+    # Fixed 12.08.2026: previously an uncaught exception here propagated
+    # all the way to finops_summary()'s except-block, which zeroed out
+    # the ENTIRE bundle including already-successful DB-backed data --
+    # this is why the 429 banner kept appearing even after the DB-first
+    # fix, for any month where the breakdown call happened to rate-limit.
+    breakdown = []
+    try:
+        bd_data = _cost_query(token, {
+            "type": "ActualCost", "timeframe": "Custom", "timePeriod": time_period,
+            "dataset": {
+                "granularity": "None",
+                "aggregation": {"totalCost": {"name": "PreTaxCost", "function": "Sum"}},
+                "grouping": [
+                    {"type": "Dimension", "name": "MeterCategory"},
+                    {"type": "Dimension", "name": "MeterSubCategory"}
+                ],
+                "filter": {
+                    "dimensions": {
+                        "name": "ResourceGroupName",
+                        "operator": "In",
+                        "values": ["rg-django-azure-staging"]
+                    }
                 }
             }
-        }
-    })
-    breakdown = [
-        {"service": r[1], "meter": r[2], "cost": round(r[0], 3)}
-        for r in bd_data.get("properties", {}).get("rows", []) if r[0] > 0.001
-    ]
-    breakdown.sort(key=lambda x: x["cost"], reverse=True)
+        })
+        breakdown = [
+            {"service": r[1], "meter": r[2], "cost": round(r[0], 3)}
+            for r in bd_data.get("properties", {}).get("rows", []) if r[0] > 0.001
+        ]
+        breakdown.sort(key=lambda x: x["cost"], reverse=True)
+    except Exception:
+        logger.exception("finops: RG breakdown query failed, continuing without it")
     bundle = {
         "costs": costs, "total": total,
         "daily": daily, "daily_by_rg": daily_by_rg, "breakdown": breakdown,

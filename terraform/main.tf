@@ -97,7 +97,21 @@ module "app_service" {
   azure_tenant_id     = var.tenant_id
   django_secret_key   = var.django_secret_key
   azure_redirect_uri  = var.azure_redirect_uri
-  tags                = local.tags
+  # No cycle: this references module.cost_export's storage_account_name
+  # output (depends only on random_string.cost_export_suffix), while
+  # module.cost_export's app_reader role assignment separately depends on
+  # this module's app_service_principal_id below. At the resource graph
+  # level: storage_account -> web_app -> role_assignment is a valid DAG,
+  # not a cycle -- Terraform resolves dependencies per-resource, not by
+  # textual module declaration order.
+  cost_export_storage_account_name = module.cost_export.storage_account_name
+  cost_export_container_name       = module.cost_export.container_name
+  external_id_client_id            = var.external_id_client_id
+  external_id_client_secret        = var.external_id_client_secret
+  external_id_tenant_id            = var.external_id_tenant_id
+  external_id_user_flow            = var.external_id_user_flow
+  external_id_redirect_uri         = var.external_id_redirect_uri
+  tags                             = local.tags
 }
 
 module "monitoring" {
