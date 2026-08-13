@@ -13,6 +13,7 @@
 
 | Item | Spec | Blocker | Priority | Source |
 |---|---|---|---|---|
+| Migrate App Service secrets (`DB_PASSWORD`, `AZURE_CLIENT_SECRET`, `SECRET_KEY`, `EXTERNAL_ID_CLIENT_SECRET`, and arguably `EXTERNAL_ID_CLIENT_ID`/`EXTERNAL_ID_TENANT_ID`) from plaintext app_settings values to @Microsoft.KeyVault(...) references | no spec | blocked-on-azure | High | 11.08.2026 -- AI PR Review on PR #47 flagged EXTERNAL_ID_CLIENT_SECRET as a direct violation of CONSTITUTION.md NEVER hardcode a secret rule. Verified this is not new -- AZURE_CLIENT_SECRET, DB_PASSWORD, and SECRET_KEY already follow the exact same plaintext pattern in modules/app_service/main.tf, predating this session. Not fixed in PR #47 (would have expanded scope); needs one deliberate pass converting all app_settings secret values at once. |
 | Rotate 3 exposed secrets (`DB_PASSWORD`, `SECRET_KEY`, `EXTERNAL_ID_CLIENT_SECRET`) | no spec | blocked-on-azure | CRITICAL | Long-standing; reinforced by 27.07.2026 Attack Path finding |
 | Rotate `DJANGO-SECRET-KEY` and `AZURE-CLIENT-SECRET` (exposed in plaintext to AI assistant during 10.08.2026 RBAC-fix session while debugging `local.auto.tfvars`) | no spec | blocked-on-azure | CRITICAL | 10.08.2026 — same exposure pattern as original incident; roll into the rotation above |
 | Verify `AZURE_CLIENT_SECRET` GitHub Secret still matches Key Vault (secret got a new version during 10.08.2026 apply — value unchanged but version rotated) | no spec | blocked-on-azure | Medium | 10.08.2026 — precaution against AADSTS7000215 recurrence on next CI run |
@@ -20,6 +21,23 @@
 | Update outdated `cryptography` package (closes Critical Attack Path entry point) | no spec | blocked-on-azure | CRITICAL | 27.07.2026 — confirmed root cause of Critical Defender Attack Path `c81dcadc-7b9c-3066-79cc-74be12d8b64f` |
 | Fix Terraform state lock / `Terraform Apply` CI failure | no spec | blocked-on-azure | CRITICAL | 28.07.2026 — pipeline failing, likely tied to billing read-only period |
 | Resolve Azure subscription billing (`Auto pay failed`, invoice G169932806, $174.84) | n/a (account admin, not a project spec) | blocked-on-azure (is itself the blocker) | CRITICAL | 27–28.07.2026 |
+
+## 1.5. FinOps Dashboard / Cost Export -- CLOSED (10-11.08.2026)
+
+Seven independent root causes, found and fixed sequentially, each masking the next until the dashboard finally showed correct, verified data end-to-end.
+
+| Item | Spec | Blocker | Priority | Source |
+|---|---|---|---|---|
+| ~~Wire `COST_EXPORT_STORAGE_ACCOUNT`/`COST_EXPORT_CONTAINER` app settings~~ | no spec | **DONE** | CRITICAL | 10.08.2026 -- root cause #1: Terraform never connected `module.cost_export`s storage account output into `module.app_service`s app_settings. |
+| ~~Create the actual Cost Management Export resource~~ | no spec | **DONE** | CRITICAL | 10.08.2026 -- the export resource itself did not exist in Azure; created manually via `az rest`. |
+| ~~Case-insensitive column matching in cost export CSV parser~~ | no spec | **DONE** | CRITICAL | 10.08.2026 -- root cause #2: Azure real export returns lowercase/camelCase headers, not the PascalCase names `_find_col` expected. |
+| ~~MM/DD/YYYY slash-delimited date parsing~~ | no spec | **DONE** | CRITICAL | 10.08.2026 -- root cause #3: parser only handled `YYYYMMDD`/`YYYY-MM-DD`; Azure returns `08/07/2026`. |
+| ~~Strip UTF-8 BOM when decoding export CSV~~ | no spec | **DONE** | CRITICAL | 10.08.2026 -- root cause #4: BOM left attached to first column name, breaking even case-insensitive matching. |
+| ~~`backfill_cost_history` management command + historical exports~~ | no spec | **DONE** | Medium | 10-11.08.2026 -- recurring export has no retroactive memory; backfilled Feb-Aug 2026 via 4 one-time exports. |
+| ~~Aggregate duplicate (date, resource_id) rows before upsert~~ | no spec | **DONE** | CRITICAL | 11.08.2026 -- root cause #5: a resource can have multiple cost line items per day; each silently overwrote the previous instead of accumulating, understating every DB total. Verified: July total $66.9994 vs live API $67.0. |
+| ~~Make Total / Daily Spend Trend DB-first~~ | no spec | **DONE** | CRITICAL | 11.08.2026 -- root cause #6: `_all_cost_data()` always hit the live API even for already-synced months, causing the persistent 429 banner. Added DB-first path with live-API fallback. |
+| ~~Isolate RG breakdown failures from the rest of the bundle~~ | no spec | **DONE** | CRITICAL | 11.08.2026 -- root cause #7, the actual final blocker: an uncaught exception from the always-live-API breakdown query zeroed out the entire bundle, discarding already-correct DB data computed earlier in the same call. Verified live: Total $27.49, 3 active RGs, Daily/Monthly Trend fully populated, no banner. |
+| ~~Commit COST_EXPORT_*/EXTERNAL_ID_* Terraform wiring (git/live drift)~~ | no spec | **DONE** | CRITICAL | 11.08.2026 -- separate finding: root cause #1 fix had been terraform-applied against staging but never committed to git, surviving hours as uncommitted state through many branch switches. A fresh clone would have re-deleted EXTERNAL_ID_* again. Committed to close the drift. |
 
 ## 2. RBAC / IAM
 
