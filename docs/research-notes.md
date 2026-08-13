@@ -79,3 +79,32 @@ Add a new row whenever a new external article/source is reviewed for this projec
 **Produced:** Added an optional `detection_engineering` block (`sentinel_rule`, `data_sources`, `data_components`, `mutable_elements`) to `security/mitre/attack_data.json`, populated for exactly the 4 techniques (T1078, T1036, T1595, T1046) backed by the project's two real, deployed Sentinel rules (`zero-trust-device-verification`, `defender-active-scanning-nmap`) -- deliberately not extended to any gap/planned technique, consistent with the honest-documentation principle. A `_schema_note` field documents this scope decision in the JSON file itself.
 
 **Not done, flagged only:** T1595's `status: "gap"` sits alongside a real, working detection (Defender kernel-level + the Sentinel rule) -- the article's telemetry-gap/detection-gap distinction shows this is correctly "gap" at the *control* (prevention) level, not the detection level; a `status_note` field was added to that entry to make this explicit rather than changing the status. Separately (pre-existing, not from this article): T1567's `status: "detected"` still cites `RiskScoringMiddleware`, which per earlier sessions does not exist as real code -- left untouched pending a deliberate decision on that misclassification, not silently corrected here.
+
+---
+
+## Setting Up an Agentic AI Workflow with Claude Code (13.08.2026)
+
+**Source:** Nikky Juwe, "Setting Up an Agentic AI Workflow with Claude Code," Medium, 04.08.2026. A seven-part DevOps course exercise (CLAUDE.md, Skills, Subagents, MCP, Hooks, Permissions, Memory) built around a small static HTML/CSS-to-Terraform-on-AWS example project.
+
+**Core takeaway:** treats Claude Code like onboarding a new hire -- narrow tool access per task, specialists with isolated context instead of one general-purpose agent, guardrails that intercept dangerous intent before execution (not after), and a curated (200-line-capped) memory file instead of re-explaining rules every session. Central thesis: "calibration first, automation second."
+
+**Comparison against this project actual working process:**
+
+| Component | Article pattern | This project |
+|---|---|---|
+| Project context for the AI | Single CLAUDE.md, 5 sections | Split across docs/specs/CONSTITUTION.md, TEMPLATE.md, and conversation memory |
+| Skills (scoped slash-commands) | 4 skills with explicit allowed-tools (e.g. tf-plan: Bash/Read/Grep, no Write) | None -- all Terraform work goes through manually copy-pasted bash commands in chat |
+| Subagents (isolated-context specialists) | security-auditor (no Write), cost-optimizer (Haiku), tf-writer (inherit model) | None in Claude Code -- AI PR Review on GitHub Actions plays a similar read-only role as an external CI gate |
+| MCP (live external data) | GitHub MCP, .mcp.json (team) vs settings.local.json (personal token, gitignored) | Not used -- all live Azure access goes through manual az rest calls and SSH sessions |
+| Hooks (pre-execution guardrails) | UserPromptSubmit blocks destructive intent; PreToolUse blocks dangerous commands (terraform destroy, aws s3 rm) before execution | None technical -- guardrails are conversational discipline only |
+| Permissions (allow/deny lists) | Explicit settings.json allow-list + deny-list | None configured |
+| Cross-session memory | MEMORY.md, capped at 200 lines, curated | Claude.ai built-in memory system -- same goal, different mechanism |
+
+**Produced:** This note only -- no code or config changes. Logged as input to a future backlog decision, not acted on immediately.
+
+**Not done, but concretely worth prioritizing:** three gaps directly relevant to this project actual failure modes seen in recent sessions:
+1. PreToolUse-style hook for Terraform/Azure destructive commands -- would have technically enforced what was, until now, purely human vigilance (e.g. the 10.08.2026 near-miss where a malformed local.auto.tfvars almost set the PostgreSQL admin password to the literal string "null").
+2. Skills for the recurring tf-plan/tf-apply cycle, scoped without Write access for the plan step -- would remove the repeated manual bash-copy-paste pattern (and its recurring heredoc/bash-history-expansion breakage) seen across recent sessions.
+3. An Azure MCP server, if one exists with adequate read scope -- would replace repeated manual az rest calls and SSH sessions with structured, repeatable queries.
+
+None of these are spec ed yet -- per docs/specs/TEMPLATE.md triage section, hooks/skills would likely warrant a brainstorm pass before a full spec, since the right scope is not fully settled yet.
