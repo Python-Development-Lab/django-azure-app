@@ -82,7 +82,7 @@
 |---|---|---|---|---|
 | PostgreSQL least-privilege role migration (`django_app_user`, DML-only) | no spec | blocked-on-azure | High | 24.07.2026 real finding (app connects as `azuresu`) |
 | Formalize `kv-to-sentinel` / `pg-to-sentinel` diagnostic settings in Terraform | no spec | blocked-on-azure | Medium | 24.07.2026 (currently manual `az rest` artifacts) |
-| Verify and set `https_only = true` on App Service | no spec | blocked-on-azure | Medium | 21.07.2026 |
+| Verify and set `https_only = true` on App Service | no spec | blocked-on-azure | Medium | 21.07.2026 -- Bundle into the next Terraform-touching session (secrets/Key Vault migration or RBAC scope-down) rather than a standalone PR -- cheap to verify/set alongside other app_service module changes. |
 | ThreadPoolExecutor parallelization for Log Analytics queries | no spec | blocked-on-azure | Low | 21.07.2026 (only relevant if consolidated Security endpoint is built) |
 
 ## 8. Compliance
@@ -107,7 +107,7 @@ Not part of the original 43-item backlog — these are new research/methodology 
 
 | Item | Spec | Blocker | Priority | Source |
 |---|---|---|---|---|
-| Security Investment Cost-Effectiveness Model (correlate FinOps cost data with Secure Score impact) | **has spec** (`security-investment-cost-effectiveness-model.spec.md`) | docs-only (read-only Azure API queries) | Medium | 28.07.2026, motivated by a same-session unverified-claim correction (cryptography/`hornetdashboardprod` misattribution) |
+| Security Investment Cost-Effectiveness Model (correlate FinOps cost data with Secure Score impact) | **has spec** (`security-investment-cost-effectiveness-model.spec.md`) | docs-only (read-only Azure API queries) | Medium | 28.07.2026, motivated by a same-session unverified-claim correction (cryptography/`hornetdashboardprod` misattribution) -- Now practically unblocked: as of 11.08.2026 CostRecord/FinOps Dashboard data is fully verified and reliable (7-root-cause chain closed) -- this spec finally has trustworthy cost data to correlate against Secure Score. Good candidate as a lighter, high-visibility task between the secrets-rotation cluster and WAF work. |
 | SDD Methodology Baseline (internal, retroactive process contract) | **has spec** (`sdd-methodology-baseline.spec.md`, Implemented) | docs-only | Low | 28.07.2026, second Tier 2 retroactive baseline (alongside the Security Dashboard baseline), documenting the spec-authoring/verification discipline itself |
 | SDD Case-Study Article (external-facing narrative, portfolio content) | **has spec** (`sdd-case-study-article.spec.md`) | docs-only | Medium | 28.07.2026, differentiated content since generic SDD writing doesn't cover the security/compliance failure mode this project encountered — draft article already exists (`docs/writing/sdd-security-compliance-case-study.md`), pending a self-verification pass (see spec's Open Question 3) |
 
