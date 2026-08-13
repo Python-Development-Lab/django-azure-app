@@ -102,7 +102,23 @@ done
 
 ### Action: `waf-application-gateway`
 
-*(pending -- category identification and resource-level verification not yet run; see Batch 1 continuation)*
+**Finding (13.08.2026, REQ-01/REQ-02/REQ-03):** Investigated whether Application Gateway v2 + WAF (the T1595-closing candidate already planned in `docs/backlog-status.md`) affects the "Restrict unauthorized network access" Secure Score category (current: 1.33/4 points, 33.25%, `unhealthyResourceCount: 4`).
+
+Cross-referenced the category's underlying `assessmentDefinitions` (via `Microsoft.Security/secureScoreControlDefinitions`) against `rg-django-azure-staging`'s actual Unhealthy findings (from the full, paginated `assessments` list -- see the corrected `update-cryptography-package` record above for why full pagination matters). Three of the category's Unhealthy findings for this project were identified and confirmed to belong to "Restrict unauthorized network access":
+
+| Finding | Resource | Category (verified via secureScoreControlDefinitions) |
+|---|---|---|
+| Storage account should use a private link connection | `stdjangosarif89420`, `stcostexp02l9xz` | Restrict unauthorized network access |
+| Storage accounts should restrict network access using virtual network rules | `stdjangosarif89420`, `stcostexp02l9xz` | Restrict unauthorized network access |
+| Firewall should be enabled on Key Vault | `kv-django-azure-staging` | Restrict unauthorized network access |
+
+A fourth related-sounding finding ("Storage account public access should be disallowed", also Unhealthy on `stcostexp02l9xz`) was checked and does **not** belong to this category -- it maps to "Manage access and permissions" instead, per the same `secureScoreControlDefinitions` cross-reference. Included here as a negative-result data point, not a false lead.
+
+**Corrected direction (important scope finding):** none of these three findings are addressed by Application Gateway v2 + WAF. WAF protects HTTP(S) traffic into the web application (the actual purpose of the `waf-application-gateway` action, and the correct fix for the T1595 active-scanning gap) -- it does not touch Storage Account or Key Vault network isolation. The action that would actually move this Secure Score category is a **different, cheaper** one: extending the Private Endpoint pattern already used for PostgreSQL and (partially) Key Vault to both Storage Accounts, plus resolving the Key Vault firewall finding specifically.
+
+**Conclusion:** `waf-application-gateway`'s Secure Score impact on "Restrict unauthorized network access" is likely **near zero** for these three specific findings -- its real value remains the T1595 ATT&CK gap closure (qualitative, not this category's points), which was always the primary justification for it in `docs/backlog-status.md`. A separate, not-yet-named candidate action ("extend Private Endpoints to both Storage Accounts + Key Vault firewall") is the actual cost-effective path to this specific Secure Score category -- not yet added as a full record in this model; recommended as the next candidate to evaluate.
+
+**Status per spec REQ-09:** `waf-application-gateway`'s point-gain estimate for *this* category is effectively ruled out (not "insufficient data" -- a genuine negative finding). Its qualitative ATT&CK/T1595 value is unaffected and remains the actual justification for the action, tracked separately from this Secure-Score-specific ranking per REQ-07.
 
 ### Action: `rbac-scope-down`
 
