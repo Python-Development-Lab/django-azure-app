@@ -28,6 +28,28 @@ az rest --method get \
 # findings. Enumerate everything and manually attribute by resourceId
 # prefix instead.
 jq -r '.value[] | {name: .properties.displayName, status: .properties.status.code, resourceId: .properties.resourceDetails.Id}' /tmp/secscore/all_assessments.json
+
+# CRITICAL (added 13.08.2026 after a real methodology failure -- see
+# the CORRECTION note on the cryptography record below): this API
+# response is PAGINATED. Check for a .nextLink field and follow it
+# until absent before drawing any conclusion. A single-page read
+# missed 7 of 118 real records and produced a wrong conclusion that
+# was merged and had to be corrected. Loop example:
+
+NEXTLINK=$(jq -r ".nextLink // empty" /tmp/secscore/all_assessments.json)
+PAGE=2
+> /tmp/secscore/all_pages_combined.json
+echo "[]" > /tmp/secscore/all_pages_combined.json
+while [ -n "$NEXTLINK" ]; do
+  az rest --method get --url "$NEXTLINK" -o json > "/tmp/secscore/page_${PAGE}.json"
+  jq -s ".[0] + .[1].value" /tmp/secscore/all_pages_combined.json "/tmp/secscore/page_${PAGE}.json" > /tmp/secscore/tmp.json
+  mv /tmp/secscore/tmp.json /tmp/secscore/all_pages_combined.json
+  NEXTLINK=$(jq -r ".nextLink // empty" "/tmp/secscore/page_${PAGE}.json")
+  PAGE=$((PAGE + 1))
+  sleep 1
+done
+# /tmp/secscore/all_pages_combined.json now holds every page-2+ record;
+# combine with page 1's .value array before filtering by resource group.
 ```
 
 ---
@@ -62,13 +84,19 @@ jq -r '.value[] | {name: .properties.displayName, status: .properties.status.cod
 }
 ```
 
-**Finding (REQ-01, REQ-02):** All 7 `Unhealthy` vulnerability assessments currently in the subscription belong to `hornetdashboardprod`'s container registry (`rg-hornet-dashboard-prod/.../registries/hornetdashboardprod`), for packages `gdown`, `requests`, `tornado`, `streamlit`, `wheel`, `jaraco.context`, and `linux` -- none of which are `django-azure-app` dependencies, and none of which reference `rg-django-azure-staging`.
+**CORRECTION (13.08.2026) -- the finding below was wrong. Original text preserved with strikethrough for the record, per this project's honest-documentation principle.**
 
-**Conclusion:** `django-azure-app` currently has **zero** unhealthy resources in the "Remediate vulnerabilities" Secure Score category. Updating the `cryptography` package in this project will **not** move this specific Secure Score category, because the category's current point deficit is entirely attributable to a different project sharing the same subscription.
+~~Finding (REQ-01, REQ-02): All 7 Unhealthy vulnerability assessments currently in the subscription belong to hornetdashboardprod's container registry, none reference rg-django-azure-staging. Conclusion: django-azure-app currently has zero unhealthy resources in the "Remediate vulnerabilities" category.~~
 
-**This corrects the original 28.07.2026 claim** ("updating `cryptography` would raise Secure Score from 36% to ~67%") with a verified statement rather than a category-name-matching assumption. The `cryptography` update remains worthwhile for its own sake (7 real Dependabot alerts, GLIBC constraint tracked in GitHub Issue #1) -- it is simply decoupled from any Secure Score point claim until a resource-level check says otherwise.
+**What went wrong:** the `Microsoft.Security/assessments` API response is **paginated** (`nextLink`), and the original query only read page 1 of 6 (7 of 118 total records). The methodology fix from the original REQ-01/REQ-02 pass (verify resource attribution, don't trust category names) was correct, but it was undermined by a *different* verification gap: not confirming the API response was complete before drawing a conclusion from it.
 
-**Status per spec REQ-09:** insufficient data to rank -- cost/effort estimate not yet done (blocked on the GLIBC base-image work), and the verified Secure Score point gain is confirmed to be **zero** for this specific category. Excluded from any ranked output until/unless a different Secure Score category is found to be affected.
+**Corrected finding, all 6 pages (118 total records) enumerated:** `rg-django-azure-staging` has confirmed `Unhealthy` assessments for **both** `Update Django` and `Update cryptography`, against resource `/subscriptions/23ee341e-dbd1-4904-8bb2-5dde59747b5d/resourceGroups/rg-django-azure-staging/providers/Microsoft.Web/sites/app-django-azure-staging`.
+
+**Corrected conclusion:** this project **does** have at least one real, resource-attributed vulnerability finding for `cryptography`. Whether fixing it moves the "Remediate vulnerabilities" Secure Score category specifically is **not yet confirmed** -- REQ-01 through REQ-03 require verifying the Secure Score *category* attribution too (via `secureScoreControlDefinitions` or an equivalent mapping from assessment type to control), which this pass did not complete (`secureScoreControlDefinitions` returned `Not Found` on the API version tried). The Secure Score point-gain estimate for this action remains open, now for a different reason than before.
+
+**Status per spec REQ-09:** still insufficient data to rank -- resource attribution is now confirmed (unlike the original pass), but the Secure Score category/point mapping and the cost/effort estimate (still blocked on the GLIBC base-image constraint, GitHub Issue #1) remain outstanding. Excluded from any ranked output until both are resolved.
+
+**Methodology note added to this report's "How to re-run" section below:** always check for and follow `nextLink` until it is absent before drawing any conclusion from an `az rest` list response.
 
 ---
 
