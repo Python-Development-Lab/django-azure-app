@@ -129,3 +129,26 @@ None of these are spec ed yet -- per docs/specs/TEMPLATE.md triage section, hook
 **Produced:** This note only -- no code or config changes. The verification itself (reading the actual workflow file rather than trusting the green checkmark) is the main output: it corrected an implicit assumption that DAST -- OWASP ZAP passing meant meaningful security coverage was happening.
 
 **Not done, flagged as a real coverage gap, not hypothetical:** the current DAST job provides materially weaker coverage than its green checkmark implies -- passive-only, unauthenticated, non-blocking. Logged as a new docs/backlog-status.md item and cross-referenced into the existing (Draft) security-md-honest-limitations.spec.md, since this is exactly the kind of gap that spec exists to surface rather than let a passing CI badge silently imply.
+
+---
+
+## DevSecOps Governance Part 1: Tooling, Secret Scanning, and Branch Protection (14.08.2026)
+
+**Source:** Wayne Campbell, "DevSecOps Governance (Part 1): Tooling, Secret Scanning, and Branch Protection Strategies," Capgemini Microsoft Blog / Medium, 27.03.2026. Part 1 of the same 3-part series as the DAST article evaluated 13.08.2026.
+
+**Core takeaway:** an Azure DevOps-specific governance model -- GitHub Advanced Security (secret scanning + SAST/SCA), Branch Policies (required reviewers, merge-type controls, force-push protection), Security Policies (fine-grained Allow/Deny/Not-Set permissions with hierarchy inheritance), and Pre-deployment Approvals -- an explicit human sign-off gate before deploying to a given environment, separate from PR review.
+
+**Comparison against this project (verified directly via GitHub Settings -- Branches and Settings -- Environments, not assumed):**
+
+| Aspect | Article pattern | This project (verified 14.08.2026) |
+|---|---|---|
+| Branch protection | Required reviewers, merge-type controls, force-push protection | None configured -- GitHub explicitly shows Classic branch protections have not been configured for any branch |
+| Pre-deployment approval gate | Explicit Required reviewers step before deploying to an environment | staging environment exists with 1 protection rule shown, but Required reviewers and Wait timer are both unchecked -- the 1 rule is just the default all branches can deploy state, not an actual gate |
+| Deployment branch restriction | Implied by branch policies | Deployment branches and tags is set to Protected branches only, but since no branches are actually protected (see above), this restricts nothing in practice |
+| Admin bypass | Not discussed in the article | Allow administrators to bypass configured protection rules is checked on the staging environment -- would bypass even if reviewers were later added |
+| Terraform apply trigger | N/A (article does not cover this) | Not unconditional -- gated by an idempotency check (needs.check-infra.outputs.infra_exists == false OR a manual force_terraform input), which is a real, useful guard, just not a human-approval gate |
+| Secret scanning | GHAS-native, blocks push | Gitleaks CLI (separate tool, first CI job) -- scans on push/PR, does not block the git push itself the way GHAS push protection does |
+
+**Produced:** This note only -- no code or config changes. Direct verification (Settings pages + workflow YAML, not memory or assumption) is the actual output, continuing the same discipline applied to the DAST finding yesterday.
+
+**Not done, flagged as a real gap, not hypothetical:** this project currently has no technical deployment gate at all -- no branch protection, no required reviewers on the staging environment, and admin bypass enabled even if that were added. For a solo-maintainer portfolio project at this stage that is a reasonable, low-risk state in practice (the maintainer is the only person who merges or deploys), but it is a real gap between how the 7-job CI/CD pipeline presents itself ("DevSecOps pipeline") and what it technically enforces. Logged as a new docs/backlog-status.md item, and flagged as SECURITY.md Honest Limitations material alongside the DAST finding -- both are instances of the same underlying pattern: a passing pipeline or a configured-looking Environment implying more actual control than currently exists.
