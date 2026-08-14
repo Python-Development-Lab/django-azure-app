@@ -152,3 +152,25 @@ None of these are spec ed yet -- per docs/specs/TEMPLATE.md triage section, hook
 **Produced:** This note only -- no code or config changes. Direct verification (Settings pages + workflow YAML, not memory or assumption) is the actual output, continuing the same discipline applied to the DAST finding yesterday.
 
 **Not done, flagged as a real gap, not hypothetical:** this project currently has no technical deployment gate at all -- no branch protection, no required reviewers on the staging environment, and admin bypass enabled even if that were added. For a solo-maintainer portfolio project at this stage that is a reasonable, low-risk state in practice (the maintainer is the only person who merges or deploys), but it is a real gap between how the 7-job CI/CD pipeline presents itself ("DevSecOps pipeline") and what it technically enforces. Logged as a new docs/backlog-status.md item, and flagged as SECURITY.md Honest Limitations material alongside the DAST finding -- both are instances of the same underlying pattern: a passing pipeline or a configured-looking Environment implying more actual control than currently exists.
+
+---
+
+## DevSecOps Governance Part 2: SAST, SCA, and Build Pipelines (14.08.2026)
+
+**Source:** Wayne Campbell, "DevSecOps Governance (Part 2): Static Analysis Software Testing (SAST), Software Composition Analysis (SCA) and Build Pipelines," Capgemini Microsoft Blog / Medium, 27.03.2026. Part 2 of the same 3-part series as the Part 1 (branch protection) and Part 3 (DAST) articles already evaluated.
+
+**Core takeaway:** out-of-the-box GHAS SAST/SCA only produces passive, informational findings. To actually block insecure code, the pipeline must wire in explicit fail thresholds -- failOnSeverity/failOnAlerts for GHAS CodeQL/Dependency Scanning, and Checkov (a dedicated third-party tool, chosen specifically for its network-configuration checks -- VNets, NAT Gateways, NSGs, private endpoints) for IaC, with a centralized .checkov.yml declaring soft-fail for low/medium findings and documented skip-check exceptions.
+
+**Comparison against this project (verified directly by reading .github/workflows/deploy-staging-terraform.yml, continuing the same discipline as the Part 1 and Part 3 comparisons):**
+
+| Aspect | Article pattern | This project (verified 14.08.2026) |
+|---|---|---|
+| SAST (application code) | CodeQL, failOnAlerts true -- genuinely blocks the build | Bandit -- every invocation ends in double-pipe true, so the job can never fail regardless of findings |
+| SCA (dependency scanning) | GHAS Dependency Scanning, failOnSeverity error | pip-audit -- also ends in double-pipe true, same non-blocking pattern |
+| SAST (IaC) | Checkov, soft-fail only for low/medium, hard fail by default for High/Critical | Trivy, exit-code 0 explicitly set -- no severity split, nothing fails regardless of finding severity even at CRITICAL |
+| Documented scan exceptions | Centralized .checkov.yml with a curated skip-check list and inline reasons | No equivalent file -- no trivyignore or documented rationale for any accepted finding |
+| What actually blocks the pipeline today | SAST + SCA + IaC + (per article) DAST all configured to fail the build | Only Tests and Lint (coverage fail-under 70, flake8) -- every security-specific scanner (Bandit, pip-audit, Trivy, and per yesterday DAST finding, OWASP ZAP) is purely informational |
+
+**Produced:** This note only -- no code or config changes.
+
+**Not done, flagged as a real gap, not hypothetical -- and now a pattern, not an isolated finding:** this is the third consecutive day direct verification (not trusting a green checkmark) has found the same underlying issue in a different layer -- 13.08.2026: DAST is passive, unauthenticated, non-blocking; 14.08.2026 Part 1: zero deployment gate exists; 14.08.2026 Part 2, this note: none of the four security scanners (Bandit, pip-audit, Trivy, ZAP) can fail the pipeline -- only the unrelated Tests and Lint job can. The 7-job pipeline actual enforcement surface is narrower than its name (DevSecOps pipeline) implies across every layer checked so far. Given the recurrence, this is being logged as a single consolidated docs/backlog-status.md item covering all four scanners together (SAST/SCA/IaC/DAST severity-gate enablement) rather than one more isolated entry, and flagged as the primary SECURITY.md Honest Limitations content alongside the Part 1 and Part 3 findings.
