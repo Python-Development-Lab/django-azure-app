@@ -67,6 +67,7 @@
 | Automated response playbook (Logic App → `revokeSignInSessions`) | **has spec** (`automated-response-http-brute-force.spec.md`, translated directly from `docs/playbooks/T1110-http-brute-force.md`, plus a new idempotency requirement set per the Yazidi article lesson) | blocked-on-azure | Medium | 24.07.2026, playbook drafted 25.07.2026, formalized into EARS spec 28.07.2026 |
 | Reuse CIAM SigninLogs KQL patterns (ResultType 50126/50053/0) | no spec | blocked-on-azure (pending Event Hub + Function App bridge) | Low (dependency not ready) | 24.07.2026 |
 | Custom banned-password policy for CIAM (reference: NIST guidance, 1000-term cap) | no spec | blocked-on-azure | Low | 24.07.2026 |
+| DAST job (OWASP ZAP) provides materially weaker coverage than its green checkmark implies: passive-scan-only (zaproxy/action-baseline, not activeScan), unauthenticated (never reaches /security/ or /finops/ behind CIAM/Google OAuth2 login), non-blocking (fail_action: false -- findings are uploaded to Security tab but never fail the pipeline) | no spec | docs-only for the Honest Limitations write-up; blocked-on-azure if upgrading to authenticated active scan | High | 13.08.2026, verified by reading .github/workflows/deploy-staging-terraform.yml directly (DevSecOps Governance Part 3 article comparison) -- cross-reference into security-md-honest-limitations.spec.md |
 
 ## 6. Networking / Infrastructure
 

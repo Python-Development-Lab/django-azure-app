@@ -108,3 +108,24 @@ Add a new row whenever a new external article/source is reviewed for this projec
 3. An Azure MCP server, if one exists with adequate read scope -- would replace repeated manual az rest calls and SSH sessions with structured, repeatable queries.
 
 None of these are spec ed yet -- per docs/specs/TEMPLATE.md triage section, hooks/skills would likely warrant a brainstorm pass before a full spec, since the right scope is not fully settled yet.
+
+---
+
+## DevSecOps Governance Part 3: Implementing DAST in Build Pipelines (13.08.2026)
+
+**Source:** Wayne Campbell, "DevSecOps Governance (Part 3): Implementing Dynamic Application Security Testing (DAST) in Build Pipelines," Capgemini Microsoft Blog / Medium, 30.06.2026. Part 3 of a 3-part series on Azure DevOps pipeline governance.
+
+**Core takeaway:** OWASP ZAP post-deployment, with an explicit authenticated-scanning step (Playwright browser-login generates a session cookie, passed into the ZAP container) and a deliberate fail-gate that only blocks the pipeline on High severity findings, warns on Medium. A versioned dast-plan.yaml declares spider duration, active-scan timeout, and exit-status thresholds as configuration, not hardcoded pipeline logic.
+
+**Comparison against this project actual DAST job (verified by reading .github/workflows/deploy-staging-terraform.yml directly, not assumed from the green checkmark):**
+
+| Aspect | Article pattern | This project (verified 13.08.2026) |
+|---|---|---|
+| Scan type | activeScan (attempts real attack payloads: SQLi, XSS, etc.) | zaproxy/action-baseline -- passive scan only, no active attack attempts |
+| Authentication | Explicit Playwright login step, session cookie passed to ZAP via AUTH_HEADER | None -- scans as an anonymous visitor; everything behind CIAM/Google OAuth2 login (/security/, /finops/) is never reached |
+| Fail gate | Explicit High=fail, Medium=warn thresholds in dast-plan.yaml | fail_action: false -- the job never fails the pipeline regardless of findings; SARIF is uploaded to the Security tab but nothing blocks deploy |
+| Scan config | Versioned dast-plan.yaml, reviewable in PRs | No equivalent file -- only .zap/rules.tsv (baseline rule exceptions), no plan/timeout/threshold config |
+
+**Produced:** This note only -- no code or config changes. The verification itself (reading the actual workflow file rather than trusting the green checkmark) is the main output: it corrected an implicit assumption that DAST -- OWASP ZAP passing meant meaningful security coverage was happening.
+
+**Not done, flagged as a real coverage gap, not hypothetical:** the current DAST job provides materially weaker coverage than its green checkmark implies -- passive-only, unauthenticated, non-blocking. Logged as a new docs/backlog-status.md item and cross-referenced into the existing (Draft) security-md-honest-limitations.spec.md, since this is exactly the kind of gap that spec exists to surface rather than let a passing CI badge silently imply.
