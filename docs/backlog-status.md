@@ -13,6 +13,7 @@
 
 | Item | Spec | Blocker | Priority | Source |
 |---|---|---|---|---|
+| Configure a real deployment gate: branch protection on develop/main (required reviewers, no direct push, no force-push) and/or Required reviewers on the staging GitHub Environment (currently unchecked, with admin bypass also enabled) | no spec | docs-only for SECURITY.md write-up; the actual config change is free (GitHub Settings) | High | 14.08.2026, verified directly via Settings pages (DevSecOps Governance Part 1 article comparison) -- currently zero technical deployment gate exists despite the 7-job pipeline presenting itself as a DevSecOps pipeline; cross-reference into security-md-honest-limitations.spec.md alongside the DAST finding |
 | Rotate 3 exposed secrets (`DB_PASSWORD`, `SECRET_KEY`, `EXTERNAL_ID_CLIENT_SECRET`) | no spec | blocked-on-azure | CRITICAL | Long-standing; reinforced by 27.07.2026 Attack Path finding |
 | Rotate `DJANGO-SECRET-KEY` and `AZURE-CLIENT-SECRET` (exposed in plaintext to AI assistant during 10.08.2026 RBAC-fix session while debugging `local.auto.tfvars`) | no spec | blocked-on-azure | CRITICAL | 10.08.2026 — same exposure pattern as original incident; roll into the rotation above |
 | Verify `AZURE_CLIENT_SECRET` GitHub Secret still matches Key Vault (secret got a new version during 10.08.2026 apply — value unchanged but version rotated) | no spec | blocked-on-azure | Medium | 10.08.2026 — precaution against AADSTS7000215 recurrence on next CI run |
