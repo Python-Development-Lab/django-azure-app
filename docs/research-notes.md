@@ -264,3 +264,42 @@ Backlog-пункт "Automated response: Logic App playbook → `POST /users/{use
 ### Висновок
 
 На відміну від Cynet-статті, це джерело дає конкретний, придатний до застосування архітектурний патерн (Maze Design) саме в момент, коли AI-функції проєкту ще на стадії планування — ідеальний час інтегрувати ці gates у дизайн, а не патчити пост-фактум. Найвищий пріоритет: коли розпочнеться реалізація "Ask AI about this alert" панелі, явно задокументувати в specs/ADR, що вона архітектурно відповідає Design 1 (agent never performs mutation directly) з поясненням rationale.
+
+## Younes Khaldi — "How to Use Azure Sentinel for Incident Response, Orchestration and Automation" (LinkedIn/Microsoft Community Hub, 29.03.2021)
+
+**Джерело:** https://www.linkedin.com/pulse/how-use-azure-sentinel-incident-response-automation-younes-khaldi/ (дзеркало: Microsoft Community Hub, той самий автор і зміст — LinkedIn блокує прямий automated-доступ)
+**Тип:** практична стаття практикуючого security-інженера, доповнена перевіркою актуальності через офіційну документацію Microsoft Sentinel (Learn/Azure Docs). Сама стаття застаріла на 5 років (написана під бренд "Azure Sentinel", нині "Microsoft Sentinel"), але описаний use case і термінологія залишаються чинними.
+
+### Що взято на озброєння
+
+**1. Automation rules vs Playbooks — архітектурна різниця, якої бракує в проєкті**
+- *Automation rules* — прості дії без Logic Apps: тригаж severity, assign owner, suppress noisy incidents, auto-close known false positives, tag classification
+- *Playbooks* (на базі Azure Logic Apps) — складніші дії з інтеграцією зовнішніх сервісів (ServiceNow tickets, email notifications, isolation/revocation actions)
+
+**Ключовий gap:** у проєкту є детекція (3 analytics rules) і є план на playbook (`revokeSignInSessions`), але **відсутній проміжний automation rules шар**. Без нього 16 наявних `SecurityAlert` записів не мають механізму autotriage — накопичуються без owner assignment чи suppression правил.
+
+**2. Офіційний reference pattern "stop potentially compromised users"**
+Microsoft Learn документує саме той сценарій, що вже в backlog проєкту: automation rule тригериться на incident creation → викликає playbook → playbook виконує revocation/isolation дії. При імплементації `revokeSignInSessions` playbook варто звірятись з цим офіційним tutorial (https://learn.microsoft.com/en-us/azure/sentinel/automation/tutorial-respond-threats-playbook), а не проєктувати структуру з нуля.
+
+**3. Microsoft Sentinel Automation Contributor role**
+Коли playbook буде реалізовано, Sentinel використовує окремий service account для запуску playbooks на incidents — цьому service account потрібна власна роль **Microsoft Sentinel Automation Contributor** на resource group, де лежить Logic App (окремо від звичайних user/CI ролей). Це варто врахувати при RBAC-плануванні playbook-реалізації.
+
+**4. Threat intelligence feed enrichment (з оригінальної статті, нижчий пріоритет)**
+Автор демонструє імпорт threat indicators з AlienVault OTX через Graph Security API в нативну Sentinel-таблицю `ThreatIntelligenceIndicator`, з кореляцією через Microsoft Defender for Endpoint дані. Не застосовується напряму до проєкту — Defender for Endpoint призначений для VM/endpoint-навантажень, а проєкт використовує Defender for App Service (PaaS-рівень) — інша модель захисту. Залишити як довгостроковий, низькопріоритетний concept, якщо колись з'явиться потреба в зовнішніх threat intel feeds.
+
+### Критичний факт, знайдений під час перевірки актуальності (не зі статті)
+
+**Microsoft Sentinel Portal deprecation:** після **31 березня 2027** Microsoft Sentinel більше не підтримуватиметься в Azure Portal і буде доступний лише в Microsoft Defender Portal. Усі користувачі Azure Portal-версії Sentinel будуть автоматично перенаправлені в Defender Portal.
+
+**Релевантність для проєкту:** Sentinel-конфігурація (`law-django-azure-staging`, 3 analytics rules, Data Connector) наразі керується частково через Terraform, частково через `az rest` manual artifacts (діагностичні налаштування Key Vault/PostgreSQL). Варто зафіксувати як довгостроковий tracked item — переконатись, що жодна частина конфігурації не залежить від Azure Portal-специфічного UI/API, який припинить підтримку, і що Terraform-модуль `monitoring` сумісний з Defender Portal API поверхнею. Термін некритичний (2027), але вартий одного review-циклу протягом наступного року.
+
+### Gap-аналіз для `django-azure-app`
+
+- ❌ **Automation rules — відсутні повністю.** Найвищий пріоритет із цього джерела: почати з простих правил (assign severity/owner на `zero-trust-device-verification` alerts, auto-close known false positives для NMap-сканів з відомих Azure IP-діапазонів) — реалізовується швидше і незалежно від повноцінного Logic App playbook
+- 📋 Sentinel Automation Contributor role — додати до RBAC-плану, коли `revokeSignInSessions` playbook перейде з backlog у реалізацію
+- 📋 Sentinel Portal deprecation (2027) — новий довгостроковий tracked item, review протягом наступного року
+- N/A Threat intel feed enrichment (AlienVault OTX) — не застосовується до поточної архітектури проєкту, залишити як concept без пріоритету
+
+### Висновок
+
+На відміну від двох попередніх статей (Cynet — термінологія; appsecwarrior — архітектурний патерн для AI-агентів), ця стаття дає **конкретний, реалізовуваний наступний крок**: automation rules — це найшвидший спосіб частково закрити SOAR-gap (задокументований і в Cynet, і тут) ще до того, як `revokeSignInSessions` playbook буде повністю готовий. Також виявлено новий, раніше не зафіксований довгостроковий ризик — Sentinel Portal deprecation у 2027 році.
