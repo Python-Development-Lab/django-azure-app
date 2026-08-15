@@ -36,3 +36,7 @@ terraform/terraform.tfvars
 terraform/*.tfstate
 terraform/*.tfstate.backup
 terraform/*.tfstate.*.backup
+
+# Terraform local artifacts — auto.tfvars may contain secrets, tfplan-restore is a plan/state artifact
+terraform/*.auto.tfvars
+terraform/tfplan-restore
