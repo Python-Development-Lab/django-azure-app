@@ -212,3 +212,55 @@ Backlog-пункт "Automated response: Logic App playbook → `POST /users/{use
 ### Висновок
 
 Джерело не додає нового технічного know-how, але корисне як checklist для `SECURITY.md`: формалізує термінологію, підтверджує вже відомі прогалини (SOAR/UEBA/ASM) додатково до 5 ATT&CK gap techniques, і дає точну назву ("SOAR") для вже запланованого Logic App playbook пункту.
+
+## appsecwarrior — "How To Secure Architecture Guide for Modern AI & Agentic Platforms" (Medium, 27.07.2026)
+
+**Джерело:** https://medium.com/@appsecwarrior/how-to-secure-architecture-guide-for-modern-ai-agentic-platforms-400848022838
+**Тип:** практична AppSec-стаття (не vendor content) — component-by-component secure reference architecture для агентних AI-систем + case study про broken access control в AI-агентах (Meta AI Account Takeover pattern).
+
+### Що взято на озброєння
+
+**1. OWASP Top 10 for LLM Applications — новий framework поряд з MITRE ATT&CK**
+Наразі `security/mitre/attack_data.json` покриває лише класичний MITRE ATT&CK (20 технік/9 тактик), без LLM-специфічного шару загроз. Коли AI-функції ("Ask AI about this alert" панель, AI PR Review gate) перейдуть з планів у реалізацію — потрібен окремий шар загроз:
+- Prompt injection, insecure output handling, training data poisoning, model DoS, supply chain, sensitive info disclosure, insecure plugin/tool design, excessive agency, overreliance, model theft
+- Принцип: будь-який контент, який LLM читає (user input, retrieved documents, tool output, повідомлення іншого агента) — це **untrusted input**, незалежно від джерела
+
+**2. "Maze Design" — 7-gate модель контролю привілейованих дій (найцінніша частина статті)**
+Case study (Meta AI Agent Account Takeover) показує клас вразливості: агент витягує параметри з plain text і викликає привілейований tool без перевірки ownership. Запропонована модель — послідовні gates, кожен з яких має пройти незалежно:
+1. Intent classification (privileged vs read-only)
+2. Identity/authentication
+3. Ownership (чи належить ресурс саме цьому requester)
+4. Capability scope (чи може tool взагалі мутувати дані)
+5. Policy engine (чи дозволяє policy цю дію explicitly)
+6. Rate limiting/abuse detection
+7. Step-up verification (token/MFA/verified channel)
+
+Принцип: **жоден єдиний шар не повинен мати прямий шлях від "агент зрозумів запит" до "виконана привілейована мутація"**. Fail closed за замовчуванням: unknown tool → deny; unknown policy → deny; ambiguous parameters → deny.
+
+**3. Пряме застосування до запланованого backlog-пункту**
+Backlog-пункт "Automated response: Logic App playbook → `POST /users/{userId}/revokeSignInSessions`", якщо в майбутньому буде тригеритись через AI-рекомендацію (а не лише через Sentinel rule напряму) — підпадає під точнісінько цей клас ризику. Якщо "Ask AI about this alert" панель колись зможе не просто пропонувати fix, а й ініціювати дію — це вимагає тих самих gates, а не "AI порадив → виконали".
+
+**4. MCP-специфічні поради (розділ 3.5 статті) — релевантно для майбутньої MCP-інтеграції**
+- Підключення лише до pinned/vetted MCP-серверів (версії/хеші зафіксовані, як будь-яка third-party залежність supply chain)
+- Per-tool authorization — перевіряється саме identity, що викликає tool, а не факт "агент має доступ до tool"
+- Секрети для MCP-tools — з secrets manager, ін'єктовані в runtime, ніколи не в tool config чи prompt тексті
+- Sandbox tool execution, захист від SSRF у tools, що фетчать URL
+
+**5. Параметрична плутанина (parameter confusion) — конкретний технічний нюанс**
+Авторитетне попередження: поле, яке перевіряє policy (напр. `username`), і поле, на яке діє tool (напр. `account_id`), мають бути **тим самим resolved identifier**, а не двома окремо витягнутими значеннями з тексту. Інакше перевірка ownership пройде, а дія виконається над іншим ресурсом.
+
+### Gap-аналіз для `threat-model-agent` (Security-Engineering-Lab/threat-model-agent)
+
+- ❌ `stride_engine.py` наразі оперує класичним STRIDE, без LLM-adjacent категорій загроз (prompt injection, excessive agency тощо) — варто розглянути розширення на OWASP Top 10 for LLM Applications як другий шар аналізу
+- ⚠️ **Перевірити**, як саме зберігається `ANTHROPIC_API_KEY` в проєкті — чи через змінні середовища, чи (небажано) захардкоджено в конфіг-файлах. CLI-tool сам по собе не виконує привілейованих мутацій (лише read + report), тому ризик Maze Design тут нижчий, але secrets-hygiene залишається актуальною
+- 📋 Логування рішень `attack_mapper.py`/`report_generator.py` як окремого audit trail — наразі не задокументовано як практика
+
+### Gap-аналіз для `django-azure-app`
+
+- 📋 "Ask AI about this alert" панель — на етапі дизайну, ще до імплементації. Рекомендація: явно спроєктувати як **Design 3 (centralized policy layer)**, а не Design 1/2 — тобто LLM лише класифікує/рекомендує, а виконання (якщо колись з'явиться) проходить через окремий policy engine з fail-closed за замовчуванням
+- 📋 AI PR Review gate — вже задокументовано як "informational only — no auto-merge", що фактично відповідає Design 1 (агент ніколи не виконує mutation напряму) — це правильний архітектурний вибір з коробки, варто explicitly зазначити цей rationale в специфікації фічі
+- ❌ Rate limiting / abuse detection на виклики до Claude API — не задокументовано в жодному з двох проєктів
+
+### Висновок
+
+На відміну від Cynet-статті, це джерело дає конкретний, придатний до застосування архітектурний патерн (Maze Design) саме в момент, коли AI-функції проєкту ще на стадії планування — ідеальний час інтегрувати ці gates у дизайн, а не патчити пост-фактум. Найвищий пріоритет: коли розпочнеться реалізація "Ask AI about this alert" панелі, явно задокументувати в specs/ADR, що вона архітектурно відповідає Design 1 (agent never performs mutation directly) з поясненням rationale.
