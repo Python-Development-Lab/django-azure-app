@@ -174,3 +174,41 @@ None of these are spec ed yet -- per docs/specs/TEMPLATE.md triage section, hook
 **Produced:** This note only -- no code or config changes.
 
 **Not done, flagged as a real gap, not hypothetical -- and now a pattern, not an isolated finding:** this is the third consecutive day direct verification (not trusting a green checkmark) has found the same underlying issue in a different layer -- 13.08.2026: DAST is passive, unauthenticated, non-blocking; 14.08.2026 Part 1: zero deployment gate exists; 14.08.2026 Part 2, this note: none of the four security scanners (Bandit, pip-audit, Trivy, ZAP) can fail the pipeline -- only the unrelated Tests and Lint job can. The 7-job pipeline actual enforcement surface is narrower than its name (DevSecOps pipeline) implies across every layer checked so far. Given the recurrence, this is being logged as a single consolidated docs/backlog-status.md item covering all four scanners together (SAST/SCA/IaC/DAST severity-gate enablement) rather than one more isolated entry, and flagged as the primary SECURITY.md Honest Limitations content alongside the Part 1 and Part 3 findings.
+
+## Cynet — "What Is Incident Response? Process, Practices & Automation" (vendor context, 2026)
+
+**Джерело:** https://www.cynet.com/security-foundations/incident-response/what-is-incident-response/
+**Тип:** vendor content (не академічне джерело, без DOI) — використовується лише як термінологічний reference, не як технічне обґрунтування рішень.
+
+### Що взято на озброєння
+
+**1. Термінологія Event → Alert → Incident**
+Використати дослівно в `SECURITY.md` для класифікації даних з Sentinel:
+- *Event* — зміна стану системи (напр. запис у `AzureDiagnostics`)
+- *Alert* — сповіщення, що спрацювало на подію (напр. запис у `SecurityAlert`, 16 наявних записів: 15 Zero Trust + 1 NMap)
+- *Incident* — подія, що реально становить ризик (наразі жоден з 16 alerts у проєкті формально не ескальовано до статусу incident — це важливо зафіксувати як чесний стан)
+
+**2. SANS 6-phase vs NIST 4-step lifecycle**
+- SANS: Preparation → Identification → Containment → Eradication → Recovery → Lessons Learned
+- NIST: Preparation → Detection & Analysis → Containment/Eradication/Recovery → Post-Incident Activity
+Обрати одну модель (рекомендація: SANS 6-phase — детальніша, краще лягає на "Honest Limitations" секцію) як структуру для `SECURITY.md` розділу Incident Response.
+
+**3. Термінологічне уточнення для наявного backlog-пункту**
+Backlog-пункт "Automated response: Logic App playbook → `POST /users/{userId}/revokeSignInSessions`" відповідає означенню **SOAR playbook** зі статті (automated incident response process, що виконує предефінований сценарій у відповідь на alert). Перейменувати/задокументувати цей компонент явно як SOAR-елемент — підсилює відповідність SC-200 domain (Security Orchestration, Automation and Response) і портфоліо-наратив.
+
+### Gap-категорії, підтверджені цим джерелом (додатково до 5 ATT&CK gap techniques)
+
+Проєкт наразі не має:
+- **SOAR** — автоматизовані playbook-дії відсутні (є лише backlog-намір)
+- **UEBA** — поведінкова аналітика користувачів відсутня; `zero-trust-device-verification` rule закриває лише частину (device fingerprinting, не behavioral baseline)
+- **ASM** — немає безперервного сканування зовнішнього attack surface (WAF/Application Gateway з T1595 закриває суміжну, але не еквівалентну задачу)
+- **Формальний IRP-документ** — ролі, комунікаційний план, ескалаційні процедури відсутні
+- **CSIRT-модель** — не актуально для solo-maintainer проєкту; зафіксувати в `SECURITY.md` як "N/A — single maintainer, no formal CSIRT"
+
+### Зв'язок із запланованим функціоналом
+
+"Ask AI about this alert" панель (Claude API + knowledge graph контекст) відповідає підходу статті до GenAI в IR: LLM як co-pilot з людиною-аналітиком у контурі рішень (human-in-the-loop), а не автономний agent — це варто явно зазначити в дизайні панелі як усвідомлений архітектурний вибір.
+
+### Висновок
+
+Джерело не додає нового технічного know-how, але корисне як checklist для `SECURITY.md`: формалізує термінологію, підтверджує вже відомі прогалини (SOAR/UEBA/ASM) додатково до 5 ATT&CK gap techniques, і дає точну назву ("SOAR") для вже запланованого Logic App playbook пункту.
