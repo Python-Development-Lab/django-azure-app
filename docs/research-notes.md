@@ -303,3 +303,34 @@ Microsoft Learn документує саме той сценарій, що вж
 ### Висновок
 
 На відміну від двох попередніх статей (Cynet — термінологія; appsecwarrior — архітектурний патерн для AI-агентів), ця стаття дає **конкретний, реалізовуваний наступний крок**: automation rules — це найшвидший спосіб частково закрити SOAR-gap (задокументований і в Cynet, і тут) ще до того, як `revokeSignInSessions` playbook буде повністю готовий. Також виявлено новий, раніше не зафіксований довгостроковий ризик — Sentinel Portal deprecation у 2027 році.
+
+## Team Axon (Hunters.security) — "The Human-Friendly Guide: IR & Threat Hunting in Microsoft Azure, Part 1" (Alon Klayman)
+
+**Джерело:** https://www.hunters.security/en/blog/human-friendly-guide-incident-response-microsoft-and-threat-hunting-azure-1
+**Тип:** практичний технічний guide від Threat Hunting Expert, з повним кейс-стаді розслідування (сценарій "HNTR-Global").
+
+**Ключове:**
+- Azure IR спирається на 3 основні джерела логів: **Sign-in Logs** (30 днів), **Audit Logs** (30 днів, зміни в Azure AD), **Activity Logs** (90 днів, зміни на рівні subscription/resources) — рекомендація форвардити в SIEM, не покладатись на дефолтний retention
+- **Gotcha:** IP-адреса в Audit Logs іноді показує внутрішню Microsoft IP замість реальної IP атакуючого — важливо не сплутати з IOC
+- RBAC-нюанс: Azure Roles (RBAC) і Azure AD Roles — два незалежні набори прав, що не перетинаються автоматично; Global Admin може self-elevate до User Access Administrator на root scope
+
+**Gap для проєкту:**
+- ❌ **Azure AD Audit Logs та Activity Logs не форвардяться в Sentinel взагалі** — лише Sign-in Logs у планах (CIAM pipeline pending). Це напряму стосується вже відомого RBAC-issue (`django-azure-sp` на subscription scope, Contributor + User Access Administrator) — саме Activity Logs були б головним джерелом розслідування, якби через цей over-scoped SP стався інцидент
+- 📋 Зафіксувати IP-адреса gotcha до запуску CIAM SigninLogs pipeline
+
+---
+
+## Sygnia — "Incident Response to Cloud Security Incidents: AWS, Azure, and GCP Best Practices" (оновлено 15.07.2026)
+
+**Джерело:** https://www.sygnia.co/blog/incident-response-to-cloud-security-incidents-aws-azure-and-gcp-best-practices/
+**Тип:** vendor-контент від авторитетного DFIR-провайдера (4х Gartner DFIR Market Guide), 5-фазний Cloud IR framework на базі NIST SP 800-61, окремі best practices для AWS/Azure/GCP.
+
+**Ключове:**
+- Azure-специфічно: "Sentinel playbooks for instant action — block sign-ins from suspicious IP ranges, disable compromised accounts" — конкретні типи дій для SOAR-playbook, ширше за вже заплановий `revokeSignInSessions`
+- IR readiness метрики: **MTTR** (Mean Time to Respond/Recover), **Dwell time**, **Cost per incident**, **Post-incident hardening rate** (скільки lessons learned реально впроваджено наступного кварталу)
+
+**Gap для проєкту (підтверджує вже відомий third-party-джерелами):**
+- ❌ Sentinel playbooks / automation rules — **третє незалежне джерело поспіль** (після Cynet і Younes Khaldi), що фіксує ту саму прогалину — стійкий, підтверджений сигнал, не випадковість
+- ❌ MTTR/Dwell time — жодна попередня research-note не згадувала формальне вимірювання; варто розглянути простий tracking у `docs/backlog-status.md` для майбутніх incident-подій (кількісний доказ для портфоліо)
+
+**Висновок для обох джерел:** Разом з Younes Khaldi-нотаткою це дає повну картину Sentinel SOAR-gap: детекція є, Sign-in Logs у планах, але Audit/Activity Logs, automation rules і playbooks — усі відсутні. Коли дійде до OIDC/RBAC-scoping задачі (backlog #2), варто одночасно додати forwarding Activity Logs — саме вони покажуть аудит-слід тих RBAC-змін, що плануються.
