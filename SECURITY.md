@@ -25,8 +25,14 @@ Legend used throughout: ✅ Implemented · ⚠️ Partial / in progress / inheri
 3. [Release & Response Phase Security Controls](#release--response-phase-security-controls)
    - Release
    - Response
-4. [Cross-Cutting Honest Limitations](#cross-cutting-honest-limitations)
-5. [Vulnerability Disclosure](#vulnerability-disclosure)
+4. [Incident Response](#incident-response)
+   - Six-Phase Model — Current State
+   - Investigation Data Sources
+   - SOAR / Automated Response
+   - Forward-Looking: AI-Assisted Response
+   - Readiness Metrics
+5. [Cross-Cutting Honest Limitations](#cross-cutting-honest-limitations)
+6. [Vulnerability Disclosure](#vulnerability-disclosure)
 
 ---
 
@@ -182,6 +188,72 @@ Legend: ✅ Implemented · ⚠️ Partial / in progress · ❌ Gap (not yet addr
 - Detection and response (Application Insights, Defender for Cloud, Sentinel) is the strongest part of this project's SDL coverage; pre-release readiness (load testing, WAF, a connected IR plan) is the acknowledged weak point, not a hidden one
 
 Last independently verified against Azure Defender for Cloud MCSB (25.07.2026) and CSPM (27.07.2026) assessments.
+
+---
+
+## Incident Response
+
+This section follows the SANS Institute's six-phase incident handling model (Preparation → Identification → Containment → Eradication → Recovery → Lessons Learned), chosen over the NIST SP 800-61 four-step model for its finer-grained breakdown of the detection-to-remediation path — useful given this project currently has a single maintainer rather than a formal CSIRT.
+
+Legend: ✅ Implemented · ⚠️ Partial / in progress · ❌ Gap (not yet addressed) · — Not applicable to current scope
+
+**Terminology used throughout this section:**
+- **Event** — a state change worth recording (e.g. an `AzureDiagnostics` entry)
+- **Alert** — a notification triggered by an event matching a detection rule (e.g. a `SecurityAlert` record)
+- **Incident** — an alert confirmed to represent real risk and requiring a response
+
+As of this writing, none of the 16 `SecurityAlert` records generated to date have been formally escalated to incident status — they remain unactioned alerts, and this document states that plainly rather than implying a triage process that doesn't yet exist.
+
+### Six-Phase Model — Current State
+
+| Phase | Status | Notes |
+|---|---|---|
+| Preparation | ⚠️ | Detection tooling (Sentinel, Defender for Cloud, Application Insights) is in place; no designated incident owner, communication plan, or written runbook exists beyond `docs/playbooks/` scaffolding |
+| Identification | ✅ | 3 active Sentinel analytics rules (BuiltInFusion, zero-trust-device-verification, defender-active-scanning-nmap); Defender for Cloud proven end-to-end (NMap scan detected 2026-06-26) |
+| Containment | ❌ | No automated containment action exists for any rule — a matching alert requires manual response |
+| Eradication | ❌ | No automated remediation (e.g. session revocation, account disable) is wired to any detection rule |
+| Recovery | — | Not yet exercised — no real incident has occurred to date beyond the observed NMap reconnaissance scan |
+| Lessons Learned | ⚠️ | ADR practice (`docs/adr/*.md`) captures architectural decisions, but there is no formal post-incident review process specifically for security events |
+
+### Investigation Data Sources
+
+| Log Source | Status in this project | Default Retention |
+|---|---|---|
+| Azure AD Sign-in Logs | ⚠️ Planned, not live — CIAM SigninLogs pipeline (Event Hub + Function App bridge) pending | 30 days (7 days free tier) |
+| Azure AD Audit Logs | ❌ Not forwarded to Sentinel | 30 days |
+| Azure Activity Logs | ❌ Not forwarded to Sentinel — directly relevant to the CI/CD identity over-privilege finding above, since Activity Logs would be the primary evidence source for any investigation involving RBAC / role-assignment changes | 90 days |
+| Key Vault diagnostics (`AzureDiagnostics`) | ✅ | Routed to `law-django-azure-staging`, confirmed working (24.07.2026) — not yet formalized in Terraform |
+| PostgreSQL diagnostics (`AzureDiagnostics`) | ✅ | Same as above |
+
+*Note: Azure AD Audit Log entries can show an internal Microsoft IP address in the `IP Address` field rather than the actual actor's source IP. This is documented platform behavior, not a logging defect, and should not be misread as an indicator of compromise during future investigations.*
+
+### SOAR / Automated Response
+
+This is the primary structural gap in the project's incident response posture. Detection exists; automated triage and response do not.
+
+- ❌ **Automation rules** — no Sentinel automation rule exists to auto-assign, tag, suppress known-benign alerts, or triage the 16 accumulated `SecurityAlert` records
+- ❌ **Playbooks** — the planned Logic App playbook (`POST /users/{userId}/revokeSignInSessions` via Microsoft Graph) remains in backlog, not implemented
+- — **CSIRT / formal response team** — not applicable at current project scale (single maintainer); noted explicitly rather than left silent
+
+### Forward-Looking: AI-Assisted Response
+
+The planned "Ask AI about this alert" panel and the AI PR Review gate are designed to act as an *untrusted orchestrator of intent* rather than an execution authority. The AI PR Review gate is already informational-only with no auto-merge, matching this pattern by construction. If the "Ask AI" panel is ever extended to trigger the SOAR playbook above, it must route through the same authentication, ownership, and rate-limiting gates a human-triggered action would — an AI recommendation cannot itself be the authorization for a privileged mutation.
+
+### Readiness Metrics
+
+Not currently tracked. Mean Time to Respond/Recover (MTTR) and dwell time are the standard measures of incident response maturity, but no incident to date has required them, and no tracking mechanism exists yet for when one does.
+
+---
+
+### Honest Limitations
+
+- No automated triage or response exists for any of the 16 accumulated Sentinel alerts — all handling to date has been manual/ad hoc
+- Azure AD Audit Logs and Activity Logs are not ingested into Sentinel; Sign-in Logs are planned but not live
+- No formal incident owner, communication plan, or tested runbook exists beyond early playbook scaffolding
+- Recovery and post-incident review processes are unexercised — the project has not yet handled a confirmed incident, only an observed reconnaissance scan
+- Readiness metrics (MTTR, dwell time) are not tracked
+
+*Platform note: Microsoft Sentinel support in the Azure Portal ends 31 March 2027, with functionality moving exclusively to the Microsoft Defender Portal. This project's Sentinel configuration (Terraform-managed analytics rules plus manual `az rest` diagnostic settings) should be reviewed for Defender Portal compatibility within the next year.*
 
 ---
 
