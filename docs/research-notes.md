@@ -334,3 +334,54 @@ Microsoft Learn документує саме той сценарій, що вж
 - ❌ MTTR/Dwell time — жодна попередня research-note не згадувала формальне вимірювання; варто розглянути простий tracking у `docs/backlog-status.md` для майбутніх incident-подій (кількісний доказ для портфоліо)
 
 **Висновок для обох джерел:** Разом з Younes Khaldi-нотаткою це дає повну картину Sentinel SOAR-gap: детекція є, Sign-in Logs у планах, але Audit/Activity Logs, automation rules і playbooks — усі відсутні. Коли дійде до OIDC/RBAC-scoping задачі (backlog #2), варто одночасно додати forwarding Activity Logs — саме вони покажуть аудит-слід тих RBAC-змін, що плануються.
+
+## DeTT&CT (Detect Tactics, Techniques & Combat Threats) — Rabobank CDC framework
+
+**Source:** Redouane Otmani, "MITRE ATT&CK: DeTTECT," Medium, Jan 30, 2023.
+https://medium.com/@reotmani/dettect-70db2d219bde
+
+**What it covers:** Practical walkthrough of the DeTT&CT CLI/editor
+(rabobank-cdc/DeTTECT) — YAML administration files scoring data source
+quality, visibility, and detection per ATT&CK technique, plus gap analysis
+against a threat-actor-group layer in MITRE Navigator.
+
+**Relevance to this project:**
+
+DeTT&CT enforces a structural separation between *visibility* (do we have
+the log source) and *detection* (does a rule actually fire on it) as two
+independently scored fields per technique. This directly maps onto a known
+issue in `security/mitre/attack_data.json`: T1567 is marked `detected`,
+but the claimed detection mechanism (`RiskScoringMiddleware`) does not
+exist as implemented code. A DeTT&CT-style schema (separate visibility
+and detection scores) would have made this gap structurally visible
+instead of requiring manual code audit to discover.
+
+**Comparison table:**
+
+| Dimension | DeTT&CT | This project |
+|---|---|---|
+| Data model | YAML, per-technique visibility + detection scores, dated | `attack_data.json`, single flat enum (mitigated/detected/monitored/gap) |
+| Data source quality | Explicit completeness/timeliness/consistency scoring per source | Not scored — presence only (e.g. Sentinel connector) |
+| Visibility vs. detection | Two independent fields | Merged into one status — root cause of the T1567 misclassification |
+| Gap analysis | Formal: own layer vs. threat-actor-group layer (`dettect.py g`) | Manual, not tied to a specific actor/TTP profile |
+| Tooling | CLI + editor, exports to MITRE Navigator | Custom D3.js force graph at `/security/coverage/` |
+
+**Adopt (low-cost, no new tooling):**
+1. Split the flat status enum in `attack_data.json` into two fields:
+   `visibility_score` (log source exists — device_middleware, Sentinel
+   connector) and `detection_score` (a rule/alert actually fires). Closes
+   the T1567-class error structurally rather than relying on manual audit.
+2. Add a simple low/medium/high data-source-quality note per technique
+   (completeness/timeliness), even without full DeTT&CT scoring.
+3. Tie the 5 gap techniques (T1027, T1530, T1486, T1531, T1595) to a
+   concrete threat-actor/TTP profile to justify prioritization (e.g. WAF
+   for T1595) with evidence rather than intuition.
+
+**Reject:** Full DeTT&CT CLI/YAML stack — adds a separate tool, data
+format, and Navigator export pipeline for a project already served by
+the existing D3.js dashboard. Same "simplest tool matching current scale"
+principle already applied to d3graph-before-Neo4j-Aura. The useful part
+(visibility/detection separation) can be reproduced directly inside the
+existing `attack_data.json` schema.
+
+---
